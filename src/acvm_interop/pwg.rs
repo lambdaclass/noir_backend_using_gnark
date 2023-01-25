@@ -5,13 +5,12 @@ use std::collections::BTreeMap;
 
 mod gadget_call;
 
-use self::gadget_call::GadgetCaller;
 use super::Gnark;
 
 impl PartialWitnessGenerator for Gnark {
     fn solve_blackbox_function_call(
-        initial_witness: &mut BTreeMap<Witness, FieldElement>,
-        func_call: &BlackBoxFuncCall,
+        _initial_witness: &mut BTreeMap<Witness, FieldElement>,
+        _func_call: &BlackBoxFuncCall,
     ) -> Result<(), OpcodeResolutionError> {
         todo!()
     }
