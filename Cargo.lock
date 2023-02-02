@@ -5,6 +5,7 @@ version = 3
 [[package]]
 name = "acir"
 version = "0.3.1"
+source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
 dependencies = [
  "acir_field",
  "flate2",
@@ -15,6 +16,7 @@ dependencies = [
 [[package]]
 name = "acir_field"
 version = "0.3.1"
+source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
 dependencies = [
  "ark-bls12-381",
  "ark-bn254",
@@ -31,6 +33,7 @@ dependencies = [
 [[package]]
 name = "acvm"
 version = "0.3.1"
+source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
 dependencies = [
  "acir",
  "acir_field",
@@ -48,6 +51,7 @@ dependencies = [
 [[package]]
 name = "acvm_stdlib"
 version = "0.3.1"
+source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
 dependencies = [
  "acir",
  "acir_field",
