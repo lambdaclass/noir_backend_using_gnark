@@ -43,7 +43,7 @@ impl ProofSystemCompiler for Gnark {
         public_inputs: Vec<FieldElement>,
         circuit: Circuit,
     ) -> bool {
-        gnark_backend::verify(circuit, proof, &public_inputs)
+        gnark_backend::verify(circuit, proof, &public_inputs).unwrap()
     }
 
     fn get_exact_circuit_size(&self, _circuit: Circuit) -> u32 {
