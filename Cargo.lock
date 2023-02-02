@@ -947,6 +947,7 @@ dependencies = [
  "ark-bls12-381",
  "ark-bn254",
  "ark-ff",
+ "ark-serialize",
  "cfg-if",
  "serde",
  "serde_json",
