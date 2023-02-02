@@ -34,7 +34,7 @@ impl ProofSystemCompiler for Gnark {
     ) -> Vec<u8> {
         // TODO: modify gnark serializer to accept the BTreeMap
         let values: Vec<FieldElement> = witness_values.values().copied().collect();
-        gnark_backend::prove(circuit, values.as_slice())
+        gnark_backend::prove(circuit, values).unwrap()
     }
 
     fn verify_from_cs(
