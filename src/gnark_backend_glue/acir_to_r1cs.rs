@@ -1,8 +1,7 @@
+use super::helpers::from_fe;
 use acvm::acir::native_types::Witness;
 use anyhow::Result;
 use serde::Serialize;
-
-use super::from_fe;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
 //
