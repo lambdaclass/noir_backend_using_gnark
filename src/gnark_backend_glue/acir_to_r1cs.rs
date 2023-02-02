@@ -1,5 +1,5 @@
-use super::{from_fe, Fr};
-use acvm::acir::native_types::Witness;
+use super::{from_felt, Fr};
+use crate::acvm;
 use anyhow::Result;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
@@ -17,28 +17,30 @@ use anyhow::Result;
 #[derive(Clone)]
 pub struct RawR1CS {
     pub gates: Vec<RawGate>,
-    pub public_inputs: acvm::acir::circuit::PublicInputs,
+    pub public_inputs: acvm::PublicInputs,
     pub values: Vec<Fr>,
     pub num_variables: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct RawGate {
-    pub mul_terms: Vec<(Fr, Witness, Witness)>,
-    pub add_terms: Vec<(Fr, Witness)>,
+    pub mul_terms: Vec<(Fr, acvm::Witness, acvm::Witness)>,
+    pub add_terms: Vec<(Fr, acvm::Witness)>,
     pub constant_term: Fr,
 }
 
 impl RawR1CS {
-    pub fn new(acir: acvm::acir::circuit::Circuit, values: Vec<Fr>) -> Result<Self> {
+    pub fn new(acir: acvm::Circuit, values: Vec<acvm::FieldElement>) -> Result<Self> {
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
         let gates: Vec<_> = acir
             .opcodes
             .into_iter()
-            .filter(|opcode| opcode.is_arithmetic())
+            .filter(acvm::Opcode::is_arithmetic)
             .map(|opcode| RawGate::new(opcode.arithmetic().unwrap()))
             .collect();
+
+        let values: Vec<Fr> = values.into_iter().map(from_felt).collect();
 
         Ok(Self {
             gates,
@@ -50,25 +52,25 @@ impl RawR1CS {
 }
 
 impl RawGate {
-    pub fn new(arithmetic_gate: acvm::acir::native_types::Expression) -> Self {
+    pub fn new(arithmetic_gate: acvm::Expression) -> Self {
         let converted_mul_terms: Vec<_> = arithmetic_gate
             .mul_terms
             .into_iter()
             .map(|(coefficient, multiplicand, multiplier)| {
-                (from_fe(coefficient), multiplicand, multiplier)
+                (from_felt(coefficient), multiplicand, multiplier)
             })
             .collect();
 
         let converted_linear_combinations: Vec<_> = arithmetic_gate
             .linear_combinations
             .into_iter()
-            .map(|(coefficient, sum)| (from_fe(coefficient), sum))
+            .map(|(coefficient, sum)| (from_felt(coefficient), sum))
             .collect();
 
         Self {
             mul_terms: converted_mul_terms,
             add_terms: converted_linear_combinations,
-            constant_term: from_fe(arithmetic_gate.q_c),
+            constant_term: from_felt(arithmetic_gate.q_c),
         }
     }
 }
