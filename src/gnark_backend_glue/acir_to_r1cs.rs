@@ -32,10 +32,7 @@ pub struct RawGate<F: ark_ff::PrimeField> {
 }
 
 impl<F: ark_ff::PrimeField> RawR1CS<F> {
-    pub fn new(
-        acir: &acvm::acir::circuit::Circuit,
-        values: Vec<F>,
-    ) -> Result<Self> {
+    pub fn new(acir: &acvm::acir::circuit::Circuit, values: Vec<F>) -> Result<Self> {
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
         let gates: Vec<_> = acir
@@ -59,7 +56,9 @@ impl<F: ark_ff::PrimeField> RawGate<F> {
         let converted_mul_terms: Vec<_> = arithmetic_gate
             .mul_terms
             .into_iter()
-            .map(|(coefficient, multiplicand, multiplier)| (from_fe(coefficient), multiplicand, multiplier))
+            .map(|(coefficient, multiplicand, multiplier)| {
+                (from_fe(coefficient), multiplicand, multiplier)
+            })
             .collect();
 
         let converted_linear_combinations: Vec<_> = arithmetic_gate
