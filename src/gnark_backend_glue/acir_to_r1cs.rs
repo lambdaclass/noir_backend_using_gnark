@@ -1,7 +1,6 @@
-use super::helpers::from_fe;
+use super::{from_fe, Fr};
 use acvm::acir::native_types::Witness;
 use anyhow::Result;
-use serde::Serialize;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
 //
@@ -15,23 +14,23 @@ use serde::Serialize;
 // - index(srs, circ)
 // - prove(index_pk, prover_values, rng)
 // - verify(index_vk, verifier, rng)
-#[derive(Clone, Serialize)]
-pub struct RawR1CS<F: ark_ff::PrimeField> {
-    pub gates: Vec<RawGate<F>>,
+#[derive(Clone)]
+pub struct RawR1CS {
+    pub gates: Vec<RawGate>,
     pub public_inputs: acvm::acir::circuit::PublicInputs,
-    pub values: Vec<F>,
+    pub values: Vec<Fr>,
     pub num_variables: usize,
 }
 
-#[derive(Clone, Debug, Serialize)]
-pub struct RawGate<F: ark_ff::PrimeField> {
-    pub mul_terms: Vec<(F, Witness, Witness)>,
-    pub add_terms: Vec<(F, Witness)>,
-    pub constant_term: F,
+#[derive(Clone, Debug)]
+pub struct RawGate {
+    pub mul_terms: Vec<(Fr, Witness, Witness)>,
+    pub add_terms: Vec<(Fr, Witness)>,
+    pub constant_term: Fr,
 }
 
-impl<F: ark_ff::PrimeField> RawR1CS<F> {
-    pub fn new(acir: &acvm::acir::circuit::Circuit, values: Vec<F>) -> Result<Self> {
+impl RawR1CS {
+    pub fn new(acir: acvm::acir::circuit::Circuit, values: Vec<Fr>) -> Result<Self> {
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
         let gates: Vec<_> = acir
@@ -50,7 +49,7 @@ impl<F: ark_ff::PrimeField> RawR1CS<F> {
     }
 }
 
-impl<F: ark_ff::PrimeField> RawGate<F> {
+impl RawGate {
     pub fn new(arithmetic_gate: acvm::acir::native_types::Expression) -> Self {
         let converted_mul_terms: Vec<_> = arithmetic_gate
             .mul_terms
