@@ -949,6 +949,7 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "cfg-if",
+ "hex",
  "serde",
  "serde_json",
  "wasmer",
