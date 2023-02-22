@@ -27,7 +27,7 @@ pub struct RawGate {
 impl RawR1CS {
     pub fn new(acir: acvm::Circuit, values: Vec<acvm::FieldElement>) -> Result<Self> {
         // Currently non-arithmetic gates are not supported
-        // so we extract all of the arithmetic gates only
+        // so we extract only all of the arithmetic gates
         let gates: Vec<_> = acir
             .opcodes
             .into_iter()
