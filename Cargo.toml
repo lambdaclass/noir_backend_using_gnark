@@ -6,7 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-acvm = "0.3.1"
+acvm = { git = "https://www.github.com/LambdaClass/acvm", branch = "arkworks_update" }
+# acvm = "0.3.1"
+
+ark-ff = "0.4.0"
+ark-bls12-381 = "0.4.0"
+ark-bn254 = "0.4.0"
+ark-serialize = { version = "0.4.0" }
+
+anyhow = "1"
+wasmer = "3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1" }
+cfg-if = "1"
+hex = "0.4"
 
 [profile.test]
 opt-level = 3
@@ -14,3 +27,8 @@ lto = "thin"
 incremental = true
 debug = true
 debug-assertions = true
+
+[features]
+default = ["bn254"]
+bn254 = ["acvm/bn254"]
+bls12_381 = ["acvm/bls12_381"]
