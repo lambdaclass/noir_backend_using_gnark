@@ -10,6 +10,7 @@ import (
 	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/consensys/gnark/test"
 
+	bls12381r1cs "github.com/consensys/gnark/constraint/bls12-381"
 	"github.com/consensys/gnark/frontend"
 )
 
@@ -25,45 +26,13 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 func prove() js.Func {
 	proveFunc := js.FuncOf(func(gates []js.Value, public_indexes []js.Value, values []js.Value) any {
-		// TODO: Fill the circuit with the incoming values.
-		var circuit Circuit
+		r1cs := bls12381r1cs.NewR1CS(0)
 
-		// // building the circuit...
-		ccs, err := frontend.Compile(ecc.BN254, scs.NewBuilder, &circuit)
-		if err != nil {
-			fmt.Println("circuit compilation error")
-		}
+		r1cs
 
-		// create the necessary data for KZG.
-		// This is a toy example, normally the trusted setup to build ZKG
-		// has been ran before.
-		// The size of the data in KZG should be the closest power of 2 bounding //
-		// above max(nbConstraints, nbVariables).
-		_r1cs := plonk.NewCS(ecc.BN254)
-		srs, err := test.NewKZGSRS(_r1cs)
-		if err != nil {
-			panic(err)
-		}
+		constraints, r := r1cs.GetConstraints()
 
-		witnessFull, err := frontend.NewWitness(&circuit, ecc.BN254)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// public data consists the polynomials describing the constants involved
-		// in the constraints, the polynomial describing the permutation ("grand
-		// product argument"), and the FFT domains.
-		pk, _, err := plonk.Setup(ccs, srs)
-		//_, err := plonk.Setup(r1cs, kate, &publicWitness)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		proof, err := plonk.Prove(ccs, pk, witnessFull)
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		bls12381r1cs.prove()
 		return proof
 	})
 	return proveFunc

@@ -1,10 +1,11 @@
 use acvm::{acir::circuit::Circuit, FieldElement};
+use anyhow::Result;
 
 mod acir_to_r1cs;
 mod serialize;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
-// their value depends on the feature flag.
+// its value depends on the feature flag.
 cfg_if::cfg_if! {
     if #[cfg(feature = "bn254")] {
         pub use ark_bn254::{Bn254 as Curve, Fr};
@@ -27,10 +28,10 @@ cfg_if::cfg_if! {
     }
 }
 
-pub fn prove(_circuit: Circuit, _values: &[FieldElement]) -> Vec<u8> {
+pub fn prove(_circuit: Circuit, _values: Vec<FieldElement>) -> Result<Vec<u8>> {
     todo!()
 }
 
-pub fn verify(_circuit: Circuit, _proof: &[u8], _public_inputs: &[FieldElement]) -> bool {
+pub fn verify(_circuit: Circuit, _proof: &[u8], _public_inputs: &[FieldElement]) -> Result<bool> {
     todo!()
 }
