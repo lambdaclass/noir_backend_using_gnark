@@ -20,7 +20,7 @@ flowchart
 
 This module is needed because Noir's backend has to be written in Rust and we want to develop one using gnark which is written in Go.
 
-This Rust module is basically in charge of implementing the trait `Backend` for a given type which we've named `Gnark` which represents our backend and of translating ACIR into something useful. Even though gnark supports several proving systems (like Plonk and Groth16) this wrapper will translate ACIR into R1CS. In the future, more proving systems can be easily supported (we are already planning on supporting Plonk).
+This Rust module is basically in charge of implementing the trait `Backend` for a given type which we've named `Gnark` which represents our backend and of mapping ACIR into an R1CS-friendly data structure. Even though gnark supports several proving systems (like Plonk and Groth16) this wrapper will translate ACIR into R1CS. In the future, more proving systems can be easily supported (we are already planning on supporting Plonk. By this I mean that, a C++ Plonk implementation is already supported as a backend for Noir, but gnark's Plonk implementation isn't).
 
 The first part is not so difficult. We just followed the other Noir backends' structure (see [Arkwork's Marlin's](https://github.com/noir-lang/marlin_arkworks_backend/tree/master/src) and [Aztec's Plonk's](https://github.com/noir-lang/aztec_backend/tree/master/barretenberg_static_lib/src)).
 
