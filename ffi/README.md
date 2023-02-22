@@ -50,7 +50,7 @@ struct GoString {
 }
 ```
 
-* Call the function inside an usafe block
+* Call the function inside an unsafe block
 
 ```rust
 let result = unsafe { Ping(go_string) };
