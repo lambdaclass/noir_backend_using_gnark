@@ -4,7 +4,7 @@ mod acir_to_r1cs;
 mod serialize;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
-// its value depends on the feature flag.
+// their value depends on the feature flag.
 cfg_if::cfg_if! {
     if #[cfg(feature = "bn254")] {
         pub use ark_bn254::{Bn254 as Curve, Fr};
