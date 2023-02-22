@@ -74,6 +74,14 @@ let c_str = unsafe { CStr::from_ptr(result) };
 let string = c_str.to_str().expect("Error translating Ping from library");
 ```
 
+## Run
+
+```
+$ DYLD_LIBRARY_PATH=./{lib_name} cargo run
+```
+
+You must include the path to the lib's binary into the env var DYLD_LIBRARY_PATH
+
 ## Source
 
 [Calling a Go Library from Rust: A Case Study with SQIP](https://blog.arranfrance.com/post/cgo-sqip-rust/)
