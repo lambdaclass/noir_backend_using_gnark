@@ -8,7 +8,7 @@ use anyhow::Result;
 // - The compilers ACIR struct is currently fixed to bn254
 // - These structures only support arithmetic gates, while the compiler has other
 // gate types. These can be added later once the backend knows how to deal with things like XOR
-// or once ACIR is taught how to do convert these black box functions to Arithmetic gates.
+// or once ACIR supports converting these black box functions to Arithmetic gates.
 #[derive(Clone)]
 pub struct RawR1CS {
     pub gates: Vec<RawGate>,
