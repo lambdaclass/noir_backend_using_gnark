@@ -4,8 +4,8 @@ version = 3
 
 [[package]]
 name = "acir"
-version = "0.3.1"
-source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
+version = "0.4.1"
+source = "git+https://github.com/noir-lang/acvm#373c18fc05edf673cfec9e8bbb78bd7d7514999e"
 dependencies = [
  "acir_field",
  "flate2",
@@ -15,8 +15,8 @@ dependencies = [
 
 [[package]]
 name = "acir_field"
-version = "0.3.1"
-source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
+version = "0.4.1"
+source = "git+https://github.com/noir-lang/acvm#373c18fc05edf673cfec9e8bbb78bd7d7514999e"
 dependencies = [
  "ark-bls12-381",
  "ark-bn254",
@@ -32,14 +32,12 @@ dependencies = [
 
 [[package]]
 name = "acvm"
-version = "0.3.1"
-source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
+version = "0.4.1"
+source = "git+https://github.com/noir-lang/acvm#373c18fc05edf673cfec9e8bbb78bd7d7514999e"
 dependencies = [
  "acir",
- "acir_field",
  "acvm_stdlib",
  "blake2",
- "hex",
  "indexmap",
  "k256",
  "num-bigint",
@@ -50,11 +48,10 @@ dependencies = [
 
 [[package]]
 name = "acvm_stdlib"
-version = "0.3.1"
-source = "git+https://www.github.com/LambdaClass/acvm?branch=arkworks_update#7ca9177aba53ae3c9f00ae223a82ffb8e020bd65"
+version = "0.4.1"
+source = "git+https://github.com/noir-lang/acvm#373c18fc05edf673cfec9e8bbb78bd7d7514999e"
 dependencies = [
  "acir",
- "acir_field",
 ]
 
 [[package]]

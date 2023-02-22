@@ -8,4 +8,8 @@ impl SmartContract for Gnark {
     fn eth_contract_from_cs(&self, _circuit: Circuit) -> String {
         unimplemented!("gnark does not implement an ETH contract")
     }
+
+    fn eth_contract_from_vk(&self, verification_key: &[u8]) -> String {
+        unimplemented!("gnark does not implement an ETH contract")
+    }
 }
