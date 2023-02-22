@@ -3,5 +3,5 @@ fn main() {
     let lib = "ping";
 
     println!("cargo:rustc-link-search=native={}", path);
-    println!("cargo:rustc-link-lib=static={}", lib);
+    println!("cargo:rustc-link-lib=dylib={}", lib);
 }

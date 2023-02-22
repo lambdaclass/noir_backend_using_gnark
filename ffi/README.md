@@ -24,6 +24,55 @@ fn main() {
 }
 ```
 
+### Calling Go
+
+* Add an `extern` block. For example:
+
+```rust
+extern "C" {
+    fn Ping(path: GoString) -> *const c_char;
+}
+```
+
+* Represent io parameter types from Go in Rust as a struct. It needs to match the type definition at byte level.
+
+Example: Go's string
+```go
+typedef struct { const char *p; ptrdiff_t n; }
+```
+
+So in rust:
+```rust
+#[repr(C)]
+struct GoString {
+    a: *const c_char,
+    b: i64,
+}
+```
+
+* Call the function inside an usafe block
+
+```rust
+let result = unsafe { Ping(go_string) };
+```
+
+### Working with GoString
+
+Convert &str to GoString:
+```rust
+let c_msg = CString::new(msg).expect("CString::new failed");
+let ptr = c_msg.as_ptr();
+let go_string = GoString {
+    a: ptr,
+    b: c_msg.as_bytes().len() as i64,
+};
+```
+
+Convert GoString to &str:
+```rust
+let c_str = unsafe { CStr::from_ptr(result) };
+let string = c_str.to_str().expect("Error translating Ping from library");
+```
 
 ## Source
 
