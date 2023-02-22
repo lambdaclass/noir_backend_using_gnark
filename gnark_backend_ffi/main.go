@@ -3,20 +3,20 @@ package main
 import "C"
 import (
 	"bytes"
-
+	"unsafe"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 )
 
 //export Prove
-func Prove() []byte {
+func Prove() unsafe.Pointer {
 	var serialized_proof bytes.Buffer
 
 	proof := groth16.NewProof(ecc.BLS12_381)
 
 	proof.WriteRawTo(&serialized_proof)
 
-	return serialized_proof.Bytes()
+	return C.CBytes(serialized_proof.Bytes())
 }
 
 //export Verify
