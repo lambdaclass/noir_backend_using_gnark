@@ -7,10 +7,10 @@ use super::Gnark;
 
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
-        Language::PLONKCSat { width: 3 }
+        Language::R1CS
     }
 
-    fn blackbox_function_supported(&self, opcode: &BlackBoxFunc) -> bool {
+    fn black_box_function_supported(&self, opcode: &BlackBoxFunc) -> bool {
         match opcode {
             BlackBoxFunc::AES => false,
             BlackBoxFunc::AND => false,
@@ -24,6 +24,7 @@ impl ProofSystemCompiler for Gnark {
             BlackBoxFunc::HashToField128Security => false,
             BlackBoxFunc::EcdsaSecp256k1 => false,
             BlackBoxFunc::FixedBaseScalarMul => false,
+            BlackBoxFunc::Keccak256 => false,
         }
     }
 
@@ -46,7 +47,30 @@ impl ProofSystemCompiler for Gnark {
         gnark_backend::verify(circuit, proof, &public_inputs).unwrap()
     }
 
-    fn get_exact_circuit_size(&self, _circuit: Circuit) -> u32 {
+    fn get_exact_circuit_size(&self, circuit: &Circuit) -> u32 {
+        todo!()
+    }
+
+    fn preprocess(&self, circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
+        todo!()
+    }
+
+    fn prove_with_pk(
+        &self,
+        circuit: &Circuit,
+        witness_values: std::collections::BTreeMap<Witness, FieldElement>,
+        proving_key: &[u8],
+    ) -> Vec<u8> {
+        todo!()
+    }
+
+    fn verify_with_vk(
+        &self,
+        proof: &[u8],
+        public_inputs: Vec<FieldElement>,
+        circuit: &Circuit,
+        verification_key: &[u8],
+    ) -> bool {
         todo!()
     }
 }
