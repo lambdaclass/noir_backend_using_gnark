@@ -8,8 +8,8 @@ import (
 	"github.com/consensys/gnark/backend/groth16"
 )
 
-//export prove
-func prove() []byte {
+//export Prove
+func Prove() []byte {
 	var serialized_proof bytes.Buffer
 
 	proof := groth16.NewProof(ecc.BLS12_381)
@@ -19,8 +19,8 @@ func prove() []byte {
 	return serialized_proof.Bytes()
 }
 
-//export verify
-func verify() bool {
+//export Verify
+func Verify() bool {
 	return false
 }
 

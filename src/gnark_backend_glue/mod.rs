@@ -1,5 +1,11 @@
+use std::os::raw::c_uchar;
+
 use acvm::{acir::circuit::Circuit, FieldElement};
 use anyhow::Result;
+
+extern "C" {
+    fn Verify() -> c_uchar;
+}
 
 mod acir_to_r1cs;
 mod serialize;
@@ -33,5 +39,20 @@ pub fn prove(_circuit: Circuit, _values: Vec<FieldElement>) -> Result<Vec<u8>> {
 }
 
 pub fn verify(_circuit: Circuit, _proof: &[u8], _public_inputs: &[FieldElement]) -> Result<bool> {
-    todo!()
+    let result = unsafe { Verify() };
+    match result {
+        0 => Ok(false),
+        _ => Ok(true),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verify_should_return_false() {
+        let result = verify(Circuit::default(), &[], &[]).unwrap();
+        assert!(!result);
+    }
 }
