@@ -1,4 +1,5 @@
 use acvm::{acir::circuit::Circuit, FieldElement};
+use anyhow::Result;
 
 mod acir_to_r1cs;
 mod serialize;
