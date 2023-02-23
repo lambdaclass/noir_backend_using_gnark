@@ -21,11 +21,11 @@ struct GoString {
 }
 
 impl GoString {
-    pub fn from_cstring(c_msg: &CString) -> GoString {
-        let ptr = c_msg.as_ptr();
+    pub fn from_cstring(c_str: &CString) -> GoString {
+        let ptr = c_str.as_ptr();
         GoString {
             a: ptr,
-            b: c_msg.as_bytes().len() as i64,
+            b: c_str.as_bytes().len() as i64,
         }
     }
 }
@@ -62,8 +62,8 @@ pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
 
     // Serialize to json and then convert to GoString
     let serialized_rawr1cs = serde_json::to_string(&rawr1cs).unwrap();
-    let c_msg = CString::new(serialized_rawr1cs).unwrap();
-    let go_string_rawr1cs = GoString::from_cstring(&c_msg);
+    let c_str = CString::new(serialized_rawr1cs).unwrap();
+    let go_string_rawr1cs = GoString::from_cstring(&c_str);
 
     let result: *const c_char = unsafe { Prove(go_string_rawr1cs) };
     let c_str = unsafe { CStr::from_ptr(result) };
@@ -76,13 +76,13 @@ pub fn verify(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) ->
     let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec()).unwrap();
 
     // Serialize to json and then convert to GoString
-    let serialized_rawr1cs = serde_json::to_string(&rawr1cs).unwrap();
-    let c_msg = CString::new(serialized_rawr1cs).unwrap();
-    let go_string_rawr1cs = GoString::from_cstring(&c_msg);
+    let rawr1cs_json = serde_json::to_string(&rawr1cs).unwrap();
+    let c_str = CString::new(rawr1cs_json).unwrap();
+    let go_string_rawr1cs = GoString::from_cstring(&c_str);
 
     let serialized_proof = std::str::from_utf8(proof).unwrap().to_string();
-    let c_msg = CString::new(serialized_proof).unwrap();
-    let go_string_proof = GoString::from_cstring(&c_msg);
+    let c_str = CString::new(serialized_proof).unwrap();
+    let go_string_proof = GoString::from_cstring(&c_str);
 
     let result = unsafe { Verify(go_string_rawr1cs, go_string_proof) };
     match result {
