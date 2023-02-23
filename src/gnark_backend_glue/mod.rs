@@ -41,16 +41,14 @@ extern "C" {
 #[repr(C)]
 struct GoString {
     ptr: *const c_char,
-    length: u64,
+    length: usize,
 }
 
 impl GoString {
     pub fn from_cstring(c_str: &CString) -> GoString {
         let ptr = c_str.as_ptr();
-        GoString {
-            ptr,
-            length: c_str.as_bytes().len() as u64,
-        }
+        let length = c_str.as_bytes().len();
+        GoString { ptr, length }
     }
 }
 
