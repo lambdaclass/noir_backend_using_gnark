@@ -74,7 +74,7 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern char* Ping(GoString msg);
+extern void* Ping(GoString msg);
 
 #ifdef __cplusplus
 }

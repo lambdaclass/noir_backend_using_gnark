@@ -1,8 +1,6 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use base64::encode;
-
 extern "C" {
     fn Ping(msg: GoString) -> *const c_char;
 }

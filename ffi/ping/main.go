@@ -1,13 +1,14 @@
 package main
 
 import "C"
+import "unsafe"
 
 //export Ping
-func Ping(msg string) *C.char {
-    if msg != "ping" {
-   		return C.CString(msg)
-    }
-    return C.CString("pong")
+func Ping(msg string) unsafe.Pointer {
+	if msg != "ping" {
+		return C.CBytes([]byte(msg))
+	}
+	return C.CBytes([]byte("pong"))
 }
 
 func main() {}
