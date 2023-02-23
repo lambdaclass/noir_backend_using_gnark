@@ -28,10 +28,22 @@ cfg_if::cfg_if! {
     }
 }
 
-pub fn prove(_circuit: Circuit, _values: Vec<FieldElement>) -> Result<Vec<u8>> {
+pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
     todo!()
 }
 
-pub fn verify(_circuit: Circuit, _proof: &[u8], _public_inputs: &[FieldElement]) -> Result<bool> {
+pub fn prove_with_pk(circuit: &Circuit, values: Vec<FieldElement>, proving_key: &[u8]) -> Result<Vec<u8>> {
+    todo!()
+}
+
+pub fn verify_with_meta(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) -> Result<bool> {
+    todo!()
+}
+
+pub fn verify_with_vk(circuit: &Circuit, proof: &[u8], public_inputs: &[FieldElement], verifying_key: &[u8]) -> Result<bool> {
+    todo!()
+}
+
+pub fn preprocess(circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
     todo!()
 }
