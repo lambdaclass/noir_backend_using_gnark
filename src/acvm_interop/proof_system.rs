@@ -48,7 +48,7 @@ impl ProofSystemCompiler for Gnark {
     }
 
     fn get_exact_circuit_size(&self, circuit: &Circuit) -> u32 {
-        todo!()
+        gnark_backend::get_exact_circuit_size(circuit).unwrap()
     }
 
     fn preprocess(&self, circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
