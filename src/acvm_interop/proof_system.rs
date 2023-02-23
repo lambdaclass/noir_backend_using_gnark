@@ -57,9 +57,9 @@ impl ProofSystemCompiler for Gnark {
 
     fn prove_with_pk(
         &self,
-        _circuit: &Circuit,
-        _witness_values: std::collections::BTreeMap<Witness, FieldElement>,
-        _proving_key: &[u8],
+        circuit: &Circuit,
+        witness_values: std::collections::BTreeMap<Witness, FieldElement>,
+        proving_key: &[u8],
     ) -> Vec<u8> {
         // TODO: modify gnark serializer to accept the BTreeMap
         let values: Vec<FieldElement> = witness_values.values().copied().collect();
@@ -68,10 +68,10 @@ impl ProofSystemCompiler for Gnark {
 
     fn verify_with_vk(
         &self,
-        _proof: &[u8],
-        _public_inputs: Vec<FieldElement>,
-        _circuit: &Circuit,
-        _verification_key: &[u8],
+        proof: &[u8],
+        public_inputs: Vec<FieldElement>,
+        circuit: &Circuit,
+        verification_key: &[u8],
     ) -> bool {
         gnark_backend::verify_with_vk(circuit, proof, &public_inputs, verification_key).unwrap()
     }
