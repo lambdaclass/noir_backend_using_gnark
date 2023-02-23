@@ -73,7 +73,7 @@ pub fn prove_with_pk(
     values: Vec<FieldElement>,
     proving_key: &[u8],
 ) -> Result<Vec<u8>> {
-    let rawr1cs = RawR1CS::new(*circuit, values)?;
+    let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
 
     // Serialize to json and then convert to GoString
     let rawr1cs_json = serde_json::to_string(&rawr1cs)?;
