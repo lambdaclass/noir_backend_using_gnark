@@ -52,7 +52,7 @@ impl GoString {
     }
 }
 
-pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
+pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
     let rawr1cs = RawR1CS::new(circuit, values)?;
 
     // Serialize to json and then convert to GoString
@@ -67,7 +67,19 @@ pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
     Ok(bytes.to_vec())
 }
 
-pub fn verify(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) -> Result<bool> {
+pub fn prove_with_pk(
+    circuit: &Circuit,
+    values: Vec<FieldElement>,
+    proving_key: &[u8],
+) -> Result<Vec<u8>> {
+    todo!()
+}
+
+pub fn verify_with_meta(
+    circuit: Circuit,
+    proof: &[u8],
+    public_inputs: &[FieldElement],
+) -> Result<bool> {
     let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
 
     // Serialize to json and then convert to GoString
@@ -87,20 +99,32 @@ pub fn verify(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) ->
     }
 }
 
+pub fn verify_with_vk(
+    circuit: &Circuit,
+    proof: &[u8],
+    public_inputs: &[FieldElement],
+    verifying_key: &[u8],
+) -> Result<bool> {
+    todo!()
+}
+
+pub fn preprocess(circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hex_literal::hex;
 
     #[test]
     fn verify_should_return_false() {
-        let result = verify(Circuit::default(), &[65, 66, 67], &[]).unwrap();
+        let result = verify_with_meta(Circuit::default(), &[65, 66, 67], &[]).unwrap();
         assert!(!result);
     }
 
     #[test]
     fn prove_should_call_go_backend() {
-        let result = prove(Circuit::default(), vec![]).unwrap();
+        let result = prove_with_meta(Circuit::default(), vec![]).unwrap();
 
         assert_eq!(
             std::str::from_utf8(&result).unwrap(),
