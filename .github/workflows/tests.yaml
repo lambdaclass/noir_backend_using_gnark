@@ -49,7 +49,7 @@ jobs:
            command: test
 
    fmt:
-     name: Lints
+    name: Lints
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
