@@ -1,5 +1,5 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_uchar};
+use std::os::raw::{c_char, c_uchar, c_uint};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 use anyhow::{bail, Result};
@@ -36,6 +36,7 @@ extern "C" {
     fn Verify(rawr1cs: GoString, proof: GoString) -> c_uchar;
     fn Prove(rawr1cs: GoString) -> *const c_char;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
+    fn GetExactCircuitSize(circuit: GoString) -> c_uint;
 }
 
 #[derive(Debug)]
@@ -122,6 +123,17 @@ pub fn verify_with_vk(
     verifying_key: &[u8],
 ) -> Result<bool> {
     todo!()
+}
+
+pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32> {
+    // Serialize to json and then convert to GoString
+    let circuit_json = serde_json::to_string(circuit)?;
+    let circuit_c_str = CString::new(circuit_json)?;
+    let circuit_go_string = GoString::from_cstring(&circuit_c_str);
+
+    let result: c_uint = unsafe { GetExactCircuitSize(circuit_go_string) };
+
+    Ok(result)
 }
 
 pub fn preprocess(circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
