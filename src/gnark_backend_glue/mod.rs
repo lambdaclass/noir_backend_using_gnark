@@ -41,7 +41,7 @@ extern "C" {
 #[repr(C)]
 struct GoString {
     ptr: *const c_char,
-    length: i64,
+    length: u64,
 }
 
 impl GoString {
@@ -49,7 +49,7 @@ impl GoString {
         let ptr = c_str.as_ptr();
         GoString {
             ptr,
-            length: c_str.as_bytes().len() as i64,
+            length: c_str.as_bytes().len() as u64,
         }
     }
 }
