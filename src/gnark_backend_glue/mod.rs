@@ -16,16 +16,16 @@ extern "C" {
 #[derive(Debug)]
 #[repr(C)]
 struct GoString {
-    a: *const c_char,
-    b: i64,
+    ptr: *const c_char,
+    length: i64,
 }
 
 impl GoString {
     pub fn from_cstring(c_str: &CString) -> GoString {
         let ptr = c_str.as_ptr();
         GoString {
-            a: ptr,
-            b: c_str.as_bytes().len() as i64,
+            ptr,
+            length: c_str.as_bytes().len() as i64,
         }
     }
 }
