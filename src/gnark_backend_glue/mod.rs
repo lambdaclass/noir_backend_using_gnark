@@ -35,6 +35,7 @@ cfg_if::cfg_if! {
 extern "C" {
     fn Verify(rawr1cs: GoString, proof: GoString) -> c_uchar;
     fn Prove(rawr1cs: GoString) -> *const c_char;
+    fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn GetExactCircuitSize(circuit: GoString) -> c_uint;
 }
@@ -122,7 +123,28 @@ pub fn verify_with_vk(
     public_inputs: &[FieldElement],
     verifying_key: &[u8],
 ) -> Result<bool> {
-    todo!()
+    let rawr1cs = RawR1CS::new(circuit.clone(), public_inputs.to_vec())?;
+
+    // Serialize to json and then convert to GoString
+    let rawr1cs_json = serde_json::to_string(&rawr1cs)?;
+    let rawr1cs_c_str = CString::new(rawr1cs_json)?;
+    let rawr1cs_go_string = GoString::from_cstring(&rawr1cs_c_str);
+
+    let proof_serialized = String::from_utf8(proof.to_vec())?;
+    let proof_c_str = CString::new(proof_serialized)?;
+    let proof_go_string = GoString::from_cstring(&proof_c_str);
+
+    let verifying_key_serialized = String::from_utf8(verifying_key.to_vec())?;
+    let verifying_key_c_str = CString::new(verifying_key_serialized)?;
+    let verifying_key_go_string = GoString::from_cstring(&verifying_key_c_str);
+
+    let result =
+        unsafe { VerifyWithVK(rawr1cs_go_string, proof_go_string, verifying_key_go_string) };
+    match result {
+        0 => Ok(false),
+        1 => Ok(true),
+        _ => bail!("Verify did not return a valid bool"),
+    }
 }
 
 pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32> {
