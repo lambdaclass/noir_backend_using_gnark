@@ -1,11 +1,23 @@
-use std::{ffi::c_void, os::raw::c_uchar, result};
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_uchar, c_void};
+use std::result;
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 use anyhow::Result;
+use serde::Serialize;
+
+use self::acir_to_r1cs::RawR1CS;
 
 extern "C" {
     fn Verify() -> c_uchar;
-    fn Prove() -> *mut c_void;
+    fn Prove(rawr1cs: GoString) -> *mut c_void;
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct GoString {
+    a: *const c_char,
+    b: i64,
 }
 
 mod acir_to_r1cs;
@@ -36,9 +48,20 @@ cfg_if::cfg_if! {
 }
 
 //WIP
-pub fn prove(_circuit: Circuit, _values: Vec<FieldElement>) -> Result<Vec<u8>> {
+pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
+    let rawr1cs = RawR1CS::new(circuit, values).unwrap();
+
+    // Serialize to json and then convert to GoString
+    let serialized_rawr1cs = serde_json::to_string(&rawr1cs).unwrap();
+    let c_msg = CString::new(serialized_rawr1cs).expect("CString::new failed");
+    let ptr = c_msg.as_ptr();
+    let go_string_rawr1cs = GoString {
+        a: ptr,
+        b: c_msg.as_bytes().len() as i64,
+    };
+
     let result: u8 = unsafe {
-        let c_proof: *mut c_void = Prove();
+        let c_proof: *mut c_void = Prove(go_string_rawr1cs);
         *(c_proof as *mut u8)
     };
 
