@@ -47,29 +47,29 @@ impl ProofSystemCompiler for Gnark {
         gnark_backend::verify(circuit, proof, &public_inputs).unwrap()
     }
 
-    fn get_exact_circuit_size(&self, circuit: &Circuit) -> u32 {
+    fn get_exact_circuit_size(&self, _circuit: &Circuit) -> u32 {
         todo!()
     }
 
-    fn preprocess(&self, circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
+    fn preprocess(&self, _circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
         todo!()
     }
 
     fn prove_with_pk(
         &self,
-        circuit: &Circuit,
-        witness_values: std::collections::BTreeMap<Witness, FieldElement>,
-        proving_key: &[u8],
+        _circuit: &Circuit,
+        _witness_values: std::collections::BTreeMap<Witness, FieldElement>,
+        _proving_key: &[u8],
     ) -> Vec<u8> {
         todo!()
     }
 
     fn verify_with_vk(
         &self,
-        proof: &[u8],
-        public_inputs: Vec<FieldElement>,
-        circuit: &Circuit,
-        verification_key: &[u8],
+        _proof: &[u8],
+        _public_inputs: Vec<FieldElement>,
+        _circuit: &Circuit,
+        _verification_key: &[u8],
     ) -> bool {
         todo!()
     }
