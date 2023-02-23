@@ -1,3 +1,5 @@
+# clippy job should be revisited:
+# not all the features are being checked
 name: Noir Backend Gnark build checks
 on:
   push:

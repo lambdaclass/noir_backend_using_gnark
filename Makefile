@@ -7,5 +7,4 @@ test: build
 	$ DYLD_LIBRARY_PATH=./gnark_backend_ffi cargo test
 
 clippy:
-	$ cargo clippy --all-targets --features bn254 -- -D warnings
-	$ cargo clippy --all-targets --features bls12_381 -- -D warnings
+	$ cargo clippy --all-targets -- -D warnings
