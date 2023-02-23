@@ -9,8 +9,8 @@ use super::Gnark;
 
 impl PartialWitnessGenerator for Gnark {
     fn solve_black_box_function_call(
-        initial_witness: &mut BTreeMap<Witness, FieldElement>,
-        func_call: &BlackBoxFuncCall,
+        _initial_witness: &mut BTreeMap<Witness, FieldElement>,
+        _func_call: &BlackBoxFuncCall,
     ) -> Result<(), OpcodeResolutionError> {
         todo!()
     }

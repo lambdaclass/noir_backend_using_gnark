@@ -5,3 +5,6 @@ build:
 
 test: build
 	$ DYLD_LIBRARY_PATH=./gnark_backend_ffi cargo test
+
+clippy:
+	$ cargo clippy --all-targets -- -D warnings
