@@ -35,6 +35,7 @@ cfg_if::cfg_if! {
 extern "C" {
     fn Verify(rawr1cs: GoString, proof: GoString) -> c_uchar;
     fn Prove(rawr1cs: GoString) -> *const c_char;
+    fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
 }
 
 #[derive(Debug)]
@@ -72,7 +73,22 @@ pub fn prove_with_pk(
     values: Vec<FieldElement>,
     proving_key: &[u8],
 ) -> Result<Vec<u8>> {
-    todo!()
+    let rawr1cs = RawR1CS::new(*circuit, values)?;
+
+    // Serialize to json and then convert to GoString
+    let rawr1cs_json = serde_json::to_string(&rawr1cs)?;
+    let rawr1cs_c_str = CString::new(rawr1cs_json)?;
+    let rawr1cs_go_string = GoString::from_cstring(&rawr1cs_c_str);
+
+    let proving_key_serialized = std::str::from_utf8(proving_key)?.to_string();
+    let proving_key_c_str = CString::new(proving_key_serialized)?;
+    let proving_key_go_string = GoString::from_cstring(&proving_key_c_str);
+
+    let result: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
+    let c_str = unsafe { CStr::from_ptr(result) };
+    let bytes = c_str.to_str()?.as_bytes();
+
+    Ok(bytes.to_vec())
 }
 
 pub fn verify_with_meta(
