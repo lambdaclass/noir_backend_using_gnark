@@ -10,7 +10,7 @@ use self::acir_to_r1cs::RawR1CS;
 
 extern "C" {
     fn Verify() -> c_uchar;
-    fn Prove(rawr1cs: GoString) -> *mut c_void;
+    fn Prove(rawr1cs: GoString) -> *const c_char;
 }
 
 #[derive(Debug)]
@@ -60,12 +60,11 @@ pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
         b: c_msg.as_bytes().len() as i64,
     };
 
-    let result: u8 = unsafe {
-        let c_proof: *mut c_void = Prove(go_string_rawr1cs);
-        *(c_proof as *mut u8)
-    };
+    let result: *const c_char = unsafe { Prove(go_string_rawr1cs) };
+    let c_str = unsafe { CStr::from_ptr(result) };
+    let bytes = c_str.to_str().unwrap().as_bytes();
 
-    Ok(vec![result])
+    Ok(bytes.to_vec())
 }
 
 //WIP
@@ -92,6 +91,10 @@ mod tests {
     fn prove_should_call_go_backend() {
         //WIP
         let result = prove(Circuit::default(), vec![]).unwrap();
-        assert_eq!(result, [64]);
+
+        assert_eq!(
+            std::str::from_utf8(&result).unwrap(),
+            "{\"gates\":[],\"public_inputs\":[],\"values\":[],\"num_variables\":1}"
+        );
     }
 }

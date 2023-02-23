@@ -4,14 +4,13 @@ import "C"
 import (
 	"bytes"
 	"fmt"
-	"unsafe"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 )
 
 //export Prove
-func Prove(rawr1cs string) unsafe.Pointer {
+func Prove(rawr1cs string) *C.char {
 
 	fmt.Printf("rawr1cs: %v\n", rawr1cs)
 
@@ -21,7 +20,7 @@ func Prove(rawr1cs string) unsafe.Pointer {
 
 	proof.WriteRawTo(&serialized_proof)
 
-	return C.CBytes(serialized_proof.Bytes())
+	return C.CString(rawr1cs)
 }
 
 //export Verify
