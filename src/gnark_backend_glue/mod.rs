@@ -113,11 +113,11 @@ pub fn verify_with_vk(
     let rawr1cs_c_str = CString::new(rawr1cs_json)?;
     let rawr1cs_go_string = GoString::from_cstring(&rawr1cs_c_str);
 
-    let proof_serialized = std::str::from_utf8(proof)?.to_string();
+    let proof_serialized = String::from_utf8(proof.to_vec())?;
     let proof_c_str = CString::new(proof_serialized)?;
     let proof_go_string = GoString::from_cstring(&proof_c_str);
 
-    let verifying_key_serialized = std::str::from_utf8(proof)?.to_string();
+    let verifying_key_serialized = String::from_utf8(verifying_key.to_vec())?;
     let verifying_key_c_str = CString::new(verifying_key_serialized)?;
     let verifying_key_go_string = GoString::from_cstring(&verifying_key_c_str);
 
