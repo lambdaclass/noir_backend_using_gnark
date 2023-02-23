@@ -3,7 +3,7 @@ use std::os::raw::{c_char, c_uchar, c_void};
 use std::result;
 
 use acvm::{acir::circuit::Circuit, FieldElement};
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::Serialize;
 
 use self::acir_to_r1cs::RawR1CS;
@@ -87,7 +87,8 @@ pub fn verify(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) ->
     let result = unsafe { Verify(go_string_rawr1cs, go_string_proof) };
     match result {
         0 => Ok(false),
-        _ => Ok(true),
+        1 => Ok(true),
+        _ => bail!("Verify did not return a valid bool"),
     }
 }
 
