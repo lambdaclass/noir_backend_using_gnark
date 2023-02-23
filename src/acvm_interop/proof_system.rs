@@ -35,7 +35,7 @@ impl ProofSystemCompiler for Gnark {
     ) -> Vec<u8> {
         // TODO: modify gnark serializer to accept the BTreeMap
         let values: Vec<FieldElement> = witness_values.values().copied().collect();
-        gnark_backend::prove(circuit, values).unwrap()
+        gnark_backend::prove_with_meta(circuit, values).unwrap()
     }
 
     fn verify_from_cs(
@@ -44,7 +44,7 @@ impl ProofSystemCompiler for Gnark {
         public_inputs: Vec<FieldElement>,
         circuit: Circuit,
     ) -> bool {
-        gnark_backend::verify(circuit, proof, &public_inputs).unwrap()
+        gnark_backend::verify_with_meta(circuit, proof, &public_inputs).unwrap()
     }
 
     fn get_exact_circuit_size(&self, circuit: &Circuit) -> u32 {
@@ -52,7 +52,7 @@ impl ProofSystemCompiler for Gnark {
     }
 
     fn preprocess(&self, circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
-        todo!()
+        gnark_backend::preprocess(circuit)
     }
 
     fn prove_with_pk(
@@ -61,7 +61,9 @@ impl ProofSystemCompiler for Gnark {
         witness_values: std::collections::BTreeMap<Witness, FieldElement>,
         proving_key: &[u8],
     ) -> Vec<u8> {
-        todo!()
+        // TODO: modify gnark serializer to accept the BTreeMap
+        let values: Vec<FieldElement> = witness_values.values().copied().collect();
+        gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
 
     fn verify_with_vk(
@@ -71,6 +73,6 @@ impl ProofSystemCompiler for Gnark {
         circuit: &Circuit,
         verification_key: &[u8],
     ) -> bool {
-        todo!()
+        gnark_backend::verify_with_vk(circuit, proof, &public_inputs, verification_key).unwrap()
     }
 }
