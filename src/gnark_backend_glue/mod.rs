@@ -106,7 +106,7 @@ pub fn verify_with_vk(
     public_inputs: &[FieldElement],
     verifying_key: &[u8],
 ) -> Result<bool> {
-    let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
+    let rawr1cs = RawR1CS::new(circuit.clone(), public_inputs.to_vec())?;
 
     // Serialize to json and then convert to GoString
     let rawr1cs_json = serde_json::to_string(&rawr1cs)?;
