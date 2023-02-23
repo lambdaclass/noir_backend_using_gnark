@@ -9,7 +9,7 @@ use serde::Serialize;
 use self::acir_to_r1cs::RawR1CS;
 
 extern "C" {
-    fn Verify() -> c_uchar;
+    fn Verify(rawr1cs: GoString, proof: GoString) -> c_uchar;
     fn Prove(rawr1cs: GoString) -> *const c_char;
 }
 
@@ -47,13 +47,12 @@ cfg_if::cfg_if! {
     }
 }
 
-//WIP
 pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
     let rawr1cs = RawR1CS::new(circuit, values).unwrap();
 
     // Serialize to json and then convert to GoString
     let serialized_rawr1cs = serde_json::to_string(&rawr1cs).unwrap();
-    let c_msg = CString::new(serialized_rawr1cs).expect("CString::new failed");
+    let c_msg = CString::new(serialized_rawr1cs).unwrap();
     let ptr = c_msg.as_ptr();
     let go_string_rawr1cs = GoString {
         a: ptr,
@@ -67,9 +66,27 @@ pub fn prove(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
     Ok(bytes.to_vec())
 }
 
-//WIP
-pub fn verify(_circuit: Circuit, _proof: &[u8], _public_inputs: &[FieldElement]) -> Result<bool> {
-    let result = unsafe { Verify() };
+pub fn verify(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) -> Result<bool> {
+    let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec()).unwrap();
+
+    // Serialize to json and then convert to GoString
+    let serialized_rawr1cs = serde_json::to_string(&rawr1cs).unwrap();
+    let c_msg = CString::new(serialized_rawr1cs).unwrap();
+    let ptr = c_msg.as_ptr();
+    let go_string_rawr1cs = GoString {
+        a: ptr,
+        b: c_msg.as_bytes().len() as i64,
+    };
+
+    let serialized_proof = std::str::from_utf8(proof).unwrap().to_string();
+    let c_msg = CString::new(serialized_proof).unwrap();
+    let ptr = c_msg.as_ptr();
+    let go_string_proof = GoString {
+        a: ptr,
+        b: c_msg.as_bytes().len() as i64,
+    };
+
+    let result = unsafe { Verify(go_string_rawr1cs, go_string_proof) };
     match result {
         0 => Ok(false),
         _ => Ok(true),
@@ -83,13 +100,12 @@ mod tests {
 
     #[test]
     fn verify_should_return_false() {
-        let result = verify(Circuit::default(), &[], &[]).unwrap();
+        let result = verify(Circuit::default(), &[65, 66, 67], &[]).unwrap();
         assert!(!result);
     }
 
     #[test]
     fn prove_should_call_go_backend() {
-        //WIP
         let result = prove(Circuit::default(), vec![]).unwrap();
 
         assert_eq!(

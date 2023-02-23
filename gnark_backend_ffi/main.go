@@ -24,7 +24,10 @@ func Prove(rawr1cs string) *C.char {
 }
 
 //export Verify
-func Verify() bool {
+func Verify(rawr1cs string, proof string) bool {
+
+	fmt.Printf("rawr1cs: %v\n", rawr1cs)
+	fmt.Printf("proof: %v\n", proof)
 	return false
 }
 
