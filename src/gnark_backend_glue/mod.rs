@@ -67,11 +67,19 @@ pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Ve
     Ok(bytes.to_vec())
 }
 
-pub fn prove_with_pk(circuit: &Circuit, values: Vec<FieldElement>, proving_key: &[u8]) -> Result<Vec<u8>> {
+pub fn prove_with_pk(
+    circuit: &Circuit,
+    values: Vec<FieldElement>,
+    proving_key: &[u8],
+) -> Result<Vec<u8>> {
     todo!()
 }
 
-pub fn verify_with_meta(circuit: Circuit, proof: &[u8], public_inputs: &[FieldElement]) -> Result<bool> {
+pub fn verify_with_meta(
+    circuit: Circuit,
+    proof: &[u8],
+    public_inputs: &[FieldElement],
+) -> Result<bool> {
     let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
 
     // Serialize to json and then convert to GoString
@@ -91,7 +99,12 @@ pub fn verify_with_meta(circuit: Circuit, proof: &[u8], public_inputs: &[FieldEl
     }
 }
 
-pub fn verify_with_vk(circuit: &Circuit, proof: &[u8], public_inputs: &[FieldElement], verifying_key: &[u8]) -> Result<bool> {
+pub fn verify_with_vk(
+    circuit: &Circuit,
+    proof: &[u8],
+    public_inputs: &[FieldElement],
+    verifying_key: &[u8],
+) -> Result<bool> {
     todo!()
 }
 
