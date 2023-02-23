@@ -80,7 +80,7 @@ pub fn prove_with_pk(
     let rawr1cs_c_str = CString::new(rawr1cs_json)?;
     let rawr1cs_go_string = GoString::from_cstring(&rawr1cs_c_str);
 
-    let proving_key_serialized = std::str::from_utf8(proving_key)?.to_string();
+    let proving_key_serialized = String::from_utf8(proving_key.to_vec())?;
     let proving_key_c_str = CString::new(proving_key_serialized)?;
     let proving_key_go_string = GoString::from_cstring(&proving_key_c_str);
 
@@ -103,7 +103,7 @@ pub fn verify_with_meta(
     let c_str = CString::new(rawr1cs_json)?;
     let go_string_rawr1cs = GoString::from_cstring(&c_str);
 
-    let serialized_proof = std::str::from_utf8(proof)?.to_string();
+    let serialized_proof = String::from_utf8(proof.to_vec())?;
     let c_str = CString::new(serialized_proof)?;
     let go_string_proof = GoString::from_cstring(&c_str);
 
