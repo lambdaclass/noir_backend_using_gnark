@@ -170,13 +170,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn verify_should_return_false() {
+    fn test_go_string_from_cstring() {
+        let string = "This works".to_string();
+        let c_str = CString::new(string.clone()).unwrap();
+        let go_string = GoString::try_from(&c_str).unwrap();
+        let deserialized_c_str = unsafe { CStr::from_ptr(go_string.ptr) };
+        let deserialized_string = deserialized_c_str.to_str().unwrap().to_string();
+        assert_eq!(string, deserialized_string);
+    }
+
+    #[test]
+    fn test_verify_should_return_false() {
         let result = verify_with_meta(Circuit::default(), &[65, 66, 67], &[]).unwrap();
         assert!(!result);
     }
 
     #[test]
-    fn prove_should_call_go_backend() {
+    fn test_prove_should_call_go_backend() {
         let result = prove_with_meta(Circuit::default(), vec![]).unwrap();
 
         assert_eq!(
