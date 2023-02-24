@@ -52,7 +52,7 @@ impl ProofSystemCompiler for Gnark {
     }
 
     fn preprocess(&self, circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
-        gnark_backend::preprocess(circuit)
+        gnark_backend::preprocess(circuit).unwrap()
     }
 
     fn prove_with_pk(
