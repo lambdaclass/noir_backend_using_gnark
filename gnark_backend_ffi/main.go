@@ -4,23 +4,41 @@ import "C"
 import (
 	"bytes"
 	"fmt"
+	"log"
 
-	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
+	cs_bls12381 "github.com/consensys/gnark/constraint/bls12-381"
 )
 
-//export Prove
-func Prove(rawr1cs string) *C.char {
+// TODO: Deserialize rawR1CS.
 
-	fmt.Printf("rawr1cs: %v\n", rawr1cs)
+//export ProveWithMeta
+func ProveWithMeta(rawR1CS string) *C.char {
+	// Create R1CS.
+	r1cs := cs_bls12381.NewR1CS(1)
 
+	// Add variables.
+
+	// Add constraints.
+
+	// Setup.
+	pk, _, err := groth16.Setup(r1cs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Prove.
+	proof, err := groth16.Prove(r1cs, pk, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Serialize proof
 	var serialized_proof bytes.Buffer
+	proof.WriteTo(&serialized_proof)
+	proof_string := serialized_proof.String()
 
-	proof := groth16.NewProof(ecc.BLS12_381)
-
-	proof.WriteRawTo(&serialized_proof)
-
-	return C.CString(rawr1cs)
+	return C.CString(proof_string)
 }
 
 //export Verify
