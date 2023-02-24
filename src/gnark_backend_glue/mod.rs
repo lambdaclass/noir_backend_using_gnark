@@ -172,7 +172,7 @@ pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>)> {
     // Serialize to json and then convert to GoString
     let circuit_json = serde_json::to_string(circuit)?;
     let circuit_c_str = CString::new(circuit_json)?;
-    let circuit_go_string = GoString::from_cstring(&circuit_c_str);
+    let circuit_go_string = GoString::try_from(&circuit_c_str)?;
 
     let key_pair: KeyPair = unsafe { Preprocess(circuit_go_string) };
 
