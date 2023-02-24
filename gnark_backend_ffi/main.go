@@ -101,4 +101,35 @@ func VerifyWithMeta(rawr1cs string, proof string) bool {
 	return true
 }
 
+//export VerifyWithVK
+func VerifyWithVK(rawr1cs string, proof string, verifyingKey string) bool {
+	// Create R1CS.
+	r1cs := cs_bls12381.NewR1CS(1)
+
+	// Add variables.
+
+	// Add constraints.
+
+	// Deserialize proof.
+	p := groth16.NewProof(r1cs.CurveID())
+	_, err_p := p.ReadFrom(bytes.NewReader([]byte(proof)))
+	if err_p != nil {
+		log.Fatal(err_p)
+	}
+
+	// Deserialize verifying key.
+	vk := groth16.NewVerifyingKey(r1cs.CurveID())
+	_, err_vk := vk.ReadFrom(bytes.NewReader([]byte(verifyingKey)))
+	if err_vk != nil {
+		log.Fatal(err_vk)
+	}
+
+	// Verify.
+	if groth16.Verify(p, vk, nil) != nil {
+		return false
+	}
+
+	return true
+}
+
 func main() {}
