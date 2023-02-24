@@ -1,6 +1,6 @@
 use super::{from_felt, Fr};
 use crate::acvm;
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
 //
@@ -9,7 +9,7 @@ use anyhow::{Result, bail};
 // - These structures only support arithmetic gates, while the compiler has other
 // gate types. These can be added later once the backend knows how to deal with things like XOR
 // or once ACIR is taught how to do convert these black box functions to Arithmetic gates.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RawR1CS {
     pub gates: Vec<RawGate>,
     pub public_inputs: acvm::PublicInputs,
@@ -52,12 +52,10 @@ impl RawR1CS {
     fn num_constraints(acir: &acvm::Circuit) -> Result<usize> {
         // each multiplication term adds an extra constraint
         let mut num_opcodes = acir.opcodes.len();
-    
+
         for opcode in acir.opcodes.iter() {
             match opcode {
-                acvm::Opcode::Arithmetic(arith) => {
-                    num_opcodes += arith.num_mul_terms() + 1
-                } // plus one for the linear combination gate
+                acvm::Opcode::Arithmetic(arith) => num_opcodes += arith.num_mul_terms() + 1, // plus one for the linear combination gate
                 acvm::Opcode::Directive(_) => (),
                 _ => bail!(
                     "currently we do not support non-arithmetic opcodes {:?}",
@@ -65,8 +63,35 @@ impl RawR1CS {
                 ),
             }
         }
-    
+
         Ok(num_opcodes)
+    }
+}
+
+impl From<&acvm::Circuit> for RawR1CS {
+    fn from(acir: &acvm::Circuit) -> RawR1CS {
+        let num_constraints = Self::num_constraints(&acir).unwrap();
+        // Currently non-arithmetic gates are not supported
+        // so we extract all of the arithmetic gates only
+        let gates: Vec<_> = acir
+            .clone()
+            .opcodes
+            .into_iter()
+            .filter(acvm::Opcode::is_arithmetic)
+            .map(|opcode| RawGate::new(opcode.arithmetic().unwrap()))
+            .collect();
+
+        let values: Vec<Fr> = vec![];
+        let num_variables: usize = (acir.current_witness_index + 1).try_into().unwrap();
+        let public_inputs = acir.public_inputs.clone();
+
+        Self {
+            gates,
+            values,
+            num_variables,
+            public_inputs,
+            num_constraints,
+        }
     }
 }
 
@@ -92,5 +117,18 @@ impl RawGate {
             add_terms: converted_linear_combinations,
             constant_term: from_felt(arithmetic_gate.q_c),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ::acvm::acir::circuit::Circuit;
+
+    use super::*;
+
+    #[test]
+    fn test_rawr1cs_from_default_circuit_should_have_zero_constraints() {
+        let rawr1cs = RawR1CS::from(&Circuit::default());
+        assert_eq!(rawr1cs.num_constraints, 0);
     }
 }
