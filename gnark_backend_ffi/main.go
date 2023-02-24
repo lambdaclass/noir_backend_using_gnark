@@ -3,7 +3,6 @@ package main
 import "C"
 import (
 	"bytes"
-	"fmt"
 	"log"
 
 	"github.com/consensys/gnark/backend/groth16"
