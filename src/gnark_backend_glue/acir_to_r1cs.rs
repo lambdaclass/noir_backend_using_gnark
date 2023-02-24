@@ -1,6 +1,6 @@
 use super::{from_felt, Fr};
 use crate::acvm;
-use anyhow::Result;
+use anyhow::{Result, bail};
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
 //
@@ -15,6 +15,7 @@ pub struct RawR1CS {
     pub public_inputs: acvm::PublicInputs,
     pub values: Vec<Fr>,
     pub num_variables: usize,
+    pub num_constraints: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -27,6 +28,7 @@ pub struct RawGate {
 impl RawR1CS {
     #[allow(dead_code)]
     pub fn new(acir: acvm::Circuit, values: Vec<acvm::FieldElement>) -> Result<Self> {
+        let num_constraints = Self::num_constraints(&acir)?;
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
         let gates: Vec<_> = acir
@@ -43,7 +45,28 @@ impl RawR1CS {
             values,
             num_variables: (acir.current_witness_index + 1).try_into()?,
             public_inputs: acir.public_inputs,
+            num_constraints,
         })
+    }
+
+    fn num_constraints(acir: &acvm::Circuit) -> Result<usize> {
+        // each multiplication term adds an extra constraint
+        let mut num_opcodes = acir.opcodes.len();
+    
+        for opcode in acir.opcodes.iter() {
+            match opcode {
+                acvm::Opcode::Arithmetic(arith) => {
+                    num_opcodes += arith.num_mul_terms() + 1
+                } // plus one for the linear combination gate
+                acvm::Opcode::Directive(_) => (),
+                _ => bail!(
+                    "currently we do not support non-arithmetic opcodes {:?}",
+                    opcode
+                ),
+            }
+        }
+    
+        Ok(num_opcodes)
     }
 }
 
