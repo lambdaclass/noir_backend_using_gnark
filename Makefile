@@ -7,7 +7,7 @@ build-go:
 build: build-go
 	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo build
 
-test: build
+test: build-go
 	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo test
 
 clippy:
