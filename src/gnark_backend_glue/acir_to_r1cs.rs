@@ -70,7 +70,7 @@ impl RawR1CS {
 
 impl From<&acvm::Circuit> for RawR1CS {
     fn from(acir: &acvm::Circuit) -> RawR1CS {
-        let num_constraints = Self::num_constraints(&acir).unwrap();
+        let num_constraints = Self::num_constraints(acir).unwrap();
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
         let gates: Vec<_> = acir
