@@ -42,8 +42,10 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Build go-backend
+        run: make build-go
+
       - name: Run cargo test
-      - run: make build-go
         uses: actions-rs/cargo@v1
         with:
           command: test
