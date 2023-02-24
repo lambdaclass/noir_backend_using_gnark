@@ -12,3 +12,5 @@ test: build-go
 
 clippy:
 	$ cargo clippy --all-targets -- -D warnings
+
+check: clippy test
