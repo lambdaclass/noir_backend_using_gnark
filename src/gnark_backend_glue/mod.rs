@@ -159,7 +159,7 @@ pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32> {
     Ok(result)
 }
 
-pub fn preprocess(circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
+pub fn preprocess(_circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
     todo!()
 }
 

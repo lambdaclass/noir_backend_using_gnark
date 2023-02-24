@@ -43,8 +43,10 @@ jobs:
           override: true
 
       - name: Run cargo test
+      - run: make build-go
         uses: actions-rs/cargo@v1
-      - run: make test
+        with:
+          command: test
         
   fmt:
     name: Format
