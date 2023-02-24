@@ -34,8 +34,8 @@ cfg_if::cfg_if! {
 }
 
 extern "C" {
-    fn Verify(rawr1cs: GoString, proof: GoString) -> c_uchar;
-    fn Prove(rawr1cs: GoString) -> *const c_char;
+    fn VerifyWithMeta(rawr1cs: GoString, proof: GoString) -> c_uchar;
+    fn ProveWithMeta(rawr1cs: GoString) -> *const c_char;
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn GetExactCircuitSize(circuit: GoString) -> c_uint;
@@ -64,7 +64,7 @@ pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Ve
     let c_str = CString::new(serialized_rawr1cs)?;
     let go_string_rawr1cs = GoString::from_cstring(&c_str);
 
-    let result: *const c_char = unsafe { Prove(go_string_rawr1cs) };
+    let result: *const c_char = unsafe { ProveWithMeta(go_string_rawr1cs) };
     let c_str = unsafe { CStr::from_ptr(result) };
     let bytes = c_str.to_str()?.as_bytes();
 
@@ -110,7 +110,7 @@ pub fn verify_with_meta(
     let c_str = CString::new(serialized_proof)?;
     let go_string_proof = GoString::from_cstring(&c_str);
 
-    let result = unsafe { Verify(go_string_rawr1cs, go_string_proof) };
+    let result = unsafe { VerifyWithMeta(go_string_rawr1cs, go_string_proof) };
     match result {
         0 => Ok(false),
         1 => Ok(true),
@@ -159,7 +159,7 @@ pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32> {
     Ok(result)
 }
 
-pub fn preprocess(circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
+pub fn preprocess(_circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
     todo!()
 }
 

@@ -1,10 +1,14 @@
-build:
-	$ cd ./gnark_backend_ffi; \
-		go build -o libgnark_backend.so -buildmode=c-shared ./main.go
-	$ cargo build
+FFI_LIB_PATH=./gnark_backend_ffi
 
-test: build
-	$ DYLD_LIBRARY_PATH=./gnark_backend_ffi cargo test
+build-go:
+	$ cd ${FFI_LIB_PATH}; \
+		go build -buildmode=c-archive -o libgnark_backend.a main.go
+
+build: build-go
+	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo build
+
+test: build-go
+	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo test
 
 clippy:
 	$ cargo clippy --all-targets -- -D warnings
