@@ -39,6 +39,7 @@ extern "C" {
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn GetExactCircuitSize(circuit: GoString) -> c_uint;
+    fn Preprocess(circuit: GoString) -> KeyPair;
 }
 
 #[derive(Debug)]
@@ -54,6 +55,12 @@ impl GoString {
         let length = c_str.as_bytes().len();
         GoString { ptr, length }
     }
+}
+
+#[repr(C)]
+struct KeyPair {
+    proving_key: *const c_char,
+    verifying_key: *const c_char,
 }
 
 pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
@@ -159,8 +166,21 @@ pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32> {
     Ok(result)
 }
 
-pub fn preprocess(_circuit: &Circuit) -> (Vec<u8>, Vec<u8>) {
-    todo!()
+pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>)> {
+    // Serialize to json and then convert to GoString
+    let circuit_json = serde_json::to_string(circuit)?;
+    let circuit_c_str = CString::new(circuit_json)?;
+    let circuit_go_string = GoString::from_cstring(&circuit_c_str);
+
+    let key_pair: KeyPair = unsafe { Preprocess(circuit_go_string) };
+
+    let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
+    let proving_key_bytes = proving_key_c_str.to_str()?.as_bytes();
+
+    let verifying_key_c_str = unsafe { CStr::from_ptr(key_pair.verifying_key) };
+    let verifying_key_bytes = verifying_key_c_str.to_str()?.as_bytes();
+
+    Ok((proving_key_bytes.to_vec(), verifying_key_bytes.to_vec()))
 }
 
 #[cfg(test)]
