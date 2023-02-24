@@ -1,22 +1,65 @@
 package main
 
+// #include <stdlib.h>
 import "C"
 import (
 	"bytes"
+	"encoding/json"
 	"log"
 
+	"github.com/recoilme/btreeset"
+
+	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/groth16"
-	cs_bls12381 "github.com/consensys/gnark/constraint/bls12-381"
+	"github.com/consensys/gnark/backend/witness"
+	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
 // TODO: Deserialize rawR1CS.
 
+type RawR1CS struct {
+	Gates          []RawGate
+	PublicInputs   btreeset.BTreeSet
+	Values         fr_bn254.Vector
+	NumVariables   uint
+	NumConstraints uint
+}
+
+type RawGate struct {
+	MulTerms     []MulTerm
+	AddTerms     []AddTerm
+	ConstantTerm fr_bn254.Element
+}
+
+type MulTerm struct {
+	Coefficient  fr_bn254.Element
+	Multiplicand uint32
+	Multiplier   uint32
+}
+
+type AddTerm struct {
+	Coefficient fr_bn254.Element
+	Sum         uint32
+}
+
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
+	// Deserialize rawR1CS.
+	var r RawR1CS
+	err := json.Unmarshal([]byte(rawR1CS), &r)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Create R1CS.
-	r1cs := cs_bls12381.NewR1CS(1)
+	r1cs := cs_bn254.NewR1CS(0)
 
 	// Add variables.
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	witness.Fill(0, 0, nil)
 
 	// Add constraints.
 
@@ -27,7 +70,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 	}
 
 	// Prove.
-	proof, err := groth16.Prove(r1cs, pk, nil)
+	proof, err := groth16.Prove(r1cs, pk, witness)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,21 +86,26 @@ func ProveWithMeta(rawR1CS string) *C.char {
 //export ProveWithPK
 func ProveWithPK(rawR1CS string, provingKey string) *C.char {
 	// Create R1CS.
-	r1cs := cs_bls12381.NewR1CS(1)
+	r1cs := cs_bn254.NewR1CS(1)
 
 	// Add variables.
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	witness.Fill(0, 0, nil)
 
 	// Add constraints.
 
 	// Deserialize proving key.
 	pk := groth16.NewProvingKey(r1cs.CurveID())
-	_, err := pk.ReadFrom(bytes.NewReader([]byte(provingKey)))
+	_, err = pk.ReadFrom(bytes.NewReader([]byte(provingKey)))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Prove.
-	proof, err := groth16.Prove(r1cs, pk, nil)
+	proof, err := groth16.Prove(r1cs, pk, witness)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,15 +121,20 @@ func ProveWithPK(rawR1CS string, provingKey string) *C.char {
 //export VerifyWithMeta
 func VerifyWithMeta(rawr1cs string, proof string) bool {
 	// Create R1CS.
-	r1cs := cs_bls12381.NewR1CS(1)
+	r1cs := cs_bn254.NewR1CS(1)
 
 	// Add variables.
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	witness.Fill(0, 0, nil)
 
 	// Add constraints.
 
 	// Deserialize proof.
 	p := groth16.NewProof(r1cs.CurveID())
-	_, err := p.ReadFrom(bytes.NewReader([]byte(proof)))
+	_, err = p.ReadFrom(bytes.NewReader([]byte(proof)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,8 +145,14 @@ func VerifyWithMeta(rawr1cs string, proof string) bool {
 		log.Fatal(err)
 	}
 
+	// Retrieve public inputs.
+	publicInputs, err := witness.Public()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Verify.
-	if groth16.Verify(p, vk, nil) != nil {
+	if groth16.Verify(p, vk, publicInputs) != nil {
 		return false
 	}
 
@@ -103,28 +162,39 @@ func VerifyWithMeta(rawr1cs string, proof string) bool {
 //export VerifyWithVK
 func VerifyWithVK(rawr1cs string, proof string, verifyingKey string) bool {
 	// Create R1CS.
-	r1cs := cs_bls12381.NewR1CS(1)
+	r1cs := cs_bn254.NewR1CS(1)
 
 	// Add variables.
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	witness.Fill(0, 0, nil)
 
 	// Add constraints.
 
 	// Deserialize proof.
 	p := groth16.NewProof(r1cs.CurveID())
-	_, err_p := p.ReadFrom(bytes.NewReader([]byte(proof)))
-	if err_p != nil {
-		log.Fatal(err_p)
+	_, err = p.ReadFrom(bytes.NewReader([]byte(proof)))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Deserialize verifying key.
 	vk := groth16.NewVerifyingKey(r1cs.CurveID())
-	_, err_vk := vk.ReadFrom(bytes.NewReader([]byte(verifyingKey)))
-	if err_vk != nil {
-		log.Fatal(err_vk)
+	_, err = vk.ReadFrom(bytes.NewReader([]byte(verifyingKey)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Retrieve public inputs.
+	publicInputs, err := witness.Public()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Verify.
-	if groth16.Verify(p, vk, nil) != nil {
+	if groth16.Verify(p, vk, publicInputs) != nil {
 		return false
 	}
 
@@ -134,9 +204,14 @@ func VerifyWithVK(rawr1cs string, proof string, verifyingKey string) bool {
 //export Preprocess
 func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	// Create R1CS.
-	r1cs := cs_bls12381.NewR1CS(1)
+	r1cs := cs_bn254.NewR1CS(1)
 
 	// Add variables.
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	witness.Fill(0, 0, nil)
 
 	// Add constraints.
 
