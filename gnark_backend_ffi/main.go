@@ -71,12 +71,34 @@ func ProveWithPK(rawR1CS string, provingKey string) *C.char {
 	return C.CString(proof_string)
 }
 
-//export Verify
-func Verify(rawr1cs string, proof string) bool {
+//export VerifyWithMeta
+func VerifyWithMeta(rawr1cs string, proof string) bool {
+	// Create R1CS.
+	r1cs := cs_bls12381.NewR1CS(1)
 
-	fmt.Printf("rawr1cs: %v\n", rawr1cs)
-	fmt.Printf("proof: %v\n", proof)
-	return false
+	// Add variables.
+
+	// Add constraints.
+
+	// Deserialize proof.
+	p := groth16.NewProof(r1cs.CurveID())
+	_, err := p.ReadFrom(bytes.NewReader([]byte(proof)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Setup.
+	_, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Verify.
+	if groth16.Verify(p, vk, nil) != nil {
+		return false
+	}
+
+	return true
 }
 
 func main() {}
