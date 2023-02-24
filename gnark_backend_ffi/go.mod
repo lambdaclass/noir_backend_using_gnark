@@ -19,5 +19,6 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark v0.8.0
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
+	github.com/recoilme/btreeset v0.0.0-20200809183105-7b1adf6e3d3c
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
