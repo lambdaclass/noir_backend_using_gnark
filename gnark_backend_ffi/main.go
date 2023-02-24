@@ -1,10 +1,10 @@
 package main
 
-// #include <stdlib.h>
 import "C"
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/recoilme/btreeset"
@@ -74,6 +74,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Proof: ", proof)
 
 	// Serialize proof
 	var serialized_proof bytes.Buffer
@@ -234,4 +235,10 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(pk_string), C.CString(vk_string)
 }
 
-func main() {}
+func main() {
+	rawR1CS := `{"gates":[],"public_inputs":[],"values":[],"num_variables":1}`
+
+	proof := ProveWithMeta(rawR1CS)
+
+	fmt.Println("Proof: ", proof)
+}
