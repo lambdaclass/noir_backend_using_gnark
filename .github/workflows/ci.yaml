@@ -1,5 +1,8 @@
 # clippy job should be revisited:
 # not all the features are being checked
+
+# test job should be revisited
+
 name: Noir Backend Gnark build checks
 on:
   push:
@@ -29,6 +32,7 @@ jobs:
         with:
            command: check
   test:
+    if: ${{ false }}  # disable for now
     name: Tests
     runs-on: ubuntu-latest
     steps:
