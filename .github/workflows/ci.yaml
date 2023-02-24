@@ -44,8 +44,8 @@ jobs:
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - run: make test
+        
   fmt:
     name: Format
     runs-on: ubuntu-latest
