@@ -59,7 +59,7 @@ impl GoString {
 
 #[repr(C)]
 struct KeyPair {
-    proof: *const c_char,
+    proving_key: *const c_char,
     verifying_key: *const c_char,
 }
 
@@ -174,13 +174,13 @@ pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>)> {
 
     let key_pair: KeyPair = unsafe { Preprocess(circuit_go_string) };
 
-    let proof_c_str = unsafe { CStr::from_ptr(key_pair.proof) };
-    let proof_bytes = proof_c_str.to_str()?.as_bytes();
+    let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
+    let proving_key_bytes = proving_key_c_str.to_str()?.as_bytes();
 
     let verifying_key_c_str = unsafe { CStr::from_ptr(key_pair.verifying_key) };
     let verifying_key_bytes = verifying_key_c_str.to_str()?.as_bytes();
 
-    Ok((proof_bytes.to_vec(), verifying_key_bytes.to_vec()))
+    Ok((proving_key_bytes.to_vec(), verifying_key_bytes.to_vec()))
 }
 
 #[cfg(test)]
