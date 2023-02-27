@@ -30,21 +30,19 @@ impl ProofSystemCompiler for Gnark {
 
     fn prove_with_meta(
         &self,
-        circuit: Circuit,
-        witness_values: std::collections::BTreeMap<Witness, FieldElement>,
+        _circuit: Circuit,
+        _witness_values: std::collections::BTreeMap<Witness, FieldElement>,
     ) -> Vec<u8> {
-        // TODO: modify gnark serializer to accept the BTreeMap
-        let values: Vec<FieldElement> = witness_values.values().copied().collect();
-        gnark_backend::prove_with_meta(circuit, values).unwrap()
+        vec![]
     }
 
     fn verify_from_cs(
         &self,
-        proof: &[u8],
-        public_inputs: Vec<FieldElement>,
-        circuit: Circuit,
+        _proof: &[u8],
+        _public_inputs: Vec<FieldElement>,
+        _circuit: Circuit,
     ) -> bool {
-        gnark_backend::verify_with_meta(circuit, proof, &public_inputs).unwrap()
+        false
     }
 
     fn get_exact_circuit_size(&self, circuit: &Circuit) -> u32 {

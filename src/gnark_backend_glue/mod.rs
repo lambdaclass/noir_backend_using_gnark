@@ -34,8 +34,6 @@ cfg_if::cfg_if! {
 }
 
 extern "C" {
-    fn VerifyWithMeta(rawr1cs: GoString, proof: GoString) -> c_uchar;
-    fn ProveWithMeta(rawr1cs: GoString) -> *const c_char;
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn Preprocess(circuit: GoString) -> KeyPair;
@@ -64,21 +62,6 @@ struct KeyPair {
     verifying_key: *const c_char,
 }
 
-pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
-    let rawr1cs = RawR1CS::new(circuit, values)?;
-
-    // Serialize to json and then convert to GoString
-    let serialized_rawr1cs = serde_json::to_string(&rawr1cs)?;
-    let c_str = CString::new(serialized_rawr1cs)?;
-    let go_string_rawr1cs = GoString::try_from(&c_str)?;
-
-    let result: *const c_char = unsafe { ProveWithMeta(go_string_rawr1cs) };
-    let c_str = unsafe { CStr::from_ptr(result) };
-    let bytes = c_str.to_str()?.as_bytes();
-
-    Ok(bytes.to_vec())
-}
-
 pub fn prove_with_pk(
     circuit: &Circuit,
     values: Vec<FieldElement>,
@@ -100,30 +83,6 @@ pub fn prove_with_pk(
     let bytes = c_str.to_str()?.as_bytes();
 
     Ok(bytes.to_vec())
-}
-
-pub fn verify_with_meta(
-    circuit: Circuit,
-    proof: &[u8],
-    public_inputs: &[FieldElement],
-) -> Result<bool> {
-    let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
-
-    // Serialize to json and then convert to GoString
-    let rawr1cs_json = serde_json::to_string(&rawr1cs)?;
-    let c_str = CString::new(rawr1cs_json)?;
-    let go_string_rawr1cs = GoString::try_from(&c_str)?;
-
-    let serialized_proof = String::from_utf8(proof.to_vec())?;
-    let c_str = CString::new(serialized_proof)?;
-    let go_string_proof = GoString::try_from(&c_str)?;
-
-    let result = unsafe { VerifyWithMeta(go_string_rawr1cs, go_string_proof) };
-    match result {
-        0 => Ok(false),
-        1 => Ok(true),
-        _ => bail!("Verify did not return a valid bool"),
-    }
 }
 
 pub fn verify_with_vk(
@@ -196,22 +155,5 @@ mod tests {
     fn get_exact_circuit_size_should_return_zero_with_an_empty_circuit() {
         let size = get_exact_circuit_size(&Circuit::default()).unwrap();
         assert_eq!(size, 0);
-    }
-
-    //UNUSED TESTS
-    #[test]
-    fn test_verify_should_return_false() {
-        let result = verify_with_meta(Circuit::default(), &[65, 66, 67], &[]).unwrap();
-        assert!(!result);
-    }
-
-    #[test]
-    fn test_prove_should_call_go_backend() {
-        let result = prove_with_meta(Circuit::default(), vec![]).unwrap();
-
-        assert_eq!(
-            std::str::from_utf8(&result).unwrap(),
-            "{\"gates\":[],\"public_inputs\":[],\"values\":[],\"num_variables\":1}"
-        );
     }
 }
