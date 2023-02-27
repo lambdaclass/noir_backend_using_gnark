@@ -1,5 +1,5 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_uchar, c_uint};
+use std::os::raw::{c_char, c_uchar};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 use anyhow::{bail, Result};
@@ -38,7 +38,6 @@ extern "C" {
     fn ProveWithMeta(rawr1cs: GoString) -> *const c_char;
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
-    fn GetExactCircuitSize(circuit: GoString) -> c_uint;
     fn Preprocess(circuit: GoString) -> KeyPair;
 }
 
@@ -158,14 +157,8 @@ pub fn verify_with_vk(
 }
 
 pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32> {
-    // Serialize to json and then convert to GoString
-    let circuit_json = serde_json::to_string(circuit)?;
-    let circuit_c_str = CString::new(circuit_json)?;
-    let circuit_go_string = GoString::try_from(&circuit_c_str)?;
-
-    let result: c_uint = unsafe { GetExactCircuitSize(circuit_go_string) };
-
-    Ok(result)
+    let size: u32 = RawR1CS::num_constraints(circuit)?.try_into()?;
+    Ok(size)
 }
 
 pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>)> {
@@ -199,6 +192,13 @@ mod tests {
         assert_eq!(string, deserialized_string);
     }
 
+    #[test]
+    fn get_exact_circuit_size_should_return_zero_with_an_empty_circuit() {
+        let size = get_exact_circuit_size(&Circuit::default()).unwrap();
+        assert_eq!(size, 0);
+    }
+
+    //UNUSED TESTS
     #[test]
     fn test_verify_should_return_false() {
         let result = verify_with_meta(Circuit::default(), &[65, 66, 67], &[]).unwrap();

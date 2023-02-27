@@ -49,7 +49,7 @@ impl RawR1CS {
         })
     }
 
-    fn num_constraints(acir: &acvm::Circuit) -> Result<usize> {
+    pub fn num_constraints(acir: &acvm::Circuit) -> Result<usize> {
         // each multiplication term adds an extra constraint
         let mut num_opcodes = acir.opcodes.len();
 
