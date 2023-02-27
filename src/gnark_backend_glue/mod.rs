@@ -3,6 +3,7 @@ use std::os::raw::{c_char, c_uchar};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 use anyhow::{bail, Result};
+use thiserror::Error;
 
 mod acir_to_r1cs;
 mod serialize;
@@ -64,6 +65,12 @@ struct KeyPair {
     verifying_key: *const c_char,
 }
 
+#[derive(Error, Debug)]
+pub enum GnarkBackendError {
+    #[error("some error")]
+    Error,
+}
+
 pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
     let rawr1cs = RawR1CS::new(circuit, values)?;
 
@@ -83,21 +90,28 @@ pub fn prove_with_pk(
     circuit: &Circuit,
     values: Vec<FieldElement>,
     proving_key: &[u8],
-) -> Result<Vec<u8>> {
-    let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
+) -> Result<Vec<u8>, GnarkBackendError> {
+    let rawr1cs = RawR1CS::new(circuit.clone(), values).map_err(|_e| GnarkBackendError::Error)?;
 
     // Serialize to json and then convert to GoString
-    let rawr1cs_json = serde_json::to_string(&rawr1cs)?;
-    let rawr1cs_c_str = CString::new(rawr1cs_json)?;
-    let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
+    let rawr1cs_json = serde_json::to_string(&rawr1cs).map_err(|_e| GnarkBackendError::Error)?;
+    let rawr1cs_c_str = CString::new(rawr1cs_json).map_err(|_e| GnarkBackendError::Error)?;
+    let rawr1cs_go_string =
+        GoString::try_from(&rawr1cs_c_str).map_err(|_e| GnarkBackendError::Error)?;
 
-    let proving_key_serialized = String::from_utf8(proving_key.to_vec())?;
-    let proving_key_c_str = CString::new(proving_key_serialized)?;
-    let proving_key_go_string = GoString::try_from(&proving_key_c_str)?;
+    let proving_key_serialized =
+        String::from_utf8(proving_key.to_vec()).map_err(|_e| GnarkBackendError::Error)?;
+    let proving_key_c_str =
+        CString::new(proving_key_serialized).map_err(|_e| GnarkBackendError::Error)?;
+    let proving_key_go_string =
+        GoString::try_from(&proving_key_c_str).map_err(|_e| GnarkBackendError::Error)?;
 
     let result: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
     let c_str = unsafe { CStr::from_ptr(result) };
-    let bytes = c_str.to_str()?.as_bytes();
+    let bytes = c_str
+        .to_str()
+        .map_err(|_e| GnarkBackendError::Error)?
+        .as_bytes();
 
     Ok(bytes.to_vec())
 }
