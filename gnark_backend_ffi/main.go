@@ -42,6 +42,67 @@ type AddTerm struct {
 	Sum         uint32
 }
 
+func buildR1CS(r RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector, int, int) {
+	// Create R1CS.
+	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
+
+	// Fill process RawR1CS.
+	nPublicVariables := 0
+	nPrivateVariables := 0
+	var allVariableIndices []int
+	var publicVariables fr_bn254.Vector
+	var privateVariables fr_bn254.Vector
+	for i, value := range r.Values {
+		variableName := strconv.Itoa(i)
+		if r.PublicInputs.Has(make([]byte, i)) {
+			allVariableIndices = append(allVariableIndices, r1cs.AddPublicVariable(variableName))
+			publicVariables = append(publicVariables, value)
+			nPublicVariables++
+		} else {
+			allVariableIndices = append(allVariableIndices, r1cs.AddSecretVariable(variableName))
+			privateVariables = append(privateVariables, value)
+			nPrivateVariables++
+		}
+	}
+
+	// Generate constraints.
+	ONE := r1cs.AddPublicVariable("ONE")
+	ZERO := r1cs.AddPublicVariable("ZERO")
+	COEFFICIENT_ONE := r1cs.FromInterface(1)
+	for _, gate := range r.Gates {
+		var terms constraint.LinearExpression
+
+		for _, mul_term := range gate.MulTerms {
+			coefficient := r1cs.FromInterface(mul_term.Coefficient)
+
+			product := mul_term.Multiplicand * mul_term.Multiplier
+			productVariableName := strconv.FormatUint(uint64(product), 10)
+			productVariable := r1cs.AddSecretVariable(productVariableName)
+
+			terms = append(terms, r1cs.MakeTerm(&coefficient, productVariable))
+		}
+
+		for _, add_term := range gate.AddTerms {
+			coefficient := r1cs.FromInterface(add_term.Coefficient)
+			sum := add_term.Sum
+
+			sumVariable := allVariableIndices[sum]
+
+			terms = append(terms, r1cs.MakeTerm(&coefficient, sumVariable))
+		}
+
+		r1cs.AddConstraint(
+			constraint.R1C{
+				L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ONE)},
+				R: terms,
+				O: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ZERO)},
+			},
+		)
+	}
+
+	return r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables
+}
+
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
 	// Deserialize rawR1CS.
@@ -51,8 +112,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 		log.Fatal(err)
 	}
 
-	// Create R1CS.
-	r1cs := cs_bn254.NewR1CS(0)
+	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
 
 	// Add variables.
 	witness, err := witness.New(r1cs.CurveID().ScalarField())
