@@ -33,6 +33,7 @@ jobs:
            command: check
 
   go:
+    name: Tests go backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
