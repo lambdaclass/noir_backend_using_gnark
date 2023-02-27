@@ -4,6 +4,10 @@ build-go:
 	$ cd ${FFI_LIB_PATH}; \
 		go build -buildmode=c-archive -o libgnark_backend.a main.go
 
+test-go: build-go
+	$ cd ${FFI_LIB_PATH}; \
+		go test
+
 build: build-go
 	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo build
 
