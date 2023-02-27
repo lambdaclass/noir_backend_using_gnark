@@ -103,6 +103,29 @@ func buildR1CS(r RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector, int
 	return r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables
 }
 
+func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nPublicVariables int, nPrivateVariables int) witness.Witness {
+	witnessValues := make(chan any)
+
+	go func() {
+		defer close(witnessValues)
+		for _, publicVariable := range publicVariables {
+			witnessValues <- publicVariable
+		}
+		for _, privateVariable := range privateVariables {
+			witnessValues <- privateVariable
+		}
+	}()
+
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	witness.Fill(nPublicVariables, nPrivateVariables, witnessValues)
+
+	return witness
+}
+
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
 	// Deserialize rawR1CS.
@@ -114,14 +137,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 
 	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
 
-	// Add variables.
-	witness, err := witness.New(r1cs.CurveID().ScalarField())
-	if err != nil {
-		log.Fatal(err)
-	}
-	witness.Fill(0, 0, nil)
-
-	// Add constraints.
+	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
 
 	// Setup.
 	pk, _, err := groth16.Setup(r1cs)
