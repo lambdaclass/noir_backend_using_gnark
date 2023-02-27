@@ -152,7 +152,6 @@ func ProveWithMeta(rawR1CS string) *C.char {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Proof: ", proof)
 
 	// Serialize proof
 	var serialized_proof bytes.Buffer
