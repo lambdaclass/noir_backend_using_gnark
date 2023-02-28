@@ -6,8 +6,8 @@ use acvm::{acir::circuit::Circuit, FieldElement};
 mod acir_to_r1cs;
 mod errors;
 mod serialize;
-use crate::gnark_backend_glue::acir_to_r1cs::RawR1CS;
-use crate::gnark_backend_glue::errors::GnarkBackendError;
+use crate::gnark_backend_wrapper::acir_to_r1cs::RawR1CS;
+use crate::gnark_backend_wrapper::errors::GnarkBackendError;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.
