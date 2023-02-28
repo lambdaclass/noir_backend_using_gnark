@@ -20,7 +20,7 @@ serde_json = { version = "1" }
 cfg-if = "1"
 hex = "0.4"
 hex-literal = "0.3.4"
-thiserror = "1.0.38"
+thiserror = "1.0"
 
 [profile.test]
 opt-level = 3
