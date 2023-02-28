@@ -312,6 +312,73 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(pk_string), C.CString(vk_string)
 }
 
+//export TestFeltDeserialization
+func TestFeltDeserialization(encoded_felt string) *C.char {
+	// Decode the received felt.
+	decoded_felt, err := hex.DecodeString(encoded_felt)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Deserialize the decoded felt.
+	var deserialized_felt fr_bn254.Element
+	deserialized_felt.SetBytes(decoded_felt)
+	fmt.Printf("| GO |\n%v\n", deserialized_felt)
+
+	// Serialize the felt.
+	serialized_felt := deserialized_felt.Bytes()
+
+	// Encode the serialized felt.
+	serialized_felt_string := hex.EncodeToString(serialized_felt[:])
+
+	return C.CString(serialized_felt_string)
+}
+
+//export TestFeltVecDeserialization
+func TestFeltVecDeserialization(encoded_felt_vec string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestUSizeDeserialization
+func TestUSizeDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestMulTermDeserialization
+func TestMulTermDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestMulTermsDeserialization
+func TestMulTermsDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestAddTermDeserialization
+func TestAddTermDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestAddTermsDeserialization
+func TestAddTermsDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestRawGateDeserialization
+func TestRawGateDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestRawGateVecDeserialization
+func TestRawGateVecDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestRawR1CSDeserialization
+func TestRawR1CSDeserialization(encoded_usize string) *C.char {
+	return C.CString("unimplemented")
+}
+
 func main() {
 	// rawR1CS := `{"gates":[{"mul_terms":[["0100000000000000000000000000000000000000000000000000000000000000",1],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",2],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"add_terms":[["0100000000000000000000000000000000000000000000000000000000000000",1],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",2],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"add_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"add_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"add_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"constant_term":"0100000000000000000000000000000000000000000000000000000000000000"}],"public_inputs":[2],"values":["0100000000000000000000000000000000000000000000000000000000000000","0200000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"],"num_variables":7}`
 	rawR1CS := `{"gates":[{"mul_terms":[["0100000000000000000000000000000000000000000000000000000000000000",1],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",2],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"add_terms":[["0100000000000000000000000000000000000000000000000000000000000000",1],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",2],["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"add_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"add_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",3]],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"add_terms":[["000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430",5]],"constant_term":"0100000000000000000000000000000000000000000000000000000000000000"}],"public_inputs":[2],"values":[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"num_variables":7}`
