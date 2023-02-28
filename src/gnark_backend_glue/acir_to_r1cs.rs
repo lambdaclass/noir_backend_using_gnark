@@ -1,6 +1,7 @@
 use super::{from_felt, Fr};
 use crate::acvm;
-use anyhow::{bail, Result};
+use crate::gnark_backend_glue::GnarkBackendError;
+use std::num::TryFromIntError;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
 //
@@ -27,7 +28,10 @@ pub struct RawGate {
 
 impl RawR1CS {
     #[allow(dead_code)]
-    pub fn new(acir: acvm::Circuit, values: Vec<acvm::FieldElement>) -> Result<Self> {
+    pub fn new(
+        acir: acvm::Circuit,
+        values: Vec<acvm::FieldElement>,
+    ) -> Result<Self, GnarkBackendError> {
         let num_constraints = Self::num_constraints(&acir)?;
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
@@ -43,13 +47,15 @@ impl RawR1CS {
         Ok(Self {
             gates,
             values,
-            num_variables: (acir.current_witness_index + 1).try_into()?,
+            num_variables: (acir.current_witness_index + 1)
+                .try_into()
+                .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?,
             public_inputs: acir.public_inputs,
             num_constraints,
         })
     }
 
-    pub fn num_constraints(acir: &acvm::Circuit) -> Result<usize> {
+    pub fn num_constraints(acir: &acvm::Circuit) -> Result<usize, GnarkBackendError> {
         // each multiplication term adds an extra constraint
         let mut num_opcodes = acir.opcodes.len();
 
@@ -57,10 +63,11 @@ impl RawR1CS {
             match opcode {
                 acvm::Opcode::Arithmetic(arith) => num_opcodes += arith.num_mul_terms() + 1, // plus one for the linear combination gate
                 acvm::Opcode::Directive(_) => (),
-                _ => bail!(
-                    "currently we do not support non-arithmetic opcodes {:?}",
-                    opcode
-                ),
+                _ => {
+                    return Err(GnarkBackendError::NonArithmeticOpcodeError(
+                        opcode.to_string(),
+                    ))
+                }
             }
         }
 

@@ -8,6 +8,8 @@ pub enum GnarkBackendError {
     SerializeKeyError(String),
     #[error("an error occurred while deserializing a proof: {0}")]
     DeserializeProofError(String),
-    #[error("an error occurred")]
-    Error,
+    #[error("currently we do not support non-arithmetic opcodes {0}")]
+    NonArithmeticOpcodeError(String),
+    #[error("an error occurred: {0}")]
+    Error(String),
 }
