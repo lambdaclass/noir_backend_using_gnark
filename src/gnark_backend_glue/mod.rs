@@ -4,9 +4,9 @@ use std::os::raw::{c_char, c_uchar};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 mod acir_to_r1cs;
+pub use acir_to_r1cs::{RawR1CS, RawGate};
 mod errors;
 mod serialize;
-use crate::gnark_backend_glue::acir_to_r1cs::RawR1CS;
 use crate::gnark_backend_glue::errors::GnarkBackendError;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
@@ -44,7 +44,7 @@ extern "C" {
 
 #[derive(Debug)]
 #[repr(C)]
-struct GoString {
+pub struct GoString {
     ptr: *const c_char,
     length: usize,
 }
@@ -60,7 +60,7 @@ impl TryFrom<&CString> for GoString {
 }
 
 #[repr(C)]
-struct KeyPair {
+pub struct KeyPair {
     proving_key: *const c_char,
     verifying_key: *const c_char,
 }
