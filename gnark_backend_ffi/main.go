@@ -367,9 +367,10 @@ func TestFeltsSerialization(encodedFelts string) *C.char {
 	return C.CString(serializedFeltsString)
 }
 
-//export TestUSizeSerialization
-func TestUSizeSerialization(encodedUsize string) *C.char {
-	return C.CString("unimplemented")
+//export TestU64Serialization
+func TestU64Serialization(number uint64) uint64 {
+	fmt.Println(number)
+	return number
 }
 
 //export TestMulTermSerialization
