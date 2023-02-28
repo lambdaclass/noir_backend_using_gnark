@@ -341,42 +341,42 @@ func TestFeltsSerialization(encoded_felt_vec string) *C.char {
 }
 
 //export TestUSizeSerialization
-func TestUSizeSerialization(encoded_usize string) *C.char {
+func TestUSizeSerialization(encodedUsize string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestMulTermSerialization
-func TestMulTermSerialization(encoded_usize string) *C.char {
+func TestMulTermSerialization(encodedMulTerm string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestMulTermsSerialization
-func TestMulTermsSerialization(encoded_usize string) *C.char {
+func TestMulTermsSerialization(encodedMulTerms string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestAddTermSerialization
-func TestAddTermSerialization(encoded_usize string) *C.char {
+func TestAddTermSerialization(encodedAddTerm string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestAddTermsSerialization
-func TestAddTermsSerialization(encoded_usize string) *C.char {
+func TestAddTermsSerialization(encodedAddTerms string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestRawGateSerialization
-func TestRawGateSerialization(encoded_usize string) *C.char {
+func TestRawGateSerialization(encodedRawGate string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestRawGateVecSerialization
-func TestRawGatesSerialization(encoded_usize string) *C.char {
+func TestRawGatesSerialization(encodedRawGates string) *C.char {
 	return C.CString("unimplemented")
 }
 
 //export TestRawR1CSSerialization
-func TestRawR1CSSerialization(encoded_usize string) *C.char {
+func TestRawR1CSSerialization(encodedR1CS string) *C.char {
 	return C.CString("unimplemented")
 }
 
