@@ -314,30 +314,57 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 }
 
 //export TestFeltSerialization
-func TestFeltSerialization(encoded_felt string) *C.char {
+func TestFeltSerialization(encodedFelt string) *C.char {
 	// Decode the received felt.
-	decoded_felt, err := hex.DecodeString(encoded_felt)
+	decodedFelt, err := hex.DecodeString(encodedFelt)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Deserialize the decoded felt.
-	var deserialized_felt fr_bn254.Element
-	deserialized_felt.SetBytes(decoded_felt)
-	fmt.Printf("| GO |\n%v\n", deserialized_felt)
+	var deserializedFelt fr_bn254.Element
+	deserializedFelt.SetBytes(decodedFelt)
+	fmt.Printf("| GO |\n%v\n", deserializedFelt)
 
 	// Serialize the felt.
-	serialized_felt := deserialized_felt.Bytes()
+	serializedFelt := deserializedFelt.Bytes()
 
 	// Encode the serialized felt.
-	serialized_felt_string := hex.EncodeToString(serialized_felt[:])
+	serializedFeltString := hex.EncodeToString(serializedFelt[:])
 
-	return C.CString(serialized_felt_string)
+	return C.CString(serializedFeltString)
 }
 
-//export TestFeltVecSerialization
-func TestFeltsSerialization(encoded_felt_vec string) *C.char {
-	return C.CString("unimplemented")
+//export TestFeltsSerialization
+func TestFeltsSerialization(encodedFelts string) *C.char {
+	// Decode the received felts.
+	decodedFelts, err := hex.DecodeString(encodedFelts)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Unpack and deserialize the decoded felts.
+	var deserializedFelts fr_bn254.Vector
+	// Felts are 32 bytes long.
+	feltsToDeserialize := len(decodedFelts) / 32
+	for i := 0; i < feltsToDeserialize; i++ {
+		var deserializedFelt fr_bn254.Element
+		deserializedFelt.SetBytes(decodedFelts[i*32 : (i+1)*32])
+		fmt.Printf("| GO |\n%v\n", deserializedFelt)
+		deserializedFelts = append(deserializedFelts, deserializedFelt)
+	}
+
+	// Serialize the felt.
+	var serializedFelts []byte
+	for _, felt := range deserializedFelts {
+		serializedFelt := felt.Bytes()
+		serializedFelts = append(serializedFelts, serializedFelt[:]...)
+	}
+
+	// Encode the serialized felt.
+	serializedFeltsString := hex.EncodeToString(serializedFelts[:])
+
+	return C.CString(serializedFeltsString)
 }
 
 //export TestUSizeSerialization
