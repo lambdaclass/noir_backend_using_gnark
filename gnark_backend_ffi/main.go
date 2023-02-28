@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
