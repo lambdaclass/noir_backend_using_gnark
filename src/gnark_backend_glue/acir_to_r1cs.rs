@@ -64,7 +64,7 @@ impl RawR1CS {
                 acvm::Opcode::Arithmetic(arith) => num_opcodes += arith.num_mul_terms() + 1, // plus one for the linear combination gate
                 acvm::Opcode::Directive(_) => (),
                 _ => {
-                    return Err(GnarkBackendError::NonArithmeticOpcodeError(
+                    return Err(GnarkBackendError::UnsupportedOpcodeError(
                         opcode.to_string(),
                     ))
                 }
