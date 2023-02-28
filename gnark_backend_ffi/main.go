@@ -370,7 +370,7 @@ func TestRawGateSerialization(encodedRawGate string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawGateVecSerialization
+//export TestRawGatesSerialization
 func TestRawGatesSerialization(encodedRawGates string) *C.char {
 	return C.CString("unimplemented")
 }
