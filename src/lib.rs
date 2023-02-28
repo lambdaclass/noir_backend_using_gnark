@@ -1,5 +1,4 @@
 #![warn(warnings, rust_2018_idioms)]
-//#![forbid(unsafe_code)] REVISIT
 #![recursion_limit = "256"]
 #![warn(
     clippy::allow_attributes_without_reason,
@@ -25,7 +24,7 @@
     clippy::try_err,
     clippy::unseparated_literal_suffix
 )]
-//#![deny(clippy::unwrap_used, clippy::expect_used)] REVISIT
+#![deny(clippy::unwrap_used, clippy::expect_used)]
 #![allow(
     clippy::module_inception,
     clippy::module_name_repetitions,

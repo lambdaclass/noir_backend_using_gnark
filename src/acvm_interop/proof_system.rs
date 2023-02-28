@@ -5,6 +5,8 @@ use crate::gnark_backend_glue as gnark_backend;
 
 use super::Gnark;
 
+// Allow unwrap because the ProofSystemCompiler interface does not support Result
+#[allow(clippy::unwrap_used)]
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
         Language::R1CS
