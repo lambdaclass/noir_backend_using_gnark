@@ -197,21 +197,4 @@ mod tests {
         let size = get_exact_circuit_size(&Circuit::default()).unwrap();
         assert_eq!(size, 0);
     }
-
-    //UNUSED TESTS
-    #[test]
-    fn test_verify_should_return_false() {
-        let result = verify_with_meta(Circuit::default(), &[65, 66, 67], &[]).unwrap();
-        assert!(!result);
-    }
-
-    #[test]
-    fn test_prove_should_call_go_backend() {
-        let result = prove_with_meta(Circuit::default(), vec![]).unwrap();
-
-        assert_eq!(
-            std::str::from_utf8(&result).unwrap(),
-            "{\"gates\":[],\"public_inputs\":[],\"values\":[],\"num_variables\":1}"
-        );
-    }
 }
