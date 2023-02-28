@@ -2,8 +2,14 @@ pub struct Gnark;
 
 impl acvm::Backend for Gnark {}
 
-use acvm::acir::{circuit::Circuit, native_types::Witness, BlackBoxFunc};
-use acvm::{FieldElement, Language, ProofSystemCompiler};
+use acvm::acir::{
+    circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
+};
+use acvm::{
+    FieldElement, Language, OpcodeResolutionError, PartialWitnessGenerator, ProofSystemCompiler,
+    SmartContract,
+};
+use std::collections::BTreeMap;
 
 use crate::gnark_backend_glue as gnark_backend;
 
@@ -79,11 +85,6 @@ impl ProofSystemCompiler for Gnark {
     }
 }
 
-use acvm::acir::circuit::opcodes::BlackBoxFuncCall;
-use acvm::OpcodeResolutionError;
-use acvm::PartialWitnessGenerator;
-use std::collections::BTreeMap;
-
 impl PartialWitnessGenerator for Gnark {
     fn solve_black_box_function_call(
         _initial_witness: &mut BTreeMap<Witness, FieldElement>,
@@ -105,8 +106,6 @@ impl GadgetCaller {
         todo!()
     }
 }
-
-use acvm::SmartContract;
 
 impl SmartContract for Gnark {
     fn eth_contract_from_cs(&self, _circuit: Circuit) -> String {
