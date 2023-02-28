@@ -3,11 +3,12 @@ use std::os::raw::{c_char, c_uchar};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 use anyhow::{bail, Result};
-use thiserror::Error;
 
 mod acir_to_r1cs;
+mod errors;
 mod serialize;
 use crate::gnark_backend_glue::acir_to_r1cs::RawR1CS;
+use crate::gnark_backend_glue::errors::GnarkBackendError;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.
@@ -63,18 +64,6 @@ impl TryFrom<&CString> for GoString {
 struct KeyPair {
     proving_key: *const c_char,
     verifying_key: *const c_char,
-}
-
-#[derive(Error, Debug)]
-pub enum GnarkBackendError {
-    #[error("an error occured while serializing the circuit")]
-    SerializeCircuitError,
-    #[error("an error occured while serializing a key")]
-    SerializeKeyError,
-    #[error("an error occured while deserializing a proof")]
-    DeserializeProofError,
-    #[error("some error")]
-    Error,
 }
 
 pub fn prove_with_meta(circuit: Circuit, values: Vec<FieldElement>) -> Result<Vec<u8>> {
