@@ -89,25 +89,25 @@ pub fn prove_with_pk(
     let rawr1cs = RawR1CS::new(circuit.clone(), values).map_err(|_e| GnarkBackendError::Error)?;
 
     // Serialize to json and then convert to GoString
-    let rawr1cs_json =
-        serde_json::to_string(&rawr1cs).map_err(|_e| GnarkBackendError::SerializeCircuitError)?;
-    let rawr1cs_c_str =
-        CString::new(rawr1cs_json).map_err(|_e| GnarkBackendError::SerializeCircuitError)?;
+    let rawr1cs_json = serde_json::to_string(&rawr1cs)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let rawr1cs_c_str = CString::new(rawr1cs_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)
-        .map_err(|_e| GnarkBackendError::SerializeCircuitError)?;
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
 
     let proving_key_serialized = String::from_utf8(proving_key.to_vec())
-        .map_err(|_e| GnarkBackendError::SerializeKeyError)?;
-    let proving_key_c_str =
-        CString::new(proving_key_serialized).map_err(|_e| GnarkBackendError::SerializeKeyError)?;
+        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
+    let proving_key_c_str = CString::new(proving_key_serialized)
+        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
     let proving_key_go_string = GoString::try_from(&proving_key_c_str)
-        .map_err(|_e| GnarkBackendError::SerializeKeyError)?;
+        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
 
     let result: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
     let c_str = unsafe { CStr::from_ptr(result) };
     let bytes = c_str
         .to_str()
-        .map_err(|_e| GnarkBackendError::DeserializeProofError)?
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?
         .as_bytes();
 
     Ok(bytes.to_vec())
