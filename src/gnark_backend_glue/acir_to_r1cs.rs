@@ -39,7 +39,10 @@ impl RawR1CS {
             .opcodes
             .into_iter()
             .filter(acvm::Opcode::is_arithmetic)
-            .map(|opcode| RawGate::new(opcode.arithmetic().unwrap()))
+            .map(|opcode| match opcode.arithmetic() {
+                Some(expression) => RawGate::new(expression),
+                None => RawGate::new(acvm::Expression::default()),
+            })
             .collect();
 
         let values: Vec<Fr> = values.into_iter().map(from_felt).collect();
