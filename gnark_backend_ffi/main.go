@@ -313,8 +313,8 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(pk_string), C.CString(vk_string)
 }
 
-//export TestFeltDeserialization
-func TestFeltDeserialization(encoded_felt string) *C.char {
+//export TestFeltSerialization
+func TestFeltSerialization(encoded_felt string) *C.char {
 	// Decode the received felt.
 	decoded_felt, err := hex.DecodeString(encoded_felt)
 	if err != nil {
@@ -335,48 +335,48 @@ func TestFeltDeserialization(encoded_felt string) *C.char {
 	return C.CString(serialized_felt_string)
 }
 
-//export TestFeltVecDeserialization
-func TestFeltVecDeserialization(encoded_felt_vec string) *C.char {
+//export TestFeltVecSerialization
+func TestFeltsSerialization(encoded_felt_vec string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestUSizeDeserialization
-func TestUSizeDeserialization(encoded_usize string) *C.char {
+//export TestUSizeSerialization
+func TestUSizeSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestMulTermDeserialization
-func TestMulTermDeserialization(encoded_usize string) *C.char {
+//export TestMulTermSerialization
+func TestMulTermSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestMulTermsDeserialization
-func TestMulTermsDeserialization(encoded_usize string) *C.char {
+//export TestMulTermsSerialization
+func TestMulTermsSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestAddTermDeserialization
-func TestAddTermDeserialization(encoded_usize string) *C.char {
+//export TestAddTermSerialization
+func TestAddTermSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestAddTermsDeserialization
-func TestAddTermsDeserialization(encoded_usize string) *C.char {
+//export TestAddTermsSerialization
+func TestAddTermsSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawGateDeserialization
-func TestRawGateDeserialization(encoded_usize string) *C.char {
+//export TestRawGateSerialization
+func TestRawGateSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawGateVecDeserialization
-func TestRawGateVecDeserialization(encoded_usize string) *C.char {
+//export TestRawGateVecSerialization
+func TestRawGatesSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawR1CSDeserialization
-func TestRawR1CSDeserialization(encoded_usize string) *C.char {
+//export TestRawR1CSSerialization
+func TestRawR1CSSerialization(encoded_usize string) *C.char {
 	return C.CString("unimplemented")
 }
 
