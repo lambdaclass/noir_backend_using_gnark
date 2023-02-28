@@ -1,7 +1,7 @@
 use acvm::acir::{circuit::Circuit, native_types::Witness, BlackBoxFunc};
 use acvm::{FieldElement, Language, ProofSystemCompiler};
 
-use crate::gnark_backend_wrapper as gnark_backend;
+use crate::gnark_backend_wrapper::groth16 as gnark_backend;
 
 use super::Gnark;
 
