@@ -1,7 +1,3 @@
-pub struct Gnark;
-
-impl acvm::Backend for Gnark {}
-
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
@@ -12,6 +8,10 @@ use acvm::{
 use std::collections::BTreeMap;
 
 use crate::gnark_backend_wrapper::groth16 as gnark_backend;
+
+pub struct Gnark;
+
+impl acvm::Backend for Gnark {}
 
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
