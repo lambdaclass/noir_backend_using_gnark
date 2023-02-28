@@ -1,9 +1,11 @@
+pub struct Gnark;
+
+impl acvm::Backend for Gnark {}
+
 use acvm::acir::{circuit::Circuit, native_types::Witness, BlackBoxFunc};
 use acvm::{FieldElement, Language, ProofSystemCompiler};
 
 use crate::gnark_backend_glue as gnark_backend;
-
-use super::Gnark;
 
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
@@ -74,5 +76,44 @@ impl ProofSystemCompiler for Gnark {
         verification_key: &[u8],
     ) -> bool {
         gnark_backend::verify_with_vk(circuit, proof, &public_inputs, verification_key).unwrap()
+    }
+}
+
+use acvm::acir::circuit::opcodes::BlackBoxFuncCall;
+use acvm::OpcodeResolutionError;
+use acvm::PartialWitnessGenerator;
+use std::collections::BTreeMap;
+
+impl PartialWitnessGenerator for Gnark {
+    fn solve_black_box_function_call(
+        _initial_witness: &mut BTreeMap<Witness, FieldElement>,
+        _func_call: &BlackBoxFuncCall,
+    ) -> Result<(), OpcodeResolutionError> {
+        todo!()
+    }
+}
+
+#[allow(dead_code)]
+pub struct GadgetCaller;
+
+impl GadgetCaller {
+    #[allow(dead_code)]
+    pub fn solve_blackbox_func_call(
+        _initial_witness: &mut BTreeMap<Witness, FieldElement>,
+        _gadget_call: &BlackBoxFuncCall,
+    ) -> Result<(), OpcodeResolutionError> {
+        todo!()
+    }
+}
+
+use acvm::SmartContract;
+
+impl SmartContract for Gnark {
+    fn eth_contract_from_cs(&self, _circuit: Circuit) -> String {
+        unimplemented!("gnark does not implement an ETH contract")
+    }
+
+    fn eth_contract_from_vk(&self, _verification_key: &[u8]) -> String {
+        unimplemented!("gnark does not implement an ETH contract")
     }
 }
