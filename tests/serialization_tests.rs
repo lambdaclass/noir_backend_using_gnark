@@ -1,5 +1,5 @@
-use noir_backend_using_gnark::gnark_backend_glue;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use noir_backend_using_gnark::gnark_backend_glue;
 use std::ffi;
 
 extern "C" {
@@ -31,10 +31,7 @@ fn deserialize_felt(felt_bytes: &[u8]) -> gnark_backend_glue::Fr {
 }
 
 fn serialize_felts(felts: &[gnark_backend_glue::Fr]) -> Vec<u8> {
-    felts
-        .iter()
-        .flat_map(serialize_felt)
-        .collect()
+    felts.iter().flat_map(serialize_felt).collect()
 }
 
 #[test]
@@ -42,7 +39,7 @@ fn test_felt_serialization() {
     // Sample a random felt.
     let felt: gnark_backend_glue::Fr = rand::random();
 
-    println!("| RUST |\n{:?}", felt.0.0);
+    println!("| RUST |\n{:?}", felt.0 .0);
 
     // Serialize the random felt.
     let serialized_felt = serialize_felt(&felt);
@@ -71,7 +68,10 @@ fn test_felts_serialization() {
     // Sample a random felt.
     let felts: [gnark_backend_glue::Fr; 2] = rand::random();
 
-    println!("| RUST |\n{:?}", felts.iter().map(|felt| felt.0.0).collect::<Vec<_>>());
+    println!(
+        "| RUST |\n{:?}",
+        felts.iter().map(|felt| felt.0 .0).collect::<Vec<_>>()
+    );
 
     // Serialize the random felts and pack them into one byte array.
     let serialized_felts = serialize_felts(&felts);
@@ -98,7 +98,8 @@ fn test_felts_serialization() {
             // Turn big-endian to little-endian.
             go_decoded_felt.reverse();
             // Here I reference after dereference because I had a mutable reference and I need a non-mutable one.
-            let felt: gnark_backend_glue::Fr = CanonicalDeserialize::deserialize_uncompressed(&*go_decoded_felt).unwrap();
+            let felt: gnark_backend_glue::Fr =
+                CanonicalDeserialize::deserialize_uncompressed(&*go_decoded_felt).unwrap();
             felt
         })
         .collect();

@@ -4,7 +4,7 @@ use std::os::raw::{c_char, c_uchar};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 mod acir_to_r1cs;
-pub use acir_to_r1cs::{RawR1CS, RawGate};
+pub use acir_to_r1cs::{RawGate, RawR1CS};
 mod errors;
 mod serialize;
 use crate::gnark_backend_glue::errors::GnarkBackendError;
