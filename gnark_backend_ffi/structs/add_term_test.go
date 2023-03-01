@@ -13,7 +13,7 @@ import (
 // TODO: Test error cases.
 
 func TestAddTermUnmarshalJSON(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
+	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
 	sum := rand.Uint32()
 	addTerm := fmt.Sprintf(`{"coefficient":"%s","sum":%d}`, encodedCoefficient, sum)
 
@@ -24,10 +24,12 @@ func TestAddTermUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	assert.Equal(t, nonEncodedCoefficient, a.Coefficient)
+	assert.Equal(t, sum, a.Sum)
 }
 
 func TestAddTermsUnmarshalJSON(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
+	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
 	sum := rand.Uint32()
 	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
 
@@ -38,4 +40,8 @@ func TestAddTermsUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	for _, addTerm := range a {
+		assert.Equal(t, nonEncodedCoefficient, addTerm.Coefficient)
+		assert.Equal(t, sum, addTerm.Sum)
+	}
 }

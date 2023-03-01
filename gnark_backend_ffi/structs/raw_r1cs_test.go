@@ -22,13 +22,18 @@ func TestRawR1CSTermUnmarshalJSON(t *testing.T) {
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 	rawGates := fmt.Sprintf(`[%s,%s]`, rawGate, rawGate)
 	publicInputs := fmt.Sprintf("[%d,%d,%d]", multiplicand, multiplier, sum)
-	encodedValues, _ := SampleEncodedFelts()
-	numVariables := rand.Uint64()
-	numConstraints := rand.Uint64()
+	encodedValues, nonEncodedValues := SampleEncodedFelts()
+	numVariables := uint64(10)
+	numConstraints := uint64(10)
 	rawR1CS := fmt.Sprintf(`{"gates":%s,"public_inputs":%s,"values":"%s","num_variables":%d,"num_constraints":%d}`, rawGates, publicInputs, encodedValues, numVariables, numConstraints)
 
 	var r RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 
 	assert.NoError(t, err)
+	assert.Equal(t, UncheckedDeserializeRawGates(rawGates), r.Gates)
+	assert.Equal(t, Witnesses{multiplicand, multiplier, sum}, r.PublicInputs)
+	assert.Equal(t, nonEncodedValues, r.Values)
+	assert.Equal(t, numConstraints, r.NumConstraints)
+	assert.Equal(t, numVariables, r.NumVariables)
 }

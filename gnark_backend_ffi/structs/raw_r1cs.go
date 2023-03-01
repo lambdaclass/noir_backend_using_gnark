@@ -2,6 +2,7 @@ package structs
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -79,6 +80,7 @@ func (r *RawR1CS) UnmarshalJSON(data []byte) error {
 	}
 
 	// Deserialize num_constraints.
+	fmt.Println("", rawR1CSMap["num_constraints"])
 	if numConstraintsValue, ok := rawR1CSMap["num_constraints"].(float64); ok {
 		numConstraints = uint64(numConstraintsValue)
 	} else {

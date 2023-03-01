@@ -19,7 +19,7 @@ func TestRawGateTermUnmarshalJSON(t *testing.T) {
 	sum := rand.Uint32()
 	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
 	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
-	encodedConstantTerm, _ := SampleEncodedFelt()
+	encodedConstantTerm, nonEncodedConstantTerm := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
 	var r RawGate
@@ -29,6 +29,9 @@ func TestRawGateTermUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	assert.Equal(t, UncheckedDeserializeMulTerms(mulTerms), r.MulTerms)
+	assert.Equal(t, UncheckedDeserializeAddTerms(addTerms), r.AddTerms)
+	assert.Equal(t, nonEncodedConstantTerm, r.ConstantTerm)
 }
 
 func TestRawGatesTermUnmarshalJSON(t *testing.T) {
@@ -38,7 +41,7 @@ func TestRawGatesTermUnmarshalJSON(t *testing.T) {
 	sum := rand.Uint32()
 	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
 	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
-	encodedConstantTerm, _ := SampleEncodedFelt()
+	encodedConstantTerm, nonEncodedConstantTerm := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 	rawGates := fmt.Sprintf(`[%s,%s]`, rawGate, rawGate)
 
@@ -49,4 +52,9 @@ func TestRawGatesTermUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	for _, rawGate := range r {
+		assert.Equal(t, UncheckedDeserializeMulTerms(mulTerms), rawGate.MulTerms)
+		assert.Equal(t, UncheckedDeserializeAddTerms(addTerms), rawGate.AddTerms)
+		assert.Equal(t, nonEncodedConstantTerm, rawGate.ConstantTerm)
+	}
 }
