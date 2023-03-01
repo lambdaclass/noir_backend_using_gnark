@@ -4,9 +4,12 @@ use std::os::raw::{c_char, c_uchar};
 
 use acvm::{acir::circuit::Circuit, FieldElement};
 mod acir_to_r1cs;
+mod c_go_structures;
 mod errors;
 mod serialize;
 use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::RawR1CS;
+use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
+use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
 use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
@@ -40,29 +43,6 @@ extern "C" {
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn Preprocess(circuit: GoString) -> KeyPair;
-}
-
-#[derive(Debug)]
-#[repr(C)]
-struct GoString {
-    ptr: *const c_char,
-    length: usize,
-}
-
-impl TryFrom<&CString> for GoString {
-    type Error = GnarkBackendError;
-
-    fn try_from(value: &CString) -> std::result::Result<Self, Self::Error> {
-        let ptr = value.as_ptr();
-        let length = value.as_bytes().len();
-        Ok(Self { ptr, length })
-    }
-}
-
-#[repr(C)]
-struct KeyPair {
-    proving_key: *const c_char,
-    verifying_key: *const c_char,
 }
 
 pub fn prove_with_meta(
