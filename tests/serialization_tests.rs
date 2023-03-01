@@ -1,43 +1,21 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use noir_backend_using_gnark::{
     acvm,
-    gnark_backend_wrapper::{
-        self,
-        AddTerm, 
-        MulTerm, 
-        RawGate, 
-        RawR1CS,
-    },
+    gnark_backend_wrapper::{self, AddTerm, MulTerm, RawGate, RawR1CS},
 };
 use std::ffi;
 
 extern "C" {
     fn TestFeltSerialization(felt: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestFeltsSerialization(
-        felts: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
+    fn TestFeltsSerialization(felts: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
     fn TestU64Serialization(unsigned_integer: ffi::c_ulong) -> ffi::c_ulong;
-    fn TestMulTermSerialization(
-        mul_term: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
-    fn TestMulTermsSerialization(
-        mul_terms: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
-    fn TestAddTermSerialization(
-        add_term: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
-    fn TestAddTermsSerialization(
-        add_terms: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
-    fn TestRawGateSerialization(
-        raw_gate: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
-    fn TestRawGatesSerialization(
-        raw_gates: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
-    fn TestRawR1CSSerialization(
-        raw_r1cs: gnark_backend_wrapper::GoString,
-    ) -> *const ffi::c_char;
+    fn TestMulTermSerialization(mul_term: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn TestMulTermsSerialization(mul_terms: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn TestAddTermSerialization(add_term: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn TestAddTermsSerialization(add_terms: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn TestRawGateSerialization(raw_gate: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn TestRawGatesSerialization(raw_gates: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn TestRawR1CSSerialization(raw_r1cs: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
 }
 
 fn serialize_felt(felt: &gnark_backend_wrapper::Fr) -> Vec<u8> {
@@ -122,8 +100,7 @@ fn test_felts_serialization() {
     let go_serialized_felt = go_pre_serialized_felt.to_str().unwrap().as_bytes();
 
     // Decode and deserialize the unpacked felts.
-    let go_felts: Vec<gnark_backend_wrapper::Fr> = hex::decode(go_serialized_felt)
-        .unwrap()[4..] // Skip the vector length corresponding to the first four bytes.
+    let go_felts: Vec<gnark_backend_wrapper::Fr> = hex::decode(go_serialized_felt).unwrap()[4..] // Skip the vector length corresponding to the first four bytes.
         .chunks_mut(32)
         .map(|go_decoded_felt| {
             // Turn big-endian to little-endian.
