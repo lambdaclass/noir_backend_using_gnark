@@ -57,40 +57,6 @@ fn serialize_felts(felts: &[gnark_backend_wrapper::groth16::Fr]) -> Vec<u8> {
     buff
 }
 
-fn serialize_mul_term(
-    mul_term: &(
-        gnark_backend_wrapper::groth16::Fr,
-        acvm::Witness,
-        acvm::Witness,
-    ),
-) -> String {
-    let serialized_coefficient = serialize_felt(&mul_term.0);
-    let encoded_coefficient = hex::encode(serialized_coefficient);
-
-    let serialized_multiplicand = serde_json::to_string(&mul_term.1).unwrap();
-    let serialized_multiplier = serde_json::to_string(&mul_term.2).unwrap();
-
-    serde_json::to_string(&json!({
-        "coefficient": encoded_coefficient,
-        "multiplicand": serialized_multiplicand,
-        "multiplier": serialized_multiplier
-    }))
-    .unwrap()
-}
-
-fn serialize_add_term(mul_term: &(gnark_backend_wrapper::groth16::Fr, acvm::Witness)) -> Vec<u8> {
-    let serialized_coefficient = serialize_felt(&mul_term.0);
-    let encoded_coefficient = hex::encode(serialized_coefficient);
-
-    let serialized_sum = serde_json::to_string(&mul_term.1).unwrap();
-
-    serde_json::to_vec(&json!({
-        "coefficient": encoded_coefficient,
-        "sum": serialized_sum,
-    }))
-    .unwrap()
-}
-
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
