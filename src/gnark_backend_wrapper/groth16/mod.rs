@@ -4,12 +4,14 @@ use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
 
 mod acir_to_r1cs;
-pub use acir_to_r1cs::{RawGate, RawR1CS};
-
+mod c_go_structures;
 mod errors;
-use errors::GnarkBackendError;
 
 mod serialize;
+use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::RawR1CS;
+pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
+use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
+use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.
@@ -19,7 +21,6 @@ cfg_if::cfg_if! {
 
         // Converts a FieldElement to a Fr
         // noir_field uses arkworks for bn254
-        #[allow(dead_code)]
         pub fn from_felt(felt: acvm::FieldElement) -> Fr {
             felt.into_repr()
         }
@@ -42,29 +43,6 @@ extern "C" {
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn Preprocess(circuit: GoString) -> KeyPair;
-}
-
-#[derive(Debug)]
-#[repr(C)]
-pub struct GoString {
-    ptr: *const c_char,
-    length: usize,
-}
-
-impl TryFrom<&CString> for GoString {
-    type Error = GnarkBackendError;
-
-    fn try_from(value: &CString) -> std::result::Result<Self, Self::Error> {
-        let ptr = value.as_ptr();
-        let length = value.as_bytes().len();
-        Ok(Self { ptr, length })
-    }
-}
-
-#[repr(C)]
-pub struct KeyPair {
-    proving_key: *const c_char,
-    verifying_key: *const c_char,
 }
 
 pub fn prove_with_meta(
@@ -223,11 +201,11 @@ mod tests {
 
     #[test]
     fn test_go_string_from_cstring() {
-        let string = "This works".to_string();
+        let string = "This works".to_owned();
         let c_str = CString::new(string.clone()).unwrap();
         let go_string = GoString::try_from(&c_str).unwrap();
         let deserialized_c_str = unsafe { CStr::from_ptr(go_string.ptr) };
-        let deserialized_string = deserialized_c_str.to_str().unwrap().to_string();
+        let deserialized_string = deserialized_c_str.to_str().unwrap().to_owned();
         assert_eq!(string, deserialized_string);
     }
 

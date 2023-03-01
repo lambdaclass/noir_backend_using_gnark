@@ -1,5 +1,6 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use noir_backend_using_gnark::gnark_backend_wrapper;
+use noir_backend_using_gnark::{acvm, gnark_backend_wrapper};
+use serde_json::json;
 use std::ffi;
 
 extern "C" {
@@ -56,7 +57,13 @@ fn serialize_felts(felts: &[gnark_backend_wrapper::groth16::Fr]) -> Vec<u8> {
     buff
 }
 
-fn serialize_mul_term(mul_term: &(gnark_backend_wrapper::groth16::Fr, acvm::Witness, acvm::Witness)) -> String {
+fn serialize_mul_term(
+    mul_term: &(
+        gnark_backend_wrapper::groth16::Fr,
+        acvm::Witness,
+        acvm::Witness,
+    ),
+) -> String {
     let serialized_coefficient = serialize_felt(&mul_term.0);
     let encoded_coefficient = hex::encode(serialized_coefficient);
 

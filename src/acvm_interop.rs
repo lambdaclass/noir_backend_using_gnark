@@ -1,3 +1,6 @@
+// Allow unwrap because the Backend traits don't support Result.
+#![allow(clippy::unwrap_used)]
+
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
@@ -94,11 +97,9 @@ impl PartialWitnessGenerator for Gnark {
     }
 }
 
-#[allow(dead_code)]
 pub struct GadgetCaller;
 
 impl GadgetCaller {
-    #[allow(dead_code)]
     pub fn solve_blackbox_func_call(
         _initial_witness: &mut BTreeMap<Witness, FieldElement>,
         _gadget_call: &BlackBoxFuncCall,
