@@ -288,8 +288,8 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(pk_string), C.CString(vk_string)
 }
 
-//export TestFeltSerialization
-func TestFeltSerialization(encodedFelt string) *C.char {
+//export IntegrationTestFeltSerialization
+func IntegrationTestFeltSerialization(encodedFelt string) *C.char {
 	deserializedFelt := structs.DeserializeFelt(encodedFelt)
 	fmt.Printf("| GO |\n%v\n", deserializedFelt)
 
@@ -302,8 +302,8 @@ func TestFeltSerialization(encodedFelt string) *C.char {
 	return C.CString(serializedFeltString)
 }
 
-//export TestFeltsSerialization
-func TestFeltsSerialization(encodedFelts string) *C.char {
+//export IntegrationTestFeltsSerialization
+func IntegrationTestFeltsSerialization(encodedFelts string) *C.char {
 	deserializedFelts := structs.DeserializeFelts(encodedFelts)
 
 	// Serialize the felt.
@@ -318,14 +318,14 @@ func TestFeltsSerialization(encodedFelts string) *C.char {
 	return C.CString(serializedFeltsString)
 }
 
-//export TestU64Serialization
-func TestU64Serialization(number uint64) uint64 {
+//export IntegrationTestU64Serialization
+func IntegrationTestU64Serialization(number uint64) uint64 {
 	fmt.Println(number)
 	return number
 }
 
-//export TestMulTermSerialization
-func TestMulTermSerialization(mulTermJSON string) *C.char {
+//export IntegrationTestMulTermSerialization
+func IntegrationTestMulTermSerialization(mulTermJSON string) *C.char {
 	var deserializedMulTerm structs.MulTerm
 	err := json.Unmarshal([]byte(mulTermJSON), &deserializedMulTerm)
 	if err != nil {
@@ -345,8 +345,8 @@ func TestMulTermSerialization(mulTermJSON string) *C.char {
 	return C.CString(string(serializedMulTerm))
 }
 
-//export TestMulTermsSerialization
-func TestMulTermsSerialization(mulTermsJSON string) *C.char {
+//export IntegrationTestMulTermsSerialization
+func IntegrationTestMulTermsSerialization(mulTermsJSON string) *C.char {
 	var deserializedMulTerms []structs.MulTerm
 	err := json.Unmarshal([]byte(mulTermsJSON), &deserializedMulTerms)
 	if err != nil {
@@ -369,8 +369,8 @@ func TestMulTermsSerialization(mulTermsJSON string) *C.char {
 	return C.CString(string(serializedMulTerms))
 }
 
-//export TestAddTermSerialization
-func TestAddTermSerialization(addTermJSON string) *C.char {
+//export IntegrationTestAddTermSerialization
+func IntegrationTestAddTermSerialization(addTermJSON string) *C.char {
 	var deserializedAddTerm structs.AddTerm
 	err := json.Unmarshal([]byte(addTermJSON), &deserializedAddTerm)
 	if err != nil {
@@ -389,8 +389,8 @@ func TestAddTermSerialization(addTermJSON string) *C.char {
 	return C.CString(string(serializedAddTerm))
 }
 
-//export TestAddTermsSerialization
-func TestAddTermsSerialization(addTermsJSON string) *C.char {
+//export IntegrationTestAddTermsSerialization
+func IntegrationTestAddTermsSerialization(addTermsJSON string) *C.char {
 	var deserializedAddTerms []structs.AddTerm
 	err := json.Unmarshal([]byte(addTermsJSON), &deserializedAddTerms)
 	if err != nil {
@@ -412,8 +412,8 @@ func TestAddTermsSerialization(addTermsJSON string) *C.char {
 	return C.CString(string(serializedAddTerms))
 }
 
-//export TestRawGateSerialization
-func TestRawGateSerialization(rawGateJSON string) *C.char {
+//export IntegrationTestRawGateSerialization
+func IntegrationTestRawGateSerialization(rawGateJSON string) *C.char {
 	var deserializedRawGate structs.RawGate
 	err := json.Unmarshal([]byte(rawGateJSON), &deserializedRawGate)
 	if err != nil {
@@ -434,8 +434,8 @@ func TestRawGateSerialization(rawGateJSON string) *C.char {
 	return C.CString(string(serializedRawGate))
 }
 
-//export TestRawGatesSerialization
-func TestRawGatesSerialization(rawGatesJSON string) *C.char {
+//export IntegrationTestRawGatesSerialization
+func IntegrationTestRawGatesSerialization(rawGatesJSON string) *C.char {
 	var deserializedRawGates []structs.RawGate
 	err := json.Unmarshal([]byte(rawGatesJSON), &deserializedRawGates)
 	if err != nil {
@@ -458,8 +458,8 @@ func TestRawGatesSerialization(rawGatesJSON string) *C.char {
 	return C.CString(string(serializedRawGate))
 }
 
-//export TestRawR1CSSerialization
-func TestRawR1CSSerialization(rawR1CSJSON string) *C.char {
+//export IntegrationTestRawR1CSSerialization
+func IntegrationTestRawR1CSSerialization(rawR1CSJSON string) *C.char {
 	var deserializedRawR1CS structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CSJSON), &deserializedRawR1CS)
 	if err != nil {

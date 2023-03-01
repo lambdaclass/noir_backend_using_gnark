@@ -2,7 +2,9 @@ package structs
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +13,10 @@ import (
 // TODO: Test error cases.
 
 func TestMulTermUnmarshalJSON(t *testing.T) {
-	mulTerm := `{"coefficient":"0e3ef945f56c24501196feee0cc6446900dc410d0c6a4d3b4729c4788c0716e5","multiplicand":3583776697,"multiplier":2422311469}`
+	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
+	multiplicand := rand.Uint32()
+	multiplier := rand.Uint32()
+	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multiplicand":%d,"multiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
 
 	var m MulTerm
 	err := json.Unmarshal([]byte(mulTerm), &m)
@@ -20,10 +25,16 @@ func TestMulTermUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	assert.Equal(t, nonEncodedCoefficient, m.Coefficient)
+	assert.Equal(t, multiplicand, m.Multiplicand)
+	assert.Equal(t, multiplier, m.Multiplier)
 }
 
 func TestMulTermsUnmarshalJSON(t *testing.T) {
-	mulTerms := `[{"coefficient":"0e3ef945f56c24501196feee0cc6446900dc410d0c6a4d3b4729c4788c0716e5","multiplicand":3583776697,"multiplier":2422311469},{"coefficient":"0e3ef945f56c24501196feee0cc6446900dc410d0c6a4d3b4729c4788c0716e5","multiplicand":3583776697,"multiplier":2422311469}]`
+	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
+	multiplicand := rand.Uint32()
+	multiplier := rand.Uint32()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
 
 	var m []MulTerm
 	err := json.Unmarshal([]byte(mulTerms), &m)
@@ -32,4 +43,9 @@ func TestMulTermsUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	for _, mulTerm := range m {
+		assert.Equal(t, nonEncodedCoefficient, mulTerm.Coefficient)
+		assert.Equal(t, multiplicand, mulTerm.Multiplicand)
+		assert.Equal(t, multiplier, mulTerm.Multiplier)
+	}
 }

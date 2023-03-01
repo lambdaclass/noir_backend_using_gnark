@@ -2,7 +2,9 @@ package structs
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +13,9 @@ import (
 // TODO: Test error cases.
 
 func TestAddTermUnmarshalJSON(t *testing.T) {
-	addTerm := `{"coefficient":"0e3ef945f56c24501196feee0cc6446900dc410d0c6a4d3b4729c4788c0716e5","sum":2422311469}`
+	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
+	sum := rand.Uint32()
+	addTerm := fmt.Sprintf(`{"coefficient":"%s","sum":%d}`, encodedCoefficient, sum)
 
 	var a AddTerm
 	err := json.Unmarshal([]byte(addTerm), &a)
@@ -20,10 +24,14 @@ func TestAddTermUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	assert.Equal(t, nonEncodedCoefficient, a.Coefficient)
+	assert.Equal(t, sum, a.Sum)
 }
 
 func TestAddTermsUnmarshalJSON(t *testing.T) {
-	addTerms := `[{"coefficient":"0e3ef945f56c24501196feee0cc6446900dc410d0c6a4d3b4729c4788c0716e5","sum":2422311469},{"coefficient":"0e3ef945f56c24501196feee0cc6446900dc410d0c6a4d3b4729c4788c0716e5","sum":3583776697}]`
+	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
+	sum := rand.Uint32()
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
 
 	var a []AddTerm
 	err := json.Unmarshal([]byte(addTerms), &a)
@@ -32,4 +40,8 @@ func TestAddTermsUnmarshalJSON(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+	for _, addTerm := range a {
+		assert.Equal(t, nonEncodedCoefficient, addTerm.Coefficient)
+		assert.Equal(t, sum, addTerm.Sum)
+	}
 }
