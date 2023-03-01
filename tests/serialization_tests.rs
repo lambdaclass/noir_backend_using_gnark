@@ -211,7 +211,7 @@ fn test_mul_terms_serialization() {
 
     println!("| RUST |");
     for mul_term in &mul_terms {
-        println!("{:?}", mul_term.coefficient.0 .0);
+        println!("{:?}", mul_term.coefficient.0.0);
         println!("{:?}", mul_term.multiplicand.0);
         println!("{:?}", mul_term.multiplier.0);
         println!()
@@ -243,7 +243,7 @@ fn test_add_term_serialization() {
     let add_term = AddTerm { coefficient, sum };
 
     println!("| RUST |");
-    println!("{:?}", add_term.coefficient.0 .0);
+    println!("{:?}", add_term.coefficient.0.0);
     println!("{:?}", add_term.sum.0);
 
     // Serialize the mul term.
