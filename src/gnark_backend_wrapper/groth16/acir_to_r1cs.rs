@@ -68,7 +68,7 @@ impl RawR1CS {
             num_variables: (acir.current_witness_index + 1)
                 .try_into()
                 .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?,
-            public_inputs: acir.public_inputs,
+            public_inputs: acir.public_inputs.0.into_iter().collect(),
             num_constraints,
         })
     }
