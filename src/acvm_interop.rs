@@ -1,4 +1,4 @@
-// Allow unwrap because the ProofSystemCompiler interface does not support Result
+// Allow unwrap because the Backend traits don't support Result.
 #![allow(clippy::unwrap_used)]
 
 use acvm::acir::{
