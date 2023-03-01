@@ -7,11 +7,7 @@ use acvm::{
 };
 use std::collections::BTreeMap;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "groth16")] {
-        use crate::gnark_backend_wrapper::groth16 as gnark_backend;
-    }
-}
+use crate::gnark_backend_wrapper as gnark_backend;
 
 pub struct Gnark;
 
