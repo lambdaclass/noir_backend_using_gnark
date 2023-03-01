@@ -9,7 +9,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/recoilme/btreeset"
+	"gnark_backend_ffi/structs"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/groth16"
@@ -18,34 +18,7 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
-// TODO: Deserialize rawR1CS.
-
-type RawR1CS struct {
-	Gates          []RawGate
-	PublicInputs   btreeset.BTreeSet
-	Values         fr_bn254.Vector
-	NumVariables   uint
-	NumConstraints uint
-}
-
-type RawGate struct {
-	MulTerms     []MulTerm
-	AddTerms     []AddTerm
-	ConstantTerm fr_bn254.Element
-}
-
-type MulTerm struct {
-	Coefficient  fr_bn254.Element
-	Multiplicand uint32
-	Multiplier   uint32
-}
-
-type AddTerm struct {
-	Coefficient fr_bn254.Element
-	Sum         uint32
-}
-
-func buildR1CS(r RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector, int, int) {
+func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector, int, int) {
 	// Create R1CS.
 	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
 
@@ -132,7 +105,7 @@ func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privat
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
 	// Deserialize rawR1CS.
-	var r RawR1CS
+	var r structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -315,15 +288,7 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 
 //export TestFeltSerialization
 func TestFeltSerialization(encodedFelt string) *C.char {
-	// Decode the received felt.
-	decodedFelt, err := hex.DecodeString(encodedFelt)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Deserialize the decoded felt.
-	var deserializedFelt fr_bn254.Element
-	deserializedFelt.SetBytes(decodedFelt)
+	deserializedFelt := structs.DeserializeFelt(encodedFelt)
 	fmt.Printf("| GO |\n%v\n", deserializedFelt)
 
 	// Serialize the felt.
@@ -337,15 +302,7 @@ func TestFeltSerialization(encodedFelt string) *C.char {
 
 //export TestFeltsSerialization
 func TestFeltsSerialization(encodedFelts string) *C.char {
-	// Decode the received felts.
-	decodedFelts, err := hex.DecodeString(encodedFelts)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Unpack and deserialize the decoded felts.
-	var deserializedFelts fr_bn254.Vector
-	deserializedFelts.UnmarshalBinary(decodedFelts)
+	deserializedFelts := structs.DeserializeFelts(encodedFelts)
 
 	// Serialize the felt.
 	serializedFelts, err := deserializedFelts.MarshalBinary()
@@ -366,7 +323,7 @@ func TestU64Serialization(number uint64) uint64 {
 }
 
 //export TestMulTermSerialization
-func TestMulTermSerialization(encodedMulTerm string) *C.char {
+func TestMulTermSerialization(mulTerm string) *C.char {
 	return C.CString("unimplemented")
 }
 
