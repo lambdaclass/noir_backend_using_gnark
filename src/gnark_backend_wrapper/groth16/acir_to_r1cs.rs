@@ -18,8 +18,8 @@ pub struct RawR1CS {
     pub public_inputs: Vec<acvm::Witness>,
     #[serde(serialize_with = "serialize_felts")]
     pub values: Vec<Fr>,
-    pub num_variables: usize,
-    pub num_constraints: usize,
+    pub num_variables: u64,
+    pub num_constraints: u64,
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
@@ -48,7 +48,9 @@ impl RawR1CS {
         acir: acvm::Circuit,
         values: Vec<acvm::FieldElement>,
     ) -> Result<Self, GnarkBackendError> {
-        let num_constraints = Self::num_constraints(&acir)?;
+        let num_constraints: u64 = Self::num_constraints(&acir)?
+            .try_into()
+            .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
         let gates: Vec<_> = acir
@@ -66,9 +68,7 @@ impl RawR1CS {
         Ok(Self {
             gates,
             values,
-            num_variables: (acir.current_witness_index + 1)
-                .try_into()
-                .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?,
+            num_variables: u64::from(acir.current_witness_index) + 1,
             public_inputs: acir.public_inputs.0.into_iter().collect(),
             num_constraints,
         })
