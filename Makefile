@@ -14,7 +14,7 @@ build: build-go
 	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo build
 
 test: build-go
-	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo test
+	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo test ${TEST} -- --nocapture
 
 clippy:
 	$ cargo clippy --all-targets -- -D warnings
