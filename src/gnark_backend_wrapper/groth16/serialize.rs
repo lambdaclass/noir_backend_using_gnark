@@ -60,7 +60,8 @@ where
     S: serde::ser::Serializer,
 {
     let mut serialized_felt = Vec::new();
-    felt.serialize_uncompressed(&mut serialized_felt).map_err(serde::ser::Error::custom)?;
+    felt.serialize_uncompressed(&mut serialized_felt)
+        .map_err(serde::ser::Error::custom)?;
     // Turn little-endian to big-endian.
     serialized_felt.reverse();
     let encoded_coefficient = hex::encode(serialized_felt);
