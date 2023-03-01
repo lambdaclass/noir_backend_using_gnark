@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
