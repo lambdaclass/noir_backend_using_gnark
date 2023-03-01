@@ -7,46 +7,105 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 
-	"github.com/recoilme/btreeset"
+	"gnark_backend_ffi/structs"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/backend/witness"
+	"github.com/consensys/gnark/constraint"
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
-// TODO: Deserialize rawR1CS.
+func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector, int, int) {
+	// Create R1CS.
+	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
 
-type RawR1CS struct {
-	Gates          []RawGate
-	PublicInputs   btreeset.BTreeSet
-	Values         fr_bn254.Vector
-	NumVariables   uint
-	NumConstraints uint
+	// Fill process RawR1CS.
+	nPublicVariables := 0
+	nPrivateVariables := 0
+	var allVariableIndices []int
+	var publicVariables fr_bn254.Vector
+	var privateVariables fr_bn254.Vector
+	for i, value := range r.Values {
+		variableName := strconv.Itoa(i)
+		if r.PublicInputs.Has(make([]byte, i)) {
+			allVariableIndices = append(allVariableIndices, r1cs.AddPublicVariable(variableName))
+			publicVariables = append(publicVariables, value)
+			nPublicVariables++
+		} else {
+			allVariableIndices = append(allVariableIndices, r1cs.AddSecretVariable(variableName))
+			privateVariables = append(privateVariables, value)
+			nPrivateVariables++
+		}
+	}
+
+	// Generate constraints.
+	ONE := r1cs.AddPublicVariable("ONE")
+	ZERO := r1cs.AddPublicVariable("ZERO")
+	COEFFICIENT_ONE := r1cs.FromInterface(1)
+	for _, gate := range r.Gates {
+		var terms constraint.LinearExpression
+
+		for _, mul_term := range gate.MulTerms {
+			coefficient := r1cs.FromInterface(mul_term.Coefficient)
+
+			product := mul_term.Multiplicand * mul_term.Multiplier
+			productVariableName := strconv.FormatUint(uint64(product), 10)
+			productVariable := r1cs.AddSecretVariable(productVariableName)
+
+			terms = append(terms, r1cs.MakeTerm(&coefficient, productVariable))
+		}
+
+		for _, add_term := range gate.AddTerms {
+			coefficient := r1cs.FromInterface(add_term.Coefficient)
+			sum := add_term.Sum
+
+			sumVariable := allVariableIndices[sum]
+
+			terms = append(terms, r1cs.MakeTerm(&coefficient, sumVariable))
+		}
+
+		r1cs.AddConstraint(
+			constraint.R1C{
+				L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ONE)},
+				R: terms,
+				O: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ZERO)},
+			},
+		)
+	}
+
+	return r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables
 }
 
-type RawGate struct {
-	MulTerms     []MulTerm
-	AddTerms     []AddTerm
-	ConstantTerm fr_bn254.Element
-}
+func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nPublicVariables int, nPrivateVariables int) witness.Witness {
+	witnessValues := make(chan any)
 
-type MulTerm struct {
-	Coefficient  fr_bn254.Element
-	Multiplicand uint32
-	Multiplier   uint32
-}
+	go func() {
+		defer close(witnessValues)
+		for _, publicVariable := range publicVariables {
+			witnessValues <- publicVariable
+		}
+		for _, privateVariable := range privateVariables {
+			witnessValues <- privateVariable
+		}
+	}()
 
-type AddTerm struct {
-	Coefficient fr_bn254.Element
-	Sum         uint32
+	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	witness.Fill(nPublicVariables, nPrivateVariables, witnessValues)
+
+	return witness
 }
 
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
 	// Deserialize rawR1CS.
-	var r RawR1CS
+	var r structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -238,15 +297,7 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 
 //export TestFeltSerialization
 func TestFeltSerialization(encodedFelt string) *C.char {
-	// Decode the received felt.
-	decodedFelt, err := hex.DecodeString(encodedFelt)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Deserialize the decoded felt.
-	var deserializedFelt fr_bn254.Element
-	deserializedFelt.SetBytes(decodedFelt)
+	deserializedFelt := structs.DeserializeFelt(encodedFelt)
 	fmt.Printf("| GO |\n%v\n", deserializedFelt)
 
 	// Serialize the felt.
@@ -260,15 +311,7 @@ func TestFeltSerialization(encodedFelt string) *C.char {
 
 //export TestFeltsSerialization
 func TestFeltsSerialization(encodedFelts string) *C.char {
-	// Decode the received felts.
-	decodedFelts, err := hex.DecodeString(encodedFelts)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Unpack and deserialize the decoded felts.
-	var deserializedFelts fr_bn254.Vector
-	deserializedFelts.UnmarshalBinary(decodedFelts)
+	deserializedFelts := structs.DeserializeFelts(encodedFelts)
 
 	// Serialize the felt.
 	serializedFelts, err := deserializedFelts.MarshalBinary()
@@ -289,7 +332,7 @@ func TestU64Serialization(number uint64) uint64 {
 }
 
 //export TestMulTermSerialization
-func TestMulTermSerialization(encodedMulTerm string) *C.char {
+func TestMulTermSerialization(mulTerm string) *C.char {
 	return C.CString("unimplemented")
 }
 
