@@ -325,23 +325,91 @@ func TestU64Serialization(number uint64) uint64 {
 }
 
 //export TestMulTermSerialization
-func TestMulTermSerialization(mulTerm string) *C.char {
-	return C.CString("unimplemented")
+func TestMulTermSerialization(mulTermJSON string) *C.char {
+	var deserializedMulTerm structs.MulTerm
+	err := json.Unmarshal([]byte(mulTermJSON), &deserializedMulTerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	fmt.Println("", deserializedMulTerm.Coefficient)
+	fmt.Println("", deserializedMulTerm.Multiplicand)
+	fmt.Println("", deserializedMulTerm.Multiplier)
+
+	serializedMulTerm, err := json.Marshal(deserializedMulTerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedMulTerm))
 }
 
 //export TestMulTermsSerialization
-func TestMulTermsSerialization(encodedMulTerms string) *C.char {
-	return C.CString("unimplemented")
+func TestMulTermsSerialization(mulTermsJSON string) *C.char {
+	var deserializedMulTerms []structs.MulTerm
+	err := json.Unmarshal([]byte(mulTermsJSON), &deserializedMulTerms)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	for _, deserializedMulTerm := range deserializedMulTerms {
+		fmt.Println("", deserializedMulTerm.Coefficient)
+		fmt.Println("", deserializedMulTerm.Multiplicand)
+		fmt.Println("", deserializedMulTerm.Multiplier)
+		fmt.Println()
+	}
+
+	serializedMulTerms, err := json.Marshal(deserializedMulTerms)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedMulTerms))
 }
 
 //export TestAddTermSerialization
-func TestAddTermSerialization(encodedAddTerm string) *C.char {
-	return C.CString("unimplemented")
+func TestAddTermSerialization(addTermJSON string) *C.char {
+	var deserializedAddTerm structs.AddTerm
+	err := json.Unmarshal([]byte(addTermJSON), &deserializedAddTerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	fmt.Println("", deserializedAddTerm.Coefficient)
+	fmt.Println("", deserializedAddTerm.Sum)
+
+	serializedAddTerm, err := json.Marshal(deserializedAddTerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedAddTerm))
 }
 
 //export TestAddTermsSerialization
-func TestAddTermsSerialization(encodedAddTerms string) *C.char {
-	return C.CString("unimplemented")
+func TestAddTermsSerialization(addTermsJSON string) *C.char {
+	var deserializedAddTerms []structs.AddTerm
+	err := json.Unmarshal([]byte(addTermsJSON), &deserializedAddTerms)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	for _, deserializedAddTerm := range deserializedAddTerms {
+		fmt.Println("", deserializedAddTerm.Coefficient)
+		fmt.Println("", deserializedAddTerm.Sum)
+		fmt.Println()
+	}
+
+	serializedAddTerms, err := json.Marshal(deserializedAddTerms)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedAddTerms))
 }
 
 //export TestRawGateSerialization
