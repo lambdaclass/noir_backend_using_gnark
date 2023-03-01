@@ -34,15 +34,17 @@ impl RawR1CS {
         let num_constraints = Self::num_constraints(&acir)?;
         // Currently non-arithmetic gates are not supported
         // so we extract all of the arithmetic gates only
-        let gates: Vec<_> = acir
-            .opcodes
+        let mut gates = Vec::new();
+        acir.opcodes
             .into_iter()
             .filter(acvm::Opcode::is_arithmetic)
-            .map(|opcode| match opcode.arithmetic() {
-                Some(expression) => RawGate::new(expression),
-                None => RawGate::new(acvm::Expression::default()),
-            })
-            .collect();
+            .try_for_each(|opcode| {
+                let expression = opcode.clone().arithmetic().ok_or(
+                    GnarkBackendError::UnsupportedOpcodeError(opcode.to_string()),
+                )?;
+                gates.push(RawGate::new(expression));
+                Ok::<_, GnarkBackendError>(())
+            })?;
 
         let values: Vec<Fr> = values.into_iter().map(from_felt).collect();
 
