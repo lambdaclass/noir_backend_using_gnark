@@ -297,8 +297,8 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(pk_string), C.CString(vk_string)
 }
 
-//export TestFeltSerialization
-func TestFeltSerialization(encodedFelt string) *C.char {
+//export IntegrationTestFeltSerialization
+func IntegrationTestFeltSerialization(encodedFelt string) *C.char {
 	deserializedFelt := structs.DeserializeFelt(encodedFelt)
 	fmt.Printf("| GO |\n%v\n", deserializedFelt)
 
@@ -311,8 +311,8 @@ func TestFeltSerialization(encodedFelt string) *C.char {
 	return C.CString(serializedFeltString)
 }
 
-//export TestFeltsSerialization
-func TestFeltsSerialization(encodedFelts string) *C.char {
+//export IntegrationTestFeltsSerialization
+func IntegrationTestFeltsSerialization(encodedFelts string) *C.char {
 	deserializedFelts := structs.DeserializeFelts(encodedFelts)
 
 	// Serialize the felt.
@@ -327,44 +327,44 @@ func TestFeltsSerialization(encodedFelts string) *C.char {
 	return C.CString(serializedFeltsString)
 }
 
-//export TestU64Serialization
-func TestU64Serialization(number uint64) uint64 {
+//export IntegrationTestU64Serialization
+func IntegrationTestU64Serialization(number uint64) uint64 {
 	fmt.Println(number)
 	return number
 }
 
-//export TestMulTermSerialization
-func TestMulTermSerialization(mulTerm string) *C.char {
+//export IntegrationTestMulTermSerialization
+func IntegrationTestMulTermSerialization(mulTerm string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestMulTermsSerialization
-func TestMulTermsSerialization(encodedMulTerms string) *C.char {
+//export IntegrationTestMulTermsSerialization
+func IntegrationTestMulTermsSerialization(encodedMulTerms string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestAddTermSerialization
-func TestAddTermSerialization(encodedAddTerm string) *C.char {
+//export IntegrationTestAddTermSerialization
+func IntegrationTestAddTermSerialization(encodedAddTerm string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestAddTermsSerialization
-func TestAddTermsSerialization(encodedAddTerms string) *C.char {
+//export IntegrationTestAddTermsSerialization
+func IntegrationTestAddTermsSerialization(encodedAddTerms string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawGateSerialization
-func TestRawGateSerialization(encodedRawGate string) *C.char {
+//export IntegrationTestRawGateSerialization
+func IntegrationTestRawGateSerialization(encodedRawGate string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawGatesSerialization
-func TestRawGatesSerialization(encodedRawGates string) *C.char {
+//export IntegrationTestRawGatesSerialization
+func IntegrationTestRawGatesSerialization(encodedRawGates string) *C.char {
 	return C.CString("unimplemented")
 }
 
-//export TestRawR1CSSerialization
-func TestRawR1CSSerialization(encodedR1CS string) *C.char {
+//export IntegrationTestRawR1CSSerialization
+func IntegrationTestRawR1CSSerialization(encodedR1CS string) *C.char {
 	return C.CString("unimplemented")
 }
 
