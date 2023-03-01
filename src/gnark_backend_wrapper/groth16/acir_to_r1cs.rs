@@ -1,5 +1,6 @@
 use super::{from_felt, Fr};
 use crate::acvm;
+use crate::gnark_backend_wrapper::groth16::serialize::{serialize_felt, serialize_felts};
 use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
 use std::num::TryFromIntError;
 
@@ -10,19 +11,21 @@ use std::num::TryFromIntError;
 // - These structures only support arithmetic gates, while the compiler has other
 // gate types. These can be added later once the backend knows how to deal with things like XOR
 // or once ACIR is taught how to do convert these black box functions to Arithmetic gates.
-#[derive(Clone)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct RawR1CS {
     pub gates: Vec<RawGate>,
-    pub public_inputs: acvm::PublicInputs,
+    pub public_inputs: Vec<acvm::Witness>,
+    #[serde(serialize_with = "serialize_felts")]
     pub values: Vec<Fr>,
     pub num_variables: usize,
     pub num_constraints: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct RawGate {
-    pub mul_terms: Vec<(Fr, acvm::Witness, acvm::Witness)>,
-    pub add_terms: Vec<(Fr, acvm::Witness)>,
+    pub mul_terms: Vec<MulTerm>,
+    pub add_terms: Vec<AddTerm>,
+    #[serde(serialize_with = "serialize_felt")]
     pub constant_term: Fr,
 }
 
