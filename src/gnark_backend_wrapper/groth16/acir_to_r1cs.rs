@@ -1,6 +1,6 @@
 use super::{from_felt, Fr};
 use crate::acvm;
-use crate::gnark_backend_glue::GnarkBackendError;
+use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
 use std::num::TryFromIntError;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
