@@ -6,16 +6,34 @@ use noir_backend_using_gnark::{
 use std::ffi;
 
 extern "C" {
-    fn TestFeltSerialization(felt: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestFeltsSerialization(felts: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestU64Serialization(unsigned_integer: ffi::c_ulong) -> ffi::c_ulong;
-    fn TestMulTermSerialization(mul_term: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestMulTermsSerialization(mul_terms: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestAddTermSerialization(add_term: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestAddTermsSerialization(add_terms: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestRawGateSerialization(raw_gate: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestRawGatesSerialization(raw_gates: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
-    fn TestRawR1CSSerialization(raw_r1cs: gnark_backend_wrapper::GoString) -> *const ffi::c_char;
+    fn IntegrationTestFeltSerialization(
+        felt: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestFeltsSerialization(
+        felts: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestU64Serialization(unsigned_integer: ffi::c_ulong) -> ffi::c_ulong;
+    fn IntegrationTestMulTermSerialization(
+        mul_term: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestMulTermsSerialization(
+        mul_terms: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestAddTermSerialization(
+        add_term: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestAddTermsSerialization(
+        add_terms: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestRawGateSerialization(
+        raw_gate: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestRawGatesSerialization(
+        raw_gates: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestRawR1CSSerialization(
+        raw_r1cs: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
 }
 
 fn serialize_felt(felt: &gnark_backend_wrapper::Fr) -> Vec<u8> {
@@ -61,7 +79,7 @@ fn test_felt_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { TestFeltSerialization(ping) };
+    let pong: *const ffi::c_char = unsafe { IntegrationTestFeltSerialization(ping) };
 
     // Prepare pong for Rust.
     let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
@@ -93,7 +111,7 @@ fn test_felts_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { TestFeltsSerialization(ping) };
+    let pong: *const ffi::c_char = unsafe { IntegrationTestFeltsSerialization(ping) };
 
     // Prepare pong for Rust.
     let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
@@ -125,7 +143,7 @@ fn test_u64_serialization() {
     // Prepare ping for Go.
     let ping = number;
     // Send and receive pong from Go.
-    let pong = unsafe { TestU64Serialization(ping) };
+    let pong = unsafe { IntegrationTestU64Serialization(ping) };
 
     assert_eq!(number, pong)
 }
@@ -156,7 +174,7 @@ fn test_mul_term_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestMulTermSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestMulTermSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -197,7 +215,7 @@ fn test_mul_terms_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestMulTermsSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestMulTermsSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -225,7 +243,7 @@ fn test_add_term_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestAddTermSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestAddTermSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -253,7 +271,7 @@ fn test_add_terms_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestAddTermsSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestAddTermsSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -293,7 +311,7 @@ fn test_raw_gate_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestRawGateSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestRawGateSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -334,7 +352,7 @@ fn test_raw_gates_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestRawGatesSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestRawGatesSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -389,7 +407,7 @@ fn test_raw_r1cs_serialization() {
     let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { TestRawR1CSSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestRawR1CSSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
