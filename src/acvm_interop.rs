@@ -1,3 +1,6 @@
+// Allow unwrap because the ProofSystemCompiler interface does not support Result
+#![allow(clippy::unwrap_used)]
+
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
@@ -13,8 +16,6 @@ pub struct Gnark;
 
 impl acvm::Backend for Gnark {}
 
-// Allow unwrap because the ProofSystemCompiler interface does not support Result
-#[allow(clippy::unwrap_used)]
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
         Language::R1CS
