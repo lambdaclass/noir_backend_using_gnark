@@ -1,13 +1,15 @@
+use acvm::{acir::circuit::Circuit, FieldElement};
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
 
-use acvm::{acir::circuit::Circuit, FieldElement};
 mod acir_to_r1cs;
 pub use acir_to_r1cs::{RawGate, RawR1CS};
+
 mod errors;
+use errors::GnarkBackendError;
+
 mod serialize;
-use crate::gnark_backend_glue::errors::GnarkBackendError;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.
