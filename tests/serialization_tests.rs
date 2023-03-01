@@ -150,3 +150,155 @@ fn test_u64_serialization() {
 
     assert_eq!(number, pong)
 }
+
+#[test]
+fn test_mul_term_serialization() {
+    // Sample random coefficient.
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    // Sample a random multiplicand.
+    let multiplicand = acvm::Witness::new(rand::random());
+    // Sample a random multiplier.
+    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
+    // Sample a random mul term.
+    let mul_term = MulTerm {
+        coefficient,
+        multiplicand,
+        multiplier,
+    };
+
+    println!("| RUST |");
+    println!("{:?}", mul_term.coefficient.0 .0);
+    println!("{:?}", mul_term.multiplicand.0);
+    println!("{:?}", mul_term.multiplier.0);
+
+    // Serialize the mul term.
+    let serialized_mul_term = serde_json::to_string(&mul_term).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_mul_term).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let pong: *const ffi::c_char = unsafe { TestMulTermSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that mul_term and go_mul_term are the same (go_mul_term is
+    //   the pong's deserialization)
+}
+
+#[test]
+fn test_mul_terms_serialization() {
+    // Sample random coefficient.
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    // Sample a random multiplicand.
+    let multiplicand = acvm::Witness::new(rand::random());
+    // Sample a random multiplier.
+    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
+    // Sample a random mul term.
+    let mul_terms = vec![
+        MulTerm {
+            coefficient,
+            multiplicand,
+            multiplier,
+        },
+        MulTerm {
+            coefficient,
+            multiplicand,
+            multiplier,
+        },
+    ];
+
+    println!("| RUST |");
+    for mul_term in &mul_terms {
+        println!("{:?}", mul_term.coefficient.0 .0);
+        println!("{:?}", mul_term.multiplicand.0);
+        println!("{:?}", mul_term.multiplier.0);
+        println!()
+    }
+
+    // Serialize the mul term.
+    let serialized_mul_terms = serde_json::to_string(&mul_terms).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_mul_terms).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let pong: *const ffi::c_char = unsafe { TestMulTermsSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that mul_term and go_mul_term are the same (go_mul_term is
+    //   the pong's deserialization)
+}
+
+#[test]
+fn test_add_term_serialization() {
+    // Sample random coefficient.
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    // Sample a random sum.
+    let sum = acvm::Witness::new(rand::random());
+    // Sample a random mul term.
+    let add_term = AddTerm { coefficient, sum };
+
+    println!("| RUST |");
+    println!("{:?}", add_term.coefficient.0 .0);
+    println!("{:?}", add_term.sum.0);
+
+    // Serialize the mul term.
+    let serialized_add_term = serde_json::to_string(&add_term).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_add_term).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let pong: *const ffi::c_char = unsafe { TestAddTermSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that add_term and go_add_term are the same (go_add_term is
+    //   the pong's deserialization)
+}
+
+#[test]
+fn test_add_terms_serialization() {
+    // Sample random coefficient.
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    // Sample a random sum.
+    let sum = acvm::Witness::new(rand::random());
+    // Sample a random mul term.
+    let add_terms = vec![AddTerm { coefficient, sum }, AddTerm { coefficient, sum }];
+
+    println!("| RUST |");
+    for add_term in &add_terms {
+        println!("{:?}", add_term.coefficient.0 .0);
+        println!("{:?}", add_term.sum.0);
+        println!()
+    }
+
+    // Serialize the mul term.
+    let serialized_add_terms = serde_json::to_string(&add_terms).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_add_terms).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let pong: *const ffi::c_char = unsafe { TestAddTermsSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that add_terms and go_add_terms are the same (go_add_terms is
+    //   the pong's deserialization)
+}
+
+#[test]
+fn test_raw_gate_serialization() {}
+
+#[test]
+fn test_raw_gates_serialization() {}
+
+#[test]
+fn test_raw_r1cs_serialization() {}
