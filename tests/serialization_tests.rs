@@ -26,13 +26,13 @@ extern "C" {
     fn TestAddTermsSerialization(
         add_terms: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
-    fn _TestRawGateSerialization(
+    fn TestRawGateSerialization(
         raw_gate: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
-    fn _TestRawGatesSerialization(
+    fn TestRawGatesSerialization(
         raw_gates: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
-    fn _TestRawR1CSSerialization(
+    fn TestRawR1CSSerialization(
         raw_r1cs: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
 }
@@ -294,10 +294,137 @@ fn test_add_terms_serialization() {
 }
 
 #[test]
-fn test_raw_gate_serialization() {}
+fn test_raw_gate_serialization() {
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    let multiplicand = acvm::Witness::new(rand::random());
+    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
+    let sum = acvm::Witness::new(rand::random());
+    let add_term = AddTerm { coefficient, sum };
+    let add_terms = vec![add_term, add_term];
+    let mul_term = MulTerm {
+        coefficient,
+        multiplicand,
+        multiplier,
+    };
+    let mul_terms = vec![mul_term, mul_term];
+    let constant_term: gnark_backend_wrapper::groth16::Fr = rand::random();
+    let raw_gate = RawGate {
+        mul_terms,
+        add_terms,
+        constant_term,
+    };
+
+    println!("| RUST |");
+    println!("{raw_gate:?}");
+
+    // Serialize the raw gate.
+    let serialized_raw_gate = serde_json::to_string(&raw_gate).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_raw_gate).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let _pong: *const ffi::c_char = unsafe { TestRawGateSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that add_terms and go_add_terms are the same (go_add_terms is
+    //   the pong's deserialization)
+}
 
 #[test]
-fn test_raw_gates_serialization() {}
+fn test_raw_gates_serialization() {
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    let multiplicand = acvm::Witness::new(rand::random());
+    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
+    let sum = acvm::Witness::new(rand::random());
+    let add_term = AddTerm { coefficient, sum };
+    let add_terms = vec![add_term, add_term];
+    let mul_term = MulTerm {
+        coefficient,
+        multiplicand,
+        multiplier,
+    };
+    let mul_terms = vec![mul_term, mul_term];
+    let constant_term: gnark_backend_wrapper::groth16::Fr = rand::random();
+    let raw_gate = RawGate {
+        mul_terms,
+        add_terms,
+        constant_term,
+    };
+    let raw_gates = vec![raw_gate.clone(), raw_gate];
+
+    println!("| RUST |");
+    println!("{raw_gates:?}");
+
+    // Serialize the raw gate.
+    let serialized_raw_gates = serde_json::to_string(&raw_gates).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_raw_gates).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let _pong: *const ffi::c_char = unsafe { TestRawGatesSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that add_terms and go_add_terms are the same (go_add_terms is
+    //   the pong's deserialization)
+}
 
 #[test]
-fn test_raw_r1cs_serialization() {}
+fn test_raw_r1cs_serialization() {
+    let coefficient: gnark_backend_wrapper::groth16::Fr = rand::random();
+    let multiplicand = acvm::Witness::new(rand::random());
+    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
+    let sum = acvm::Witness::new(rand::random());
+    let add_term = AddTerm { coefficient, sum };
+    let add_terms = vec![add_term, add_term];
+    let mul_term = MulTerm {
+        coefficient,
+        multiplicand,
+        multiplier,
+    };
+    let mul_terms = vec![mul_term, mul_term];
+    let constant_term: gnark_backend_wrapper::groth16::Fr = rand::random();
+    let raw_gate = RawGate {
+        mul_terms,
+        add_terms,
+        constant_term,
+    };
+    let raw_gates = vec![raw_gate.clone(), raw_gate];
+    let public_inputs = vec![
+        acvm::Witness::new(rand::random()),
+        acvm::Witness::new(rand::random()),
+    ];
+    let values: [gnark_backend_wrapper::groth16::Fr; 2] = rand::random();
+    let num_constraints: u64 = rand::random();
+    let num_variables: u64 = rand::random();
+    let raw_r1cs = RawR1CS {
+        gates: raw_gates,
+        public_inputs,
+        values: values.to_vec(),
+        num_variables,
+        num_constraints,
+    };
+
+    println!("| RUST |");
+    println!("{raw_r1cs:?}");
+
+    // Serialize the raw gate.
+    let serialized_raw_gates = serde_json::to_string(&raw_r1cs).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_raw_gates).unwrap();
+    let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let _pong: *const ffi::c_char = unsafe { TestRawR1CSSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that add_terms and go_add_terms are the same (go_add_terms is
+    //   the pong's deserialization)
+}

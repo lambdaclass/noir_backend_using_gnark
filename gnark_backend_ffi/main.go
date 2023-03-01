@@ -413,18 +413,73 @@ func TestAddTermsSerialization(addTermsJSON string) *C.char {
 }
 
 //export TestRawGateSerialization
-func TestRawGateSerialization(encodedRawGate string) *C.char {
-	return C.CString("unimplemented")
+func TestRawGateSerialization(rawGateJSON string) *C.char {
+	var deserializedRawGate structs.RawGate
+	err := json.Unmarshal([]byte(rawGateJSON), &deserializedRawGate)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	fmt.Println("", deserializedRawGate.MulTerms)
+	fmt.Println("", deserializedRawGate.AddTerms)
+	fmt.Println("", deserializedRawGate.ConstantTerm)
+	fmt.Println()
+
+	serializedRawGate, err := json.Marshal(deserializedRawGate)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedRawGate))
 }
 
 //export TestRawGatesSerialization
-func TestRawGatesSerialization(encodedRawGates string) *C.char {
-	return C.CString("unimplemented")
+func TestRawGatesSerialization(rawGatesJSON string) *C.char {
+	var deserializedRawGates []structs.RawGate
+	err := json.Unmarshal([]byte(rawGatesJSON), &deserializedRawGates)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	for _, deserializedRawGate := range deserializedRawGates {
+		fmt.Println("", deserializedRawGate.MulTerms)
+		fmt.Println("", deserializedRawGate.AddTerms)
+		fmt.Println("", deserializedRawGate.ConstantTerm)
+		fmt.Println()
+	}
+
+	serializedRawGate, err := json.Marshal(deserializedRawGates)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedRawGate))
 }
 
 //export TestRawR1CSSerialization
-func TestRawR1CSSerialization(encodedR1CS string) *C.char {
-	return C.CString("unimplemented")
+func TestRawR1CSSerialization(rawR1CSJSON string) *C.char {
+	var deserializedRawR1CS structs.RawR1CS
+	err := json.Unmarshal([]byte(rawR1CSJSON), &deserializedRawR1CS)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	fmt.Println("Gates: ", deserializedRawR1CS.Gates)
+	fmt.Println("Public inputs: ", deserializedRawR1CS.PublicInputs)
+	fmt.Println("Values: ", deserializedRawR1CS.Values)
+	fmt.Println("Number of variables: ", deserializedRawR1CS.NumVariables)
+	fmt.Println("Number of constraints: ", deserializedRawR1CS.NumConstraints)
+	fmt.Println()
+
+	serializedRawR1CS, err := json.Marshal(deserializedRawR1CS)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedRawR1CS))
 }
 
 func main() {}
