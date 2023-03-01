@@ -2,6 +2,7 @@ use super::{from_felt, Fr};
 use crate::acvm;
 use crate::gnark_backend_wrapper::groth16::serialize::{serialize_felt, serialize_felts};
 use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
+use std::fmt::Debug;
 use std::num::TryFromIntError;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
@@ -119,5 +120,59 @@ impl RawGate {
             add_terms: converted_linear_combinations,
             constant_term: from_felt(arithmetic_gate.q_c),
         }
+    }
+}
+
+impl Copy for MulTerm {}
+impl Copy for AddTerm {}
+
+impl std::fmt::Display for MulTerm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Coefficient: {:?}", self.coefficient.0 .0)?;
+        write!(f, "Multiplicand: {:?}", self.multiplicand.0)?;
+        write!(f, "Multiplier: {:?}", self.multiplier.0)?;
+        write!(f, "")
+    }
+}
+
+impl std::fmt::Display for AddTerm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Coefficient: {:?}", self.coefficient.0 .0)?;
+        write!(f, "Sum: {:?}", self.sum.0)?;
+        write!(f, "")
+    }
+}
+
+impl std::fmt::Display for RawGate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.mul_terms.fmt(f)?;
+        self.add_terms.fmt(f)?;
+        write!(f, "Constant term: {:?}", self.constant_term.0 .0)?;
+        write!(f, "")
+    }
+}
+
+impl std::fmt::Display for RawR1CS {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.gates.fmt(f)?;
+        write!(
+            f,
+            "Public Inputs: {:?}",
+            self.public_inputs
+                .iter()
+                .map(|public_input| public_input.0)
+                .collect::<Vec<_>>()
+        )?;
+        write!(
+            f,
+            "Values: {:?}",
+            self.values
+                .iter()
+                .map(|value| value.0 .0)
+                .collect::<Vec<_>>()
+        )?;
+        write!(f, "Number of variables: {}", self.num_variables)?;
+        write!(f, "Number of constraints: {}", self.num_constraints)?;
+        write!(f, "")
     }
 }
