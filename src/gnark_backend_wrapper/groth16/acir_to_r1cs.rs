@@ -2,7 +2,6 @@ use super::{from_felt, Fr};
 use crate::acvm;
 use crate::gnark_backend_wrapper::groth16::serialize::{serialize_felt, serialize_felts};
 use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
-use std::fmt::Debug;
 use std::num::TryFromIntError;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
@@ -12,7 +11,7 @@ use std::num::TryFromIntError;
 // - These structures only support arithmetic gates, while the compiler has other
 // gate types. These can be added later once the backend knows how to deal with things like XOR
 // or once ACIR is taught how to do convert these black box functions to Arithmetic gates.
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, serde::Serialize)]
 pub struct RawR1CS {
     pub gates: Vec<RawGate>,
     pub public_inputs: Vec<acvm::Witness>,
@@ -22,7 +21,7 @@ pub struct RawR1CS {
     pub num_constraints: u64,
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, serde::Serialize)]
 pub struct RawGate {
     pub mul_terms: Vec<MulTerm>,
     pub add_terms: Vec<AddTerm>,
@@ -30,14 +29,14 @@ pub struct RawGate {
     pub constant_term: Fr,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct MulTerm {
     pub coefficient: Fr,
     pub multiplicand: acvm::Witness,
     pub multiplier: acvm::Witness,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AddTerm {
     pub coefficient: Fr,
     pub sum: acvm::Witness,
@@ -126,36 +125,36 @@ impl RawGate {
 impl Copy for MulTerm {}
 impl Copy for AddTerm {}
 
-impl std::fmt::Display for MulTerm {
+impl std::fmt::Debug for MulTerm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Coefficient: {:?}", self.coefficient.0 .0)?;
-        write!(f, "Multiplicand: {:?}", self.multiplicand.0)?;
-        write!(f, "Multiplier: {:?}", self.multiplier.0)?;
-        write!(f, "")
+        writeln!(f, "Coefficient: {:?}", self.coefficient.0 .0)?;
+        writeln!(f, "Multiplicand: {:?}", self.multiplicand.0)?;
+        writeln!(f, "Multiplier: {:?}", self.multiplier.0)?;
+        writeln!(f)
     }
 }
 
-impl std::fmt::Display for AddTerm {
+impl std::fmt::Debug for AddTerm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Coefficient: {:?}", self.coefficient.0 .0)?;
-        write!(f, "Sum: {:?}", self.sum.0)?;
-        write!(f, "")
+        writeln!(f, "Coefficient: {:?}", self.coefficient.0 .0)?;
+        writeln!(f, "Sum: {:?}", self.sum.0)?;
+        writeln!(f)
     }
 }
 
-impl std::fmt::Display for RawGate {
+impl std::fmt::Debug for RawGate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.mul_terms.fmt(f)?;
         self.add_terms.fmt(f)?;
-        write!(f, "Constant term: {:?}", self.constant_term.0 .0)?;
-        write!(f, "")
+        writeln!(f, "Constant term: {:?}", self.constant_term.0 .0)?;
+        writeln!(f)
     }
 }
 
-impl std::fmt::Display for RawR1CS {
+impl std::fmt::Debug for RawR1CS {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.gates.fmt(f)?;
-        write!(
+        writeln!(
             f,
             "Public Inputs: {:?}",
             self.public_inputs
@@ -163,7 +162,7 @@ impl std::fmt::Display for RawR1CS {
                 .map(|public_input| public_input.0)
                 .collect::<Vec<_>>()
         )?;
-        write!(
+        writeln!(
             f,
             "Values: {:?}",
             self.values
@@ -171,8 +170,8 @@ impl std::fmt::Display for RawR1CS {
                 .map(|value| value.0 .0)
                 .collect::<Vec<_>>()
         )?;
-        write!(f, "Number of variables: {}", self.num_variables)?;
-        write!(f, "Number of constraints: {}", self.num_constraints)?;
-        write!(f, "")
+        writeln!(f, "Number of variables: {}", self.num_variables)?;
+        writeln!(f, "Number of constraints: {}", self.num_constraints)?;
+        writeln!(f)
     }
 }
