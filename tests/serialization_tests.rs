@@ -125,7 +125,7 @@ fn test_felts_serialization() {
 
 #[test]
 fn test_u64_serialization() {
-    // Sample a random felt.
+    // Sample a random number.
     let number: u64 = rand::random();
 
     println!("| RUST |\n{:?}", number);
