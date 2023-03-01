@@ -30,14 +30,16 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 	var privateVariables fr_bn254.Vector
 	for i, value := range r.Values {
 		variableName := strconv.Itoa(i)
-		if r.PublicInputs.Has(make([]byte, i)) {
-			allVariableIndices = append(allVariableIndices, r1cs.AddPublicVariable(variableName))
-			publicVariables = append(publicVariables, value)
-			nPublicVariables++
-		} else {
-			allVariableIndices = append(allVariableIndices, r1cs.AddSecretVariable(variableName))
-			privateVariables = append(privateVariables, value)
-			nPrivateVariables++
+		for _, publicInput := range r.PublicInputs {
+			if uint32(i) == publicInput {
+				allVariableIndices = append(allVariableIndices, r1cs.AddPublicVariable(variableName))
+				publicVariables = append(publicVariables, value)
+				nPublicVariables++
+			} else {
+				allVariableIndices = append(allVariableIndices, r1cs.AddSecretVariable(variableName))
+				privateVariables = append(privateVariables, value)
+				nPrivateVariables++
+			}
 		}
 	}
 
