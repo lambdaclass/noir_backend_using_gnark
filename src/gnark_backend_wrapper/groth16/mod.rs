@@ -20,7 +20,6 @@ cfg_if::cfg_if! {
 
         // Converts a FieldElement to a Fr
         // noir_field uses arkworks for bn254
-        #[allow(dead_code)]
         pub fn from_felt(felt: acvm::FieldElement) -> Fr {
             felt.into_repr()
         }

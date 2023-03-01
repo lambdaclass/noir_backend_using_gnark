@@ -27,7 +27,6 @@ pub struct RawGate {
 }
 
 impl RawR1CS {
-    #[allow(dead_code)]
     pub fn new(
         acir: acvm::Circuit,
         values: Vec<acvm::FieldElement>,
@@ -39,7 +38,10 @@ impl RawR1CS {
             .opcodes
             .into_iter()
             .filter(acvm::Opcode::is_arithmetic)
-            .map(|opcode| RawGate::new(opcode.arithmetic().unwrap()))
+            .map(|opcode| match opcode.arithmetic() {
+                Some(expression) => RawGate::new(expression),
+                None => RawGate::new(acvm::Expression::default()),
+            })
             .collect();
 
         let values: Vec<Fr> = values.into_iter().map(from_felt).collect();
@@ -76,7 +78,6 @@ impl RawR1CS {
 }
 
 impl RawGate {
-    #[allow(dead_code)]
     pub fn new(arithmetic_gate: acvm::Expression) -> Self {
         let converted_mul_terms: Vec<_> = arithmetic_gate
             .mul_terms
