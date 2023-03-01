@@ -46,8 +46,42 @@ fn deserialize_felt(felt_bytes: &[u8]) -> gnark_backend_wrapper::groth16::Fr {
     gnark_backend_wrapper::groth16::Fr::deserialize_uncompressed(decoded.as_slice()).unwrap()
 }
 
+// This serialization mimics gnark's serialization of a field elements vector.
+// The length of the vector is encoded as a u32 on the first 4 bytes.
 fn serialize_felts(felts: &[gnark_backend_wrapper::groth16::Fr]) -> Vec<u8> {
-    felts.iter().flat_map(serialize_felt).collect()
+    let mut buff: Vec<u8> = Vec::new();
+    let n_felts: u32 = felts.len().try_into().unwrap();
+    buff.extend_from_slice(&n_felts.to_be_bytes());
+    buff.extend_from_slice(&felts.iter().flat_map(serialize_felt).collect::<Vec<u8>>());
+    buff
+}
+
+fn serialize_mul_term(mul_term: &(gnark_backend_wrapper::groth16::Fr, acvm::Witness, acvm::Witness)) -> String {
+    let serialized_coefficient = serialize_felt(&mul_term.0);
+    let encoded_coefficient = hex::encode(serialized_coefficient);
+
+    let serialized_multiplicand = serde_json::to_string(&mul_term.1).unwrap();
+    let serialized_multiplier = serde_json::to_string(&mul_term.2).unwrap();
+
+    serde_json::to_string(&json!({
+        "coefficient": encoded_coefficient,
+        "multiplicand": serialized_multiplicand,
+        "multiplier": serialized_multiplier
+    }))
+    .unwrap()
+}
+
+fn serialize_add_term(mul_term: &(gnark_backend_wrapper::groth16::Fr, acvm::Witness)) -> Vec<u8> {
+    let serialized_coefficient = serialize_felt(&mul_term.0);
+    let encoded_coefficient = hex::encode(serialized_coefficient);
+
+    let serialized_sum = serde_json::to_string(&mul_term.1).unwrap();
+
+    serde_json::to_vec(&json!({
+        "coefficient": encoded_coefficient,
+        "sum": serialized_sum,
+    }))
+    .unwrap()
 }
 
 #[test]
@@ -108,7 +142,7 @@ fn test_felts_serialization() {
 
     // Decode and deserialize the unpacked felts.
     let go_felts: Vec<gnark_backend_wrapper::groth16::Fr> = hex::decode(go_serialized_felt)
-        .unwrap()
+        .unwrap()[4..] // Skip the vector length corresponding to the first four bytes.
         .chunks_mut(32)
         .map(|go_decoded_felt| {
             // Turn big-endian to little-endian.

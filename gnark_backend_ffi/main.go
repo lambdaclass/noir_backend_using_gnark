@@ -345,20 +345,12 @@ func TestFeltsSerialization(encodedFelts string) *C.char {
 
 	// Unpack and deserialize the decoded felts.
 	var deserializedFelts fr_bn254.Vector
-	// Felts are 32 bytes long.
-	feltsToDeserialize := len(decodedFelts) / 32
-	for i := 0; i < feltsToDeserialize; i++ {
-		var deserializedFelt fr_bn254.Element
-		deserializedFelt.SetBytes(decodedFelts[i*32 : (i+1)*32])
-		fmt.Printf("| GO |\n%v\n", deserializedFelt)
-		deserializedFelts = append(deserializedFelts, deserializedFelt)
-	}
+	deserializedFelts.UnmarshalBinary(decodedFelts)
 
 	// Serialize the felt.
-	var serializedFelts []byte
-	for _, felt := range deserializedFelts {
-		serializedFelt := felt.Bytes()
-		serializedFelts = append(serializedFelts, serializedFelt[:]...)
+	serializedFelts, err := deserializedFelts.MarshalBinary()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Encode the serialized felt.
