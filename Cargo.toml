@@ -31,6 +31,7 @@ debug = true
 debug-assertions = true
 
 [features]
-default = ["bn254"]
+default = ["bn254", "groth16"]
+groth16 = []
 bn254 = ["acvm/bn254"]
 bls12_381 = ["acvm/bls12_381"]

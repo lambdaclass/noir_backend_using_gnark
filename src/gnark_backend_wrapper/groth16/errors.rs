@@ -17,7 +17,7 @@ pub enum GnarkBackendError {
     #[error("an error occurred while deserializing a key: {0}")]
     DeserializeKeyError(String),
 
-    #[error("currently we do not support non-arithmetic opcodes {0}")]
+    #[error("currently we do not support this opcode: {0}")]
     UnsupportedOpcodeError(String),
 
     #[error("Verify did not return a valid bool")]
