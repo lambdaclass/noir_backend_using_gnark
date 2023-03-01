@@ -6,7 +6,6 @@ use noir_backend_using_gnark::{
         groth16::{AddTerm, MulTerm},
     },
 };
-use serde_json::json;
 use std::ffi;
 
 extern "C" {
@@ -27,13 +26,13 @@ extern "C" {
     fn TestAddTermsSerialization(
         add_terms: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
-    fn TestRawGateSerialization(
+    fn _TestRawGateSerialization(
         raw_gate: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
-    fn TestRawGatesSerialization(
+    fn _TestRawGatesSerialization(
         raw_gates: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
-    fn TestRawR1CSSerialization(
+    fn _TestRawR1CSSerialization(
         raw_r1cs: gnark_backend_wrapper::groth16::GoString,
     ) -> *const ffi::c_char;
 }
@@ -179,7 +178,7 @@ fn test_mul_term_serialization() {
     let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { TestMulTermSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { TestMulTermSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -211,7 +210,7 @@ fn test_mul_terms_serialization() {
 
     println!("| RUST |");
     for mul_term in &mul_terms {
-        println!("{:?}", mul_term.coefficient.0.0);
+        println!("{:?}", mul_term.coefficient.0 .0);
         println!("{:?}", mul_term.multiplicand.0);
         println!("{:?}", mul_term.multiplier.0);
         println!()
@@ -225,7 +224,7 @@ fn test_mul_terms_serialization() {
     let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { TestMulTermsSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { TestMulTermsSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -243,7 +242,7 @@ fn test_add_term_serialization() {
     let add_term = AddTerm { coefficient, sum };
 
     println!("| RUST |");
-    println!("{:?}", add_term.coefficient.0.0);
+    println!("{:?}", add_term.coefficient.0 .0);
     println!("{:?}", add_term.sum.0);
 
     // Serialize the mul term.
@@ -254,7 +253,7 @@ fn test_add_term_serialization() {
     let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { TestAddTermSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { TestAddTermSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
@@ -286,7 +285,7 @@ fn test_add_terms_serialization() {
     let ping = gnark_backend_wrapper::groth16::GoString::try_from(&pre_ping).unwrap();
 
     // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { TestAddTermsSerialization(ping) };
+    let _pong: *const ffi::c_char = unsafe { TestAddTermsSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.

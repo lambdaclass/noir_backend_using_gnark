@@ -46,6 +46,7 @@ impl Serialize for AddTerm {
 
 pub fn serialize_felt_unchecked(felt: &gnark_backend::groth16::Fr) -> Vec<u8> {
     let mut serialized_felt = Vec::new();
+    #[allow(clippy::unwrap_used)]
     felt.serialize_uncompressed(&mut serialized_felt).unwrap();
     // Turn little-endian to big-endian.
     serialized_felt.reverse();
