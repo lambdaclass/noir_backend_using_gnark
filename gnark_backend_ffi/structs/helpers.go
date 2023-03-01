@@ -37,3 +37,26 @@ func DeserializeFelts(encodedFelts string) fr_bn254.Vector {
 
 	return deserializedFelts
 }
+
+// Samples a felt and returns the encoded felt and the non-encoded felt.
+func SampleEncodedFelt() (string, fr_bn254.Element) {
+	var felt fr_bn254.Element
+	felt.SetRandom()
+
+	return hex.EncodeToString(felt.Marshal()), felt
+}
+
+// Samples a felts vector and returns the encoded felts and the non-encoded felts vector.
+func SampleEncodedFelts() (string, fr_bn254.Vector) {
+	var felt1 fr_bn254.Element
+	felt1.SetRandom()
+
+	var felt2 fr_bn254.Element
+	felt2.SetRandom()
+
+	felts := fr_bn254.Vector{felt1, felt2}
+
+	binaryFelts, _ := felts.MarshalBinary()
+
+	return hex.EncodeToString(binaryFelts), felts
+}
