@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
@@ -17,7 +19,6 @@ cfg_if::cfg_if! {
 
         // Converts a FieldElement to a Fr
         // noir_field uses arkworks for bn254
-        #[allow(dead_code)]
         pub fn from_felt(felt: acvm::FieldElement) -> Fr {
             felt.into_repr()
         }

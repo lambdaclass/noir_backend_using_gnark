@@ -97,11 +97,9 @@ impl PartialWitnessGenerator for Gnark {
     }
 }
 
-#[allow(dead_code)]
 pub struct GadgetCaller;
 
 impl GadgetCaller {
-    #[allow(dead_code)]
     pub fn solve_blackbox_func_call(
         _initial_witness: &mut BTreeMap<Witness, FieldElement>,
         _gadget_call: &BlackBoxFuncCall,
