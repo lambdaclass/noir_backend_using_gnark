@@ -3,7 +3,7 @@ use noir_backend_using_gnark::{
     acvm,
     gnark_backend_wrapper::{
         self,
-        groth16::{AddTerm, MulTerm},
+        groth16::{AddTerm, MulTerm, RawGate, RawR1CS},
     },
 };
 use std::ffi;
@@ -166,9 +166,7 @@ fn test_mul_term_serialization() {
     };
 
     println!("| RUST |");
-    println!("{:?}", mul_term.coefficient.0 .0);
-    println!("{:?}", mul_term.multiplicand.0);
-    println!("{:?}", mul_term.multiplier.0);
+    println!("{mul_term:?}");
 
     // Serialize the mul term.
     let serialized_mul_term = serde_json::to_string(&mul_term).unwrap();
@@ -209,12 +207,7 @@ fn test_mul_terms_serialization() {
     ];
 
     println!("| RUST |");
-    for mul_term in &mul_terms {
-        println!("{:?}", mul_term.coefficient.0 .0);
-        println!("{:?}", mul_term.multiplicand.0);
-        println!("{:?}", mul_term.multiplier.0);
-        println!()
-    }
+    println!("{mul_terms:?}");
 
     // Serialize the mul term.
     let serialized_mul_terms = serde_json::to_string(&mul_terms).unwrap();
@@ -242,8 +235,7 @@ fn test_add_term_serialization() {
     let add_term = AddTerm { coefficient, sum };
 
     println!("| RUST |");
-    println!("{:?}", add_term.coefficient.0 .0);
-    println!("{:?}", add_term.sum.0);
+    println!("{add_term:?}");
 
     // Serialize the mul term.
     let serialized_add_term = serde_json::to_string(&add_term).unwrap();
@@ -271,11 +263,7 @@ fn test_add_terms_serialization() {
     let add_terms = vec![AddTerm { coefficient, sum }, AddTerm { coefficient, sum }];
 
     println!("| RUST |");
-    for add_term in &add_terms {
-        println!("{:?}", add_term.coefficient.0 .0);
-        println!("{:?}", add_term.sum.0);
-        println!()
-    }
+    println!("{add_terms:?}");
 
     // Serialize the mul term.
     let serialized_add_terms = serde_json::to_string(&add_terms).unwrap();
