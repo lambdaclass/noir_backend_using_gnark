@@ -1,5 +1,11 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use noir_backend_using_gnark::{acvm, gnark_backend_wrapper};
+use noir_backend_using_gnark::{
+    acvm,
+    gnark_backend_wrapper::{
+        self,
+        groth16::{AddTerm, MulTerm},
+    },
+};
 use serde_json::json;
 use std::ffi;
 
