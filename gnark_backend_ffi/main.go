@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -235,10 +236,91 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(pk_string), C.CString(vk_string)
 }
 
-func main() {
-	rawR1CS := `{"gates":[],"public_inputs":[],"values":[],"num_variables":1}`
+//export TestFeltSerialization
+func TestFeltSerialization(encodedFelt string) *C.char {
+	// Decode the received felt.
+	decodedFelt, err := hex.DecodeString(encodedFelt)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	proof := ProveWithMeta(rawR1CS)
+	// Deserialize the decoded felt.
+	var deserializedFelt fr_bn254.Element
+	deserializedFelt.SetBytes(decodedFelt)
+	fmt.Printf("| GO |\n%v\n", deserializedFelt)
 
-	fmt.Println("Proof: ", proof)
+	// Serialize the felt.
+	serializedFelt := deserializedFelt.Bytes()
+
+	// Encode the serialized felt.
+	serializedFeltString := hex.EncodeToString(serializedFelt[:])
+
+	return C.CString(serializedFeltString)
 }
+
+//export TestFeltsSerialization
+func TestFeltsSerialization(encodedFelts string) *C.char {
+	// Decode the received felts.
+	decodedFelts, err := hex.DecodeString(encodedFelts)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Unpack and deserialize the decoded felts.
+	var deserializedFelts fr_bn254.Vector
+	deserializedFelts.UnmarshalBinary(decodedFelts)
+
+	// Serialize the felt.
+	serializedFelts, err := deserializedFelts.MarshalBinary()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Encode the serialized felt.
+	serializedFeltsString := hex.EncodeToString(serializedFelts[:])
+
+	return C.CString(serializedFeltsString)
+}
+
+//export TestU64Serialization
+func TestU64Serialization(number uint64) uint64 {
+	fmt.Println(number)
+	return number
+}
+
+//export TestMulTermSerialization
+func TestMulTermSerialization(encodedMulTerm string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestMulTermsSerialization
+func TestMulTermsSerialization(encodedMulTerms string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestAddTermSerialization
+func TestAddTermSerialization(encodedAddTerm string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestAddTermsSerialization
+func TestAddTermsSerialization(encodedAddTerms string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestRawGateSerialization
+func TestRawGateSerialization(encodedRawGate string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestRawGatesSerialization
+func TestRawGatesSerialization(encodedRawGates string) *C.char {
+	return C.CString("unimplemented")
+}
+
+//export TestRawR1CSSerialization
+func TestRawR1CSSerialization(encodedR1CS string) *C.char {
+	return C.CString("unimplemented")
+}
+
+func main() {}
