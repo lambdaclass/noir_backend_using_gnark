@@ -26,6 +26,19 @@ pub struct RawGate {
     pub constant_term: Fr,
 }
 
+#[derive(Clone, Debug)]
+pub struct MulTerm {
+    pub coefficient: Fr,
+    pub multiplicand: acvm::Witness,
+    pub multiplier: acvm::Witness,
+}
+
+#[derive(Clone, Debug)]
+pub struct AddTerm {
+    pub coefficient: Fr,
+    pub sum: acvm::Witness,
+}
+
 impl RawR1CS {
     pub fn new(
         acir: acvm::Circuit,
@@ -79,18 +92,23 @@ impl RawR1CS {
 
 impl RawGate {
     pub fn new(arithmetic_gate: acvm::Expression) -> Self {
-        let converted_mul_terms: Vec<_> = arithmetic_gate
+        let converted_mul_terms: Vec<MulTerm> = arithmetic_gate
             .mul_terms
             .into_iter()
-            .map(|(coefficient, multiplicand, multiplier)| {
-                (from_felt(coefficient), multiplicand, multiplier)
+            .map(|(coefficient, multiplicand, multiplier)| MulTerm {
+                coefficient: from_felt(coefficient),
+                multiplicand,
+                multiplier,
             })
             .collect();
 
         let converted_linear_combinations: Vec<_> = arithmetic_gate
             .linear_combinations
             .into_iter()
-            .map(|(coefficient, sum)| (from_felt(coefficient), sum))
+            .map(|(coefficient, sum)| AddTerm {
+                coefficient: from_felt(coefficient),
+                sum,
+            })
             .collect();
 
         Self {
