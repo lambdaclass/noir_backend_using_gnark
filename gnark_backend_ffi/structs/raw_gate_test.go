@@ -12,12 +12,8 @@ import (
 // TODO: Test error cases.
 
 func TestRawGateTermUnmarshalJSON(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
-	multiplicand := rand.Uint32()
-	multiplier := rand.Uint32()
-	sum := rand.Uint32()
-	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
-	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
+	mulTerms := randomMulTerms()
+	addTerms := randomAddTerms()
 	encodedConstantTerm, nonEncodedConstantTerm := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
@@ -31,12 +27,8 @@ func TestRawGateTermUnmarshalJSON(t *testing.T) {
 }
 
 func TestRawGateTermsUnmarshalJSON(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
-	multiplicand := rand.Uint32()
-	multiplier := rand.Uint32()
-	sum := rand.Uint32()
-	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
-	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
+	mulTerms := randomMulTerms()
+	addTerms := randomAddTerms()
 	encodedConstantTerm, nonEncodedConstantTerm := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 	rawGates := fmt.Sprintf(`[%s,%s]`, rawGate, rawGate)
@@ -128,12 +120,8 @@ func TestRawGateTermUnmarshalJSONThrowsErrorWrongJSONFormatAddSum(t *testing.T) 
 }
 
 func TestRawGateTermUnmarshalJSONThrowsErrorWrongJSONFormatMulTerms(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
-	multiplicand := rand.Uint32()
-	multiplier := rand.Uint32()
-	sum := rand.Uint32()
-	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
-	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
+	mulTerms := randomMulTerms()
+	addTerms := randomAddTerms()
 	encodedConstantTerm, _ := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_term":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
@@ -143,12 +131,8 @@ func TestRawGateTermUnmarshalJSONThrowsErrorWrongJSONFormatMulTerms(t *testing.T
 }
 
 func TestRawGateTermUnmarshalJSONThrowsErrorWrongJSONFormatAddTerms(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
-	multiplicand := rand.Uint32()
-	multiplier := rand.Uint32()
-	sum := rand.Uint32()
-	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
-	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
+	mulTerms := randomMulTerms()
+	addTerms := randomAddTerms()
 	encodedConstantTerm, _ := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_term":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
@@ -158,12 +142,8 @@ func TestRawGateTermUnmarshalJSONThrowsErrorWrongJSONFormatAddTerms(t *testing.T
 }
 
 func TestRawGateTermUnmarshalJSONThrowsErrorWrongJSONFormatConstantTerm(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
-	multiplicand := rand.Uint32()
-	multiplier := rand.Uint32()
-	sum := rand.Uint32()
-	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
-	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
+	mulTerms := randomMulTerms()
+	addTerms := randomAddTerms()
 	encodedConstantTerm, _ := SampleEncodedFelt()
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_ter":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
@@ -190,12 +170,8 @@ func TestRawGateTermUnmarshalJSONThrowsErrorOddCoefficientLength(t *testing.T) {
 
 func TestRawGateTermUnmarshalJSONThrowsErrorOddConstantTerm(t *testing.T) {
 	t.Skip("DeserializeFelt exits when error")
-	encodedCoefficient, _ := SampleEncodedFelt()
-	multiplicand := rand.Uint32()
-	multiplier := rand.Uint32()
-	sum := rand.Uint32()
-	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
-	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
+	mulTerms := randomMulTerms()
+	addTerms := randomAddTerms()
 	encodedConstantTerm := "123"
 	rawGate := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
