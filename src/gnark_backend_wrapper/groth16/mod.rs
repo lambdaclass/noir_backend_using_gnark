@@ -1,4 +1,5 @@
 use acvm::acir::native_types::Witness;
+use acvm::PartialWitnessGenerator;
 use acvm::{acir::circuit::Circuit, FieldElement};
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
@@ -14,6 +15,7 @@ pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, 
 pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
 use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
 use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
+use crate::Gnark;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.
@@ -177,6 +179,8 @@ pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendE
     let mut witness_values = BTreeMap::new();
     witness_values.insert(Witness(1), FieldElement::from(10_u128));
     witness_values.insert(Witness(2), FieldElement::from(21_u128));
+    let backend = Gnark;
+    backend.solve(&mut witness_values, circuit.opcodes.clone())?;
     let num_witnesses = circuit.num_vars();
     let values = (1..num_witnesses)
         .map(|wit_index| {

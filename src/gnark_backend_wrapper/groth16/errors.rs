@@ -1,3 +1,4 @@
+use acvm::OpcodeResolutionError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -22,6 +23,9 @@ pub enum GnarkBackendError {
 
     #[error("Verify did not return a valid bool")]
     VerifyInvalidBoolError,
+
+    #[error("Opcode resolution error: {0}")]
+    OpcodeResolutionError(#[from] OpcodeResolutionError),
 
     #[error("an error occurred: {0}")]
     Error(String),
