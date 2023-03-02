@@ -1,4 +1,6 @@
+use acvm::acir::native_types::Witness;
 use acvm::{acir::circuit::Circuit, FieldElement};
+use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
@@ -171,14 +173,30 @@ pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32, GnarkBackendErro
 }
 
 pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
-    // Serialize to json and then convert to GoString
-    let circuit_json = serde_json::to_string(circuit)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let circuit_c_str = CString::new(circuit_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let circuit_go_string = GoString::try_from(&circuit_c_str)?;
+    // TODO: Sample random public_inputs
+    let mut witness_values = BTreeMap::new();
+    witness_values.insert(Witness(1), FieldElement::from(10_u128));
+    witness_values.insert(Witness(2), FieldElement::from(21_u128));
+    let num_witnesses = circuit.num_vars();
+    let values = (1..num_witnesses)
+        .map(|wit_index| {
+            // Get the value if it exists, if not then default to zero value.
+            witness_values
+                .get(&Witness(wit_index))
+                .map_or(FieldElement::zero(), |field| *field)
+        })
+        .collect();
 
-    let key_pair: KeyPair = unsafe { Preprocess(circuit_go_string) };
+    let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
+
+    // Serialize to json and then convert to GoString
+    let rawr1cs_json = serde_json::to_string(&rawr1cs)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let rawr1cs_c_str = CString::new(rawr1cs_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
+
+    let key_pair: KeyPair = unsafe { Preprocess(rawr1cs_go_string) };
 
     let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
     let proving_key_bytes = proving_key_c_str
