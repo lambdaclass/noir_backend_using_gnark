@@ -1,5 +1,3 @@
-use std::num::TryFromIntError;
-
 use super::{
     acir_to_r1cs::{AddTerm, MulTerm},
     errors::GnarkBackendError,
@@ -79,24 +77,19 @@ where
 pub fn serialize_felts<S>(
     felts: &[gnark_backend::groth16::Fr],
     serializer: S,
-) -> Result<S::Ok, GnarkBackendError>
+) -> Result<S::Ok, S::Error>
 where
     S: serde::ser::Serializer,
 {
     let mut buff: Vec<u8> = Vec::new();
-    let n_felts: u32 = felts
-        .len()
-        .try_into()
-        .map_err(|e: TryFromIntError| GnarkBackendError::SerializeFeltError(e.to_string()))?;
+    let n_felts: u32 = felts.len().try_into().map_err(serde::ser::Error::custom)?;
     buff.extend_from_slice(&n_felts.to_be_bytes());
 
     felts.iter().try_for_each(|felt| {
-        let serialized_felt = serialize_felt_unchecked(felt)?;
+        let serialized_felt = serialize_felt_unchecked(felt).map_err(serde::ser::Error::custom)?;
         buff.extend_from_slice(&serialized_felt);
-        Ok::<_, GnarkBackendError>(())
+        Ok::<_, S::Error>(())
     })?;
     let encoded_buff = hex::encode(buff);
-    serializer
-        .serialize_str(&encoded_buff)
-        .map_err(|e: S::Error| GnarkBackendError::SerializeFeltError(e.to_string()))
+    serializer.serialize_str(&encoded_buff)
 }
