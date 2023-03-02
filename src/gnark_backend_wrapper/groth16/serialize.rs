@@ -1,73 +1,90 @@
-use super::acir_to_r1cs::{RawGate, RawR1CS};
-use acvm::acir::native_types::Witness;
+use super::acir_to_r1cs::{AddTerm, MulTerm};
+use crate::gnark_backend_wrapper as gnark_backend;
+use ark_serialize::CanonicalSerialize;
 use serde::{ser::SerializeStruct, Serialize};
 
-impl Serialize for RawR1CS {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+impl Serialize for MulTerm {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let mut s = serializer.serialize_struct("RawR1CS", 4)?;
+        let mut serialized_coefficient = Vec::new();
+        self.coefficient
+            .serialize_uncompressed(&mut serialized_coefficient)
+            .map_err(serde::ser::Error::custom)?;
+        // Turn little-endian to big-endian.
+        serialized_coefficient.reverse();
+        let encoded_coefficient = hex::encode(serialized_coefficient);
 
-        let mut serializable_values: Vec<String> = Vec::new();
-        for value in &self.values {
-            let mut serialized_value = Vec::new();
-            ark_serialize::CanonicalSerialize::serialize_uncompressed(value, &mut serialized_value)
-                .map_err(|e| serde::ser::Error::custom(e.to_string()))?;
-            serializable_values.push(hex::encode(serialized_value));
-        }
-
-        s.serialize_field("gates", &self.gates)?;
-        s.serialize_field("public_inputs", &self.public_inputs)?;
-        s.serialize_field("values", &serializable_values)?;
-        s.serialize_field("num_variables", &self.num_variables)?;
+        let mut s = serializer.serialize_struct("MulTerm", 3)?;
+        s.serialize_field("coefficient", &encoded_coefficient)?;
+        s.serialize_field("multiplicand", &self.multiplicand)?;
+        s.serialize_field("multiplier", &self.multiplier)?;
         s.end()
     }
 }
 
-impl Serialize for RawGate {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+impl Serialize for AddTerm {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let mut s = serializer.serialize_struct("RawGate", 3)?;
+        let mut serialized_coefficient = Vec::new();
+        self.coefficient
+            .serialize_uncompressed(&mut serialized_coefficient)
+            .map_err(serde::ser::Error::custom)?;
+        // Turn little-endian to big-endian.
+        serialized_coefficient.reverse();
+        let encoded_coefficient = hex::encode(serialized_coefficient);
 
-        let mut serializable_mul_terms: Vec<(String, Witness, Witness)> = Vec::new();
-        for (coefficient, multiplier, multiplicand) in &self.mul_terms {
-            let mut serialized_coefficient = Vec::new();
-            ark_serialize::CanonicalSerialize::serialize_uncompressed(
-                coefficient,
-                &mut serialized_coefficient,
-            )
-            .map_err(|e| serde::ser::Error::custom(e.to_string()))?;
-            serializable_mul_terms.push((
-                hex::encode(serialized_coefficient),
-                *multiplicand,
-                *multiplier,
-            ));
-        }
-
-        let mut serializable_add_terms: Vec<(String, Witness)> = Vec::new();
-        for (coefficient, sum) in &self.add_terms {
-            let mut serialized_coefficient = Vec::new();
-            ark_serialize::CanonicalSerialize::serialize_uncompressed(
-                coefficient,
-                &mut serialized_coefficient,
-            )
-            .map_err(|e| serde::ser::Error::custom(e.to_string()))?;
-            serializable_add_terms.push((hex::encode(serialized_coefficient), *sum));
-        }
-
-        let mut serializable_constant_term = Vec::new();
-        ark_serialize::CanonicalSerialize::serialize_uncompressed(
-            &self.constant_term,
-            &mut serializable_constant_term,
-        )
-        .map_err(|e| serde::ser::Error::custom(e.to_string()))?;
-
-        s.serialize_field("mul_terms", &serializable_add_terms)?;
-        s.serialize_field("add_terms", &serializable_add_terms)?;
-        s.serialize_field("constant_term", &hex::encode(serializable_constant_term))?;
+        let mut s = serializer.serialize_struct("AddTerm", 2)?;
+        s.serialize_field("coefficient", &encoded_coefficient)?;
+        s.serialize_field("sum", &self.sum)?;
         s.end()
     }
+}
+
+pub fn serialize_felt_unchecked(felt: &gnark_backend::groth16::Fr) -> Vec<u8> {
+    let mut serialized_felt = Vec::new();
+    #[allow(clippy::unwrap_used)]
+    felt.serialize_uncompressed(&mut serialized_felt).unwrap();
+    // Turn little-endian to big-endian.
+    serialized_felt.reverse();
+    serialized_felt
+}
+
+pub fn serialize_felt<S>(
+    felt: &gnark_backend::groth16::Fr,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::ser::Serializer,
+{
+    let mut serialized_felt = Vec::new();
+    felt.serialize_uncompressed(&mut serialized_felt)
+        .map_err(serde::ser::Error::custom)?;
+    // Turn little-endian to big-endian.
+    serialized_felt.reverse();
+    let encoded_coefficient = hex::encode(serialized_felt);
+    serializer.serialize_str(&encoded_coefficient)
+}
+
+pub fn serialize_felts<S>(
+    felts: &[gnark_backend::groth16::Fr],
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::ser::Serializer,
+{
+    let mut buff: Vec<u8> = Vec::new();
+    let n_felts: u32 = felts.len().try_into().map_err(serde::ser::Error::custom)?;
+    buff.extend_from_slice(&n_felts.to_be_bytes());
+    buff.extend_from_slice(
+        &felts
+            .iter()
+            .flat_map(serialize_felt_unchecked)
+            .collect::<Vec<u8>>(),
+    );
+    let encoded_buff = hex::encode(buff);
+    serializer.serialize_str(&encoded_buff)
 }

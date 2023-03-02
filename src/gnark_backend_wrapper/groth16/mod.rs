@@ -1,14 +1,15 @@
+use acvm::{acir::circuit::Circuit, FieldElement};
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
 
-use acvm::{acir::circuit::Circuit, FieldElement};
 mod acir_to_r1cs;
 mod c_go_structures;
 mod errors;
+
 mod serialize;
-use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::RawR1CS;
-use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
+pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, RawGate, RawR1CS};
+pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
 use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
 use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
 
@@ -200,11 +201,11 @@ mod tests {
 
     #[test]
     fn test_go_string_from_cstring() {
-        let string = "This works".to_string();
+        let string = "This works".to_owned();
         let c_str = CString::new(string.clone()).unwrap();
         let go_string = GoString::try_from(&c_str).unwrap();
         let deserialized_c_str = unsafe { CStr::from_ptr(go_string.ptr) };
-        let deserialized_string = deserialized_c_str.to_str().unwrap().to_string();
+        let deserialized_string = deserialized_c_str.to_str().unwrap().to_owned();
         assert_eq!(string, deserialized_string);
     }
 

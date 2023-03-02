@@ -93,7 +93,7 @@ impl PartialWitnessGenerator for Gnark {
         _initial_witness: &mut BTreeMap<Witness, FieldElement>,
         _func_call: &BlackBoxFuncCall,
     ) -> Result<(), OpcodeResolutionError> {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -104,7 +104,7 @@ impl GadgetCaller {
         _initial_witness: &mut BTreeMap<Witness, FieldElement>,
         _gadget_call: &BlackBoxFuncCall,
     ) -> Result<(), OpcodeResolutionError> {
-        todo!()
+        unimplemented!()
     }
 }
 
