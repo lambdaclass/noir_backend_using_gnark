@@ -44,7 +44,6 @@ jobs:
       - name: Build
         run: make build-go
       - name: Test
-        if: ${{ false }}  # disable for now
         run: make test-go
 
   test:
