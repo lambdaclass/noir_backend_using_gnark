@@ -72,19 +72,35 @@ impl ProofSystemCompiler for Gnark {
         witness_values: std::collections::BTreeMap<Witness, FieldElement>,
         proving_key: &[u8],
     ) -> Vec<u8> {
-        // TODO: modify gnark serializer to accept the BTreeMap
-        let values: Vec<FieldElement> = witness_values.values().copied().collect();
+        let num_witnesses = circuit.num_vars();
+        let values = (1..num_witnesses)
+            .map(|wit_index| {
+                // Get the value if it exists, if not then default to zero value.
+                witness_values
+                    .get(&Witness(wit_index))
+                    .map_or(FieldElement::zero(), |field| *field)
+            })
+            .collect();
         gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
 
     fn verify_with_vk(
         &self,
         proof: &[u8],
-        public_inputs: Vec<FieldElement>,
+        public_inputs: BTreeMap<Witness, FieldElement>,
         circuit: &Circuit,
         verification_key: &[u8],
     ) -> bool {
-        gnark_backend::verify_with_vk(circuit, proof, &public_inputs, verification_key).unwrap()
+        let num_witnesses = circuit.num_vars();
+        let public = (1..num_witnesses)
+            .map(|wit_index| {
+                // Get the value if it exists, if not then default to zero value.
+                public_inputs
+                    .get(&Witness(wit_index))
+                    .map_or(FieldElement::zero(), |field| *field)
+            })
+            .collect::<Vec<FieldElement>>();
+        gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
     }
 }
 
