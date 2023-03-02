@@ -23,6 +23,9 @@ pub enum GnarkBackendError {
     #[error("Verify did not return a valid bool")]
     VerifyInvalidBoolError,
 
+    #[error("an error occurred while serializing felt: {0}")]
+    SerializeFeltError(String),
+
     #[error("an error occurred: {0}")]
     Error(String),
 }
