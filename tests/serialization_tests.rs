@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use noir_backend_using_gnark::{
     acvm,
