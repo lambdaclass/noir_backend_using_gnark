@@ -45,3 +45,14 @@ func TestAddTermsUnmarshalJSON(t *testing.T) {
 		assert.Equal(t, sum, addTerm.Sum)
 	}
 }
+
+func TestAddTermUnmarshalJSONThrowsErrorWrongJSONFormat(t *testing.T) {
+	sum := rand.Uint32()
+	addTerm := fmt.Sprintf(`{"coeff":"%s","sum":%d}`, "1234", sum)
+
+	var a AddTerm
+	err := json.Unmarshal([]byte(addTerm), &a)
+	if err == nil {
+		t.Error("want error for invalid input")
+	}
+}
