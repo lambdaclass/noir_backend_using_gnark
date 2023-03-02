@@ -3,7 +3,6 @@ package structs
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"testing"
 
@@ -19,9 +18,6 @@ func TestAddTermUnmarshalJSON(t *testing.T) {
 
 	var a AddTerm
 	err := json.Unmarshal([]byte(addTerm), &a)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	assert.NoError(t, err)
 	assert.Equal(t, nonEncodedCoefficient, a.Coefficient)
@@ -35,9 +31,6 @@ func TestAddTermsUnmarshalJSON(t *testing.T) {
 
 	var a []AddTerm
 	err := json.Unmarshal([]byte(addTerms), &a)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	assert.NoError(t, err)
 	for _, addTerm := range a {
@@ -52,7 +45,5 @@ func TestAddTermUnmarshalJSONThrowsErrorWrongJSONFormat(t *testing.T) {
 
 	var a AddTerm
 	err := json.Unmarshal([]byte(addTerm), &a)
-	if err == nil {
-		t.Error("want error for invalid input")
-	}
+	assert.Error(t, err)
 }
