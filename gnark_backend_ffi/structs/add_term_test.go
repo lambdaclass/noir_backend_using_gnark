@@ -39,9 +39,18 @@ func TestAddTermsUnmarshalJSON(t *testing.T) {
 	}
 }
 
-func TestAddTermUnmarshalJSONThrowsErrorWrongJSONFormat(t *testing.T) {
+func TestAddTermUnmarshalJSONThrowsErrorWrongJSONFormatCoefficient(t *testing.T) {
 	sum := rand.Uint32()
 	addTerm := fmt.Sprintf(`{"coeff":"%s","sum":%d}`, "1234", sum)
+
+	var a AddTerm
+	err := json.Unmarshal([]byte(addTerm), &a)
+	assert.Error(t, err)
+}
+
+func TestAddTermUnmarshalJSONThrowsErrorWrongJSONFormatSum(t *testing.T) {
+	sum := rand.Uint32()
+	addTerm := fmt.Sprintf(`{"coefficient":"%s","sm":%d}`, "1234", sum)
 
 	var a AddTerm
 	err := json.Unmarshal([]byte(addTerm), &a)
