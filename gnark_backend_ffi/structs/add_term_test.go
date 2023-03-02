@@ -56,3 +56,13 @@ func TestAddTermUnmarshalJSONThrowsErrorWrongJSONFormatSum(t *testing.T) {
 	err := json.Unmarshal([]byte(addTerm), &a)
 	assert.Error(t, err)
 }
+
+func TestAddTermUnmarshalJSONThrowsErrorOddCoefficientLength(t *testing.T) {
+	t.Skip("DeserializeFelt exits when error")
+	sum := rand.Uint32()
+	addTerm := fmt.Sprintf(`{"coefficient":"%s","sum":%d}`, "123", sum)
+
+	var a AddTerm
+	err := json.Unmarshal([]byte(addTerm), &a)
+	assert.Error(t, err)
+}
