@@ -3,7 +3,6 @@ package structs
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"testing"
 
@@ -20,9 +19,6 @@ func TestMulTermUnmarshalJSON(t *testing.T) {
 
 	var m MulTerm
 	err := json.Unmarshal([]byte(mulTerm), &m)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	assert.NoError(t, err)
 	assert.Equal(t, nonEncodedCoefficient, m.Coefficient)
@@ -38,9 +34,6 @@ func TestMulTermsUnmarshalJSON(t *testing.T) {
 
 	var m []MulTerm
 	err := json.Unmarshal([]byte(mulTerms), &m)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	assert.NoError(t, err)
 	for _, mulTerm := range m {
@@ -48,4 +41,49 @@ func TestMulTermsUnmarshalJSON(t *testing.T) {
 		assert.Equal(t, multiplicand, mulTerm.Multiplicand)
 		assert.Equal(t, multiplier, mulTerm.Multiplier)
 	}
+}
+
+func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatCoefficient(t *testing.T) {
+	encodedCoefficient, _ := SampleEncodedFelt()
+	multiplicand := rand.Uint32()
+	multiplier := rand.Uint32()
+	mulTerm := fmt.Sprintf(`{"coefficien":"%s","multiplicand":%d,"multiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
+
+	var m MulTerm
+	err := json.Unmarshal([]byte(mulTerm), &m)
+	assert.Error(t, err)
+}
+
+func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatMultiplicand(t *testing.T) {
+	encodedCoefficient, _ := SampleEncodedFelt()
+	multiplicand := rand.Uint32()
+	multiplier := rand.Uint32()
+	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multipliand":%d,"multiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
+
+	var m MulTerm
+	err := json.Unmarshal([]byte(mulTerm), &m)
+	assert.Error(t, err)
+}
+
+func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatMultiplier(t *testing.T) {
+	encodedCoefficient, _ := SampleEncodedFelt()
+	multiplicand := rand.Uint32()
+	multiplier := rand.Uint32()
+	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multiplicand":%d,"ultiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
+
+	var m MulTerm
+	err := json.Unmarshal([]byte(mulTerm), &m)
+	assert.Error(t, err)
+}
+
+func TestMulTermUnmarshalJSONThrowsErrorOddCoefficientLength(t *testing.T) {
+	t.Skip("DeserializeFelt exits when error")
+	encodedCoefficient := "123"
+	multiplicand := rand.Uint32()
+	multiplier := rand.Uint32()
+	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multiplicand":%d,"ultiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
+
+	var m MulTerm
+	err := json.Unmarshal([]byte(mulTerm), &m)
+	assert.Error(t, err)
 }
