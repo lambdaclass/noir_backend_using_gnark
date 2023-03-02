@@ -19,7 +19,7 @@ func (r *RawR1CS) UnmarshalJSON(data []byte) error {
 	var rawR1CSMap map[string]interface{}
 	err := json.Unmarshal(data, &rawR1CSMap)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 
@@ -33,32 +33,32 @@ func (r *RawR1CS) UnmarshalJSON(data []byte) error {
 	if gatesValue, ok := rawR1CSMap["gates"].([]interface{}); ok {
 		gatesJSON, err := json.Marshal(gatesValue)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(gatesJSON, &gates)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 	} else {
-		log.Fatal("Error: couldn't deserialize raw gates.")
+		log.Print("Error: couldn't deserialize raw gates.")
 		return &json.UnmarshalTypeError{}
 	}
 
 	if publicInputsValue, ok := rawR1CSMap["public_inputs"].([]interface{}); ok {
 		publicInputsJSON, err := json.Marshal(publicInputsValue)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(publicInputsJSON, &publicInputs)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 	} else {
-		log.Fatal("Error: couldn't deserialize public inputs.")
+		log.Print("Error: couldn't deserialize public inputs.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -66,7 +66,7 @@ func (r *RawR1CS) UnmarshalJSON(data []byte) error {
 	if encodedValues, ok := rawR1CSMap["values"].(string); ok {
 		values = DeserializeFelts(encodedValues)
 	} else {
-		log.Fatal("Error: couldn't deserialize values.")
+		log.Print("Error: couldn't deserialize values.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -74,7 +74,7 @@ func (r *RawR1CS) UnmarshalJSON(data []byte) error {
 	if numVariablesValue, ok := rawR1CSMap["num_variables"].(float64); ok {
 		numVariables = uint64(numVariablesValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize num_variables.")
+		log.Print("Error: couldn't deserialize num_variables.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -82,7 +82,7 @@ func (r *RawR1CS) UnmarshalJSON(data []byte) error {
 	if numConstraintsValue, ok := rawR1CSMap["num_constraints"].(float64); ok {
 		numConstraints = uint64(numConstraintsValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize num_constraints.")
+		log.Print("Error: couldn't deserialize num_constraints.")
 		return &json.UnmarshalTypeError{}
 	}
 
