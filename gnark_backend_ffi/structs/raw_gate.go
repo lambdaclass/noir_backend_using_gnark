@@ -17,7 +17,7 @@ func (g *RawGate) UnmarshalJSON(data []byte) error {
 	var rawGateMap map[string]interface{}
 	err := json.Unmarshal(data, &rawGateMap)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 
@@ -29,16 +29,16 @@ func (g *RawGate) UnmarshalJSON(data []byte) error {
 	if mulTermsValue, ok := rawGateMap["mul_terms"].([]interface{}); ok {
 		mulTermsJSON, err := json.Marshal(mulTermsValue)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(mulTermsJSON, &mulTerms)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 	} else {
-		log.Fatal("Error: couldn't deserialize mul terms.")
+		log.Print("Error: couldn't deserialize mul terms.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -46,16 +46,16 @@ func (g *RawGate) UnmarshalJSON(data []byte) error {
 	if addTermsValue, ok := rawGateMap["add_terms"].([]interface{}); ok {
 		addTermsJSON, err := json.Marshal(addTermsValue)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(addTermsJSON, &addTerms)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			return err
 		}
 	} else {
-		log.Fatal("Error: couldn't deserialize add terms.")
+		log.Print("Error: couldn't deserialize add terms.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -63,7 +63,7 @@ func (g *RawGate) UnmarshalJSON(data []byte) error {
 	if encodedConstantTerm, ok := rawGateMap["constant_term"].(string); ok {
 		constantTerm = DeserializeFelt(encodedConstantTerm)
 	} else {
-		log.Fatal("Error: coefficient is not a felt.")
+		log.Print("Error: coefficient is not a felt.")
 		return &json.UnmarshalTypeError{}
 	}
 

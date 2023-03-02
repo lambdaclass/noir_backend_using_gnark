@@ -17,7 +17,7 @@ func (m *MulTerm) UnmarshalJSON(data []byte) error {
 	var mul_term_map map[string]interface{}
 	err := json.Unmarshal(data, &mul_term_map)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 
@@ -29,7 +29,7 @@ func (m *MulTerm) UnmarshalJSON(data []byte) error {
 	if encodedCoefficient, ok := mul_term_map["coefficient"].(string); ok {
 		coefficient = DeserializeFelt(encodedCoefficient)
 	} else {
-		log.Fatal("Error: couldn't deserialize coefficient.")
+		log.Print("Error: couldn't deserialize coefficient.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -37,7 +37,7 @@ func (m *MulTerm) UnmarshalJSON(data []byte) error {
 	if m, ok := mul_term_map["multiplicand"].(float64); ok {
 		multiplicand = Witness(m)
 	} else {
-		log.Fatal("Error: couldn't deserialize multiplicand.")
+		log.Print("Error: couldn't deserialize multiplicand.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -45,7 +45,7 @@ func (m *MulTerm) UnmarshalJSON(data []byte) error {
 	if m, ok := mul_term_map["multiplier"].(float64); ok {
 		multiplier = Witness(m)
 	} else {
-		log.Fatal("Error: couldn't deserialize multiplier.")
+		log.Print("Error: couldn't deserialize multiplier.")
 		return &json.UnmarshalTypeError{}
 	}
 
