@@ -16,6 +16,21 @@ pub struct Gnark;
 
 impl acvm::Backend for Gnark {}
 
+fn get_values_from_witness_tree(
+    circuit: Circuit,
+    witness_values: std::collections::BTreeMap<Witness, FieldElement>,
+) -> Vec<FieldElement> {
+    let num_witnesses = circuit.num_vars();
+    (1..num_witnesses)
+        .map(|wit_index| {
+            // Get the value if it exists, if not then default to zero value.
+            witness_values
+                .get(&Witness(wit_index))
+                .map_or(FieldElement::zero(), |field| *field)
+        })
+        .collect()
+}
+
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
         Language::R1CS
@@ -45,7 +60,7 @@ impl ProofSystemCompiler for Gnark {
         witness_values: std::collections::BTreeMap<Witness, FieldElement>,
     ) -> Vec<u8> {
         // TODO: modify gnark serializer to accept the BTreeMap
-        let values: Vec<FieldElement> = witness_values.values().copied().collect();
+        let values = get_values_from_witness_tree(circuit.clone(), witness_values);
         gnark_backend::prove_with_meta(circuit, values).unwrap()
     }
 
@@ -73,7 +88,7 @@ impl ProofSystemCompiler for Gnark {
         proving_key: &[u8],
     ) -> Vec<u8> {
         // TODO: modify gnark serializer to accept the BTreeMap
-        let values: Vec<FieldElement> = witness_values.values().copied().collect();
+        let values = get_values_from_witness_tree(circuit.clone(), witness_values);
         gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
 
