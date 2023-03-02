@@ -121,13 +121,13 @@ func ProveWithMeta(rawR1CS string) *C.char {
 	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
 
 	// Setup.
-	pk, _, err := groth16.Setup(r1cs)
+	provingKey, _, err := groth16.Setup(r1cs)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Prove.
-	proof, err := groth16.Prove(r1cs, pk, witness)
+	proof, err := groth16.Prove(r1cs, provingKey, witness)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,13 +135,13 @@ func ProveWithMeta(rawR1CS string) *C.char {
 	// Serialize proof
 	var serialized_proof bytes.Buffer
 	proof.WriteTo(&serialized_proof)
-	proof_string := serialized_proof.String()
+	proof_string := hex.EncodeToString(serialized_proof.Bytes())
 
 	return C.CString(proof_string)
 }
 
 //export ProveWithPK
-func ProveWithPK(rawR1CS string, provingKey string) *C.char {
+func ProveWithPK(rawR1CS string, encodedProvingKey string) *C.char {
 	// Deserialize rawR1CS.
 	var r structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
@@ -154,14 +154,18 @@ func ProveWithPK(rawR1CS string, provingKey string) *C.char {
 	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
 
 	// Deserialize proving key.
-	pk := groth16.NewProvingKey(r1cs.CurveID())
-	_, err = pk.ReadFrom(bytes.NewReader([]byte(provingKey)))
+	provingKey := groth16.NewProvingKey(r1cs.CurveID())
+	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = provingKey.ReadFrom(bytes.NewReader([]byte(decodedProvingKey)))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Prove.
-	proof, err := groth16.Prove(r1cs, pk, witness)
+	proof, err := groth16.Prove(r1cs, provingKey, witness)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,13 +173,13 @@ func ProveWithPK(rawR1CS string, provingKey string) *C.char {
 	// Serialize proof
 	var serialized_proof bytes.Buffer
 	proof.WriteTo(&serialized_proof)
-	proof_string := serialized_proof.String()
+	proof_string := hex.EncodeToString(serialized_proof.Bytes())
 
 	return C.CString(proof_string)
 }
 
 //export VerifyWithMeta
-func VerifyWithMeta(rawR1CS string, proof string) bool {
+func VerifyWithMeta(rawR1CS string, encodedProof string) bool {
 	// Deserialize rawR1CS.
 	var r structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
@@ -188,8 +192,12 @@ func VerifyWithMeta(rawR1CS string, proof string) bool {
 	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
 
 	// Deserialize proof.
-	p := groth16.NewProof(r1cs.CurveID())
-	_, err = p.ReadFrom(bytes.NewReader([]byte(proof)))
+	proof := groth16.NewProof(r1cs.CurveID())
+	decodedProof, err := hex.DecodeString(encodedProof)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = proof.ReadFrom(bytes.NewReader([]byte(decodedProof)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -207,7 +215,7 @@ func VerifyWithMeta(rawR1CS string, proof string) bool {
 	}
 
 	// Verify.
-	if groth16.Verify(p, vk, publicInputs) != nil {
+	if groth16.Verify(proof, vk, publicInputs) != nil {
 		return false
 	}
 
@@ -215,7 +223,7 @@ func VerifyWithMeta(rawR1CS string, proof string) bool {
 }
 
 //export VerifyWithVK
-func VerifyWithVK(rawR1CS string, proof string, verifyingKey string) bool {
+func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey string) bool {
 	// Deserialize rawR1CS.
 	var r structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
@@ -228,15 +236,23 @@ func VerifyWithVK(rawR1CS string, proof string, verifyingKey string) bool {
 	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
 
 	// Deserialize proof.
-	p := groth16.NewProof(r1cs.CurveID())
-	_, err = p.ReadFrom(bytes.NewReader([]byte(proof)))
+	proof := groth16.NewProof(r1cs.CurveID())
+	decodedProof, err := hex.DecodeString(encodedProof)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = proof.ReadFrom(bytes.NewReader([]byte(decodedProof)))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Deserialize verifying key.
-	vk := groth16.NewVerifyingKey(r1cs.CurveID())
-	_, err = vk.ReadFrom(bytes.NewReader([]byte(verifyingKey)))
+	verifyingKey := groth16.NewVerifyingKey(r1cs.CurveID())
+	decodedVerifyingKey, err := hex.DecodeString(encodedVerifyingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = verifyingKey.ReadFrom(bytes.NewReader(decodedVerifyingKey))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -248,7 +264,7 @@ func VerifyWithVK(rawR1CS string, proof string, verifyingKey string) bool {
 	}
 
 	// Verify.
-	if groth16.Verify(p, vk, publicInputs) != nil {
+	if groth16.Verify(proof, verifyingKey, publicInputs) != nil {
 		return false
 	}
 
@@ -275,12 +291,12 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	// Serialize proving key.
 	var serialized_pk bytes.Buffer
 	pk.WriteTo(&serialized_pk)
-	pk_string := serialized_pk.String()
+	pk_string := hex.EncodeToString(serialized_pk.Bytes())
 
 	// Serialize verifying key.
 	var serialized_vk bytes.Buffer
 	vk.WriteTo(&serialized_vk)
-	vk_string := serialized_vk.String()
+	vk_string := hex.EncodeToString(serialized_vk.Bytes())
 
 	return C.CString(pk_string), C.CString(vk_string)
 }
