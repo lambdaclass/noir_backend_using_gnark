@@ -81,9 +81,6 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 }
 
 func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector) witness.Witness {
-	fmt.Println("Public Variables", publicVariables.String())
-	fmt.Println("Private Variables", privateVariables.String())
-
 	witnessValues := make(chan any)
 
 	go func() {
