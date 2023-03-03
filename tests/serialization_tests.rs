@@ -80,6 +80,14 @@ fn ping_pong(
     go_pre_serialized_element.to_str().unwrap().as_bytes()
 }
 
+fn random_add_term() -> AddTerm {
+    // Sample random coefficient.
+    let coefficient: gnark_backend_wrapper::Fr = rand::random();
+    // Sample a random sum.
+    let sum = acvm::Witness::new(rand::random());
+    AddTerm { coefficient, sum }
+}
+
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
@@ -216,12 +224,8 @@ fn test_mul_terms_serialization() {
 
 #[test]
 fn test_add_term_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random sum.
-    let sum = acvm::Witness::new(rand::random());
-    // Sample a random mul term.
-    let add_term = AddTerm { coefficient, sum };
+    // Sample a random add term.
+    let add_term = random_add_term();
 
     println!("| RUST |");
     println!("{add_term:?}");
