@@ -177,8 +177,8 @@ pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32, GnarkBackendErro
 pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
     // TODO: Sample random public_inputs
     let mut witness_values = BTreeMap::new();
-    witness_values.insert(Witness(1), FieldElement::from(10_u128));
-    witness_values.insert(Witness(2), FieldElement::from(21_u128));
+    witness_values.insert(Witness(1), FieldElement::from(3_u128));
+    witness_values.insert(Witness(2), FieldElement::from(3_u128));
     let backend = Gnark;
     backend.solve(&mut witness_values, circuit.opcodes.clone())?;
     let num_witnesses = circuit.num_vars();
