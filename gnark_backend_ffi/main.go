@@ -17,45 +17,36 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
-func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector, int, int) {
+func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	// Create R1CS.
 	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
 
-	// Fill process RawR1CS.
-	nPublicVariables := 0
-	nPrivateVariables := 0
-	var allVariableIndices []int
+	// Define the R1CS variables.
+	ONE := r1cs.AddPublicVariable("1")
 	var publicVariables fr_bn254.Vector
 	var privateVariables fr_bn254.Vector
 	for i, value := range r.Values {
 		i++
 		for _, publicInput := range r.PublicInputs {
 			if uint32(i) == publicInput {
-				allVariableIndices = append(allVariableIndices, r1cs.AddPublicVariable(fmt.Sprintf("public_%d", i)))
-				// fmt.Println(fmt.Sprintf("public_%d", i), value.String())
+				r1cs.AddPublicVariable(fmt.Sprintf("public_%d", i))
 				publicVariables = append(publicVariables, value)
-				nPublicVariables++
 			} else {
-				allVariableIndices = append(allVariableIndices, r1cs.AddSecretVariable(fmt.Sprintf("secret_%d", i)))
-				// fmt.Println(fmt.Sprintf("secret_%d", i), value.String())
+				r1cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
 				privateVariables = append(privateVariables, value)
-				nPrivateVariables++
 			}
 		}
 	}
 
 	// Generate constraints.
-	ONE := r1cs.AddPublicVariable("1")
 	COEFFICIENT_ONE := r1cs.FromInterface(1)
-	for g, gate := range r.Gates {
-		fmt.Println("GATE ", g)
+	for _, gate := range r.Gates {
 		var terms constraint.LinearExpression
 
 		for _, mul_term := range gate.MulTerms {
 			coefficient := r1cs.FromInterface(mul_term.Coefficient)
 			multiplicand := r.Values[mul_term.Multiplicand]
 			multiplier := r.Values[mul_term.Multiplier]
-			fmt.Println(mul_term.Coefficient.String(), " * ", multiplicand.String(), " * ", multiplier.String())
 
 			var product fr_bn254.Element
 			product.Mul(&multiplicand, &multiplier)
@@ -66,29 +57,25 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 		}
 
 		for _, add_term := range gate.AddTerms {
-			fmt.Println(add_term.Coefficient.String(), " * ", r.Values[add_term.Sum].String())
 			coefficient := r1cs.FromInterface(add_term.Coefficient)
 			sum := add_term.Sum
 
-			sumVariable := allVariableIndices[sum]
-
-			terms = append(terms, r1cs.MakeTerm(&coefficient, sumVariable))
+			terms = append(terms, r1cs.MakeTerm(&coefficient, int(sum)))
 		}
 
-		r1cs.AddConstraint(
-			constraint.R1C{
-				L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ONE)},
-				R: terms,
-				O: constraint.LinearExpression{},
-			},
-		)
-		fmt.Println()
+		r1c := constraint.R1C{
+			L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ONE)},
+			R: terms,
+			O: constraint.LinearExpression{},
+		}
+
+		r1cs.AddConstraint(r1c)
 	}
 
-	return r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables
+	return r1cs, publicVariables, privateVariables
 }
 
-func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nPublicVariables int, nPrivateVariables int) witness.Witness {
+func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector) witness.Witness {
 	witnessValues := make(chan any)
 
 	go func() {
@@ -106,7 +93,7 @@ func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privat
 		log.Fatal(err)
 	}
 
-	witness.Fill(nPublicVariables, nPrivateVariables, witnessValues)
+	witness.Fill(r1cs.GetNbPublicVariables(), r1cs.GetNbConstraints(), witnessValues)
 
 	return witness
 }
@@ -120,9 +107,9 @@ func ProveWithMeta(rawR1CS string) *C.char {
 		log.Fatal(err)
 	}
 
-	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
+	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
+	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
 
 	// Setup.
 	provingKey, _, err := groth16.Setup(r1cs)
@@ -153,9 +140,9 @@ func ProveWithPK(rawR1CS string, encodedProvingKey string) *C.char {
 		log.Fatal(err)
 	}
 
-	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
+	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
+	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
 
 	// Deserialize proving key.
 	provingKey := groth16.NewProvingKey(r1cs.CurveID())
@@ -191,9 +178,9 @@ func VerifyWithMeta(rawR1CS string, encodedProof string) bool {
 		log.Fatal(err)
 	}
 
-	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
+	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
+	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
 
 	// Deserialize proof.
 	proof := groth16.NewProof(r1cs.CurveID())
@@ -235,9 +222,9 @@ func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey strin
 		log.Fatal(err)
 	}
 
-	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
+	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
+	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
 
 	// Deserialize proof.
 	proof := groth16.NewProof(r1cs.CurveID())
@@ -284,7 +271,7 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 		log.Fatal(err)
 	}
 
-	r1cs, _, _, _, _ := buildR1CS(r)
+	r1cs, _, _ := buildR1CS(r)
 
 	// Setup.
 	pk, vk, err := groth16.Setup(r1cs)
@@ -308,7 +295,7 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 //export IntegrationTestFeltSerialization
 func IntegrationTestFeltSerialization(encodedFelt string) *C.char {
 	deserializedFelt := structs.DeserializeFelt(encodedFelt)
-	fmt.Printf("| GO |\n%v\n", deserializedFelt)
+	fmt.Printf("| GO |n%vn", deserializedFelt)
 
 	// Serialize the felt.
 	serializedFelt := deserializedFelt.Bytes()
@@ -565,8 +552,18 @@ func ExampleR1CS() {
 
 func main() {
 	// ExampleR1CS()
-	// invalidRawR1CS := `{"gates":[{"mul_terms":[],"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000001"}],"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","num_variables":7,"num_constraints":11}`
-	rawR1CS := `{"gates":[{"mul_terms":[],"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000001"}],"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000001530644e72e131a029b85045b68181585d2833e84879b9709143e1f593effffff61ecb77bd78084ea62f78e68b69af66c6eb09c25caa8d47a2427885010d1745d200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000","num_variables":7,"num_constraints":11}`
+
+	// constrain x == y
+	// constrain 0 == 0
+	// rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// constrain 1 == 1
+	// rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// constrain 2 == 2
+	// rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// constrain 3 == 3
+	rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// Invalid
+	invalidRawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
 
 	var r structs.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
@@ -574,7 +571,41 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r1cs, _, _, _, _ := buildR1CS(r)
+	fmt.Println("Gates: ", len(r.Gates))
+	mulTerms := 0
+	addTerms := 0
+	for g, gate := range r.Gates {
+		fmt.Println("Gate", g)
+		fmt.Println()
+
+		fmt.Println("MulTerms:")
+		mulTerms += len(gate.MulTerms)
+		for _, mulTerm := range gate.MulTerms {
+			fmt.Println("MulTerm:", mulTerm)
+			var product fr_bn254.Element
+			product.Mul(&r.Values[mulTerm.Multiplier], &r.Values[mulTerm.Multiplicand])
+			fmt.Println("Multiplication", mulTerm.Coefficient.String(), "*", r.Values[mulTerm.Multiplier].String(), "*", r.Values[mulTerm.Multiplicand].String(), "=", product.String())
+			fmt.Println("Product:", product.String())
+		}
+		fmt.Println()
+
+		addTerms += len(gate.AddTerms)
+		fmt.Println("AddTerms:")
+		for _, addTerm := range gate.AddTerms {
+			fmt.Println("AddTerm:", addTerm)
+			fmt.Println("Addition", addTerm.Coefficient.String(), "*", r.Values[addTerm.Sum].String())
+		}
+		fmt.Println()
+
+		fmt.Println("ConstantTerm:", gate.ConstantTerm)
+		fmt.Println()
+
+		fmt.Println()
+	}
+	fmt.Println("MulTerms: ", mulTerms)
+	fmt.Println("AddTerms: ", mulTerms)
+
+	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
 	constraints, res := r1cs.GetConstraints()
 	for _, r1c := range constraints {
@@ -587,45 +618,8 @@ func main() {
 	}
 	fmt.Println("NbPublicInputs: ", len(r.PublicInputs), "PublicInputs: ", r.PublicInputs)
 
-	for i, value := range r.Values {
-		i++
-		for _, publicInput := range r.PublicInputs {
-			if uint32(i) == publicInput {
-				fmt.Println("PublicInput Value: ", value.String())
-			}
-		}
-	}
-
-	r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
-
-	// fmt.Println("R1CS:\n", r1cs)
-	// fmt.Println("R1CS Public:\n", r1cs.Public)
-	// fmt.Println("R1CS Private:\n", r1cs.Secret)
-	// fmt.Println("R1CS Constraints:\n", r1cs.Constraints)
-	// fmt.Println("R1CS Number of Constraints:\n", r1cs.GetNbConstraints())
-	// fmt.Println("R1CS Number of Internal Variables:\n", r1cs.GetNbInternalVariables())
-	// fmt.Println("R1CS Number of Public Variables:\n", r1cs.GetNbPublicVariables())
-	// fmt.Println("R1CS Number of Private Variables:\n", r1cs.GetNbSecretVariables())
-	// fmt.Println()
-	// fmt.Println("Public variables:\n", publicVariables)
-	// fmt.Println()
-	// fmt.Println("Private variables:\n", privateVariables)
-	// fmt.Println()
-	// fmt.Println("Number of public variables: ", nPublicVariables)
-	// fmt.Println()
-	// fmt.Println("Number of private variables: ", nPrivateVariables)
-	// fmt.Println()
-
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
-
-	// fmt.Println("Witness:\n", witness)
-	// fmt.Println()
+	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
 	publicWitnesses, _ := witness.Public()
-	// fmt.Println("Public:\n", publicWitnesses)
-	// fmt.Println()
-	// witnessVector := witness.Vector().(fr_bn254.Vector)
-	// fmt.Println("Vector:\n", witnessVector)
-	// fmt.Println()
 
 	// Setup.
 	pk, vk, err := groth16.Setup(r1cs)
@@ -633,24 +627,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// // fmt.Println("Proving key:\n", pk)
-	// // fmt.Println()
-	// // fmt.Println("Verification key:\n", vk)
-	// // fmt.Println()
-	// fmt.Println("Verification key publics: ", vk.NbPublicWitness())
-	// fmt.Println()
-
-	// fmt.Println("Num Witnesses: ", len(witnessVector), "Num Public: ", len(r1cs.Public), "Num Private: ", len(r1cs.Secret))
-	// fmt.Println()
-
 	// Prove.
 	proof, err := groth16.Prove(r1cs, pk, witness)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// fmt.Println("Proof:\n", proof)
-	// fmt.Println()
 
 	// Verify.
 	verified := groth16.Verify(proof, vk, publicWitnesses)
@@ -658,21 +639,32 @@ func main() {
 	fmt.Println("Verifies with valid public inputs: ", verified == nil)
 	fmt.Println()
 
-	// // // Invalid verification (same proof, wrong public value).
-	// // invalidRawR1CS := `{"gates":[{"mul_terms":[],"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000001"}],"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","num_variables":7,"num_constraints":11}`
-	// // err = json.Unmarshal([]byte(invalidRawR1CS), &r)
-	// // if err != nil {
-	// // 	log.Fatal(err)
-	// // }
+	// Invalid verification (same proof, wrong public value).
+	err = json.Unmarshal([]byte(invalidRawR1CS), &r)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// // invalidR1CS, publicVariables, privateVariables, nPublicVariables, nPrivateVariables := buildR1CS(r)
-	// // invalidWitness := buildWitnesses(invalidR1CS, publicVariables, privateVariables, nPublicVariables, nPrivateVariables)
-	// // invalidPublicWitnesses, _ := invalidWitness.Public()
-	// // invalidVerified := groth16.Verify(proof, vk, invalidPublicWitnesses)
+	invalidR1CS, publicVariables, privateVariables := buildR1CS(r)
 
-	// // fmt.Println("Valid Public Witnesses: ", publicWitnesses)
-	// // fmt.Println("Invalid Public Witnesses: ", invalidPublicWitnesses)
-	// // fmt.Println()
+	constraints, res = invalidR1CS.GetConstraints()
+	for _, r1c := range constraints {
+		fmt.Println(r1c.String(res))
+	}
+	fmt.Println()
+	fmt.Println("NbValues: ", len(r.Values))
+	for _, value := range r.Values {
+		fmt.Println("Value: ", value.String())
+	}
+	fmt.Println("NbPublicInputs: ", len(r.PublicInputs), "PublicInputs: ", r.PublicInputs)
 
-	// // fmt.Println("Verifies with invalid public inputs: ", invalidVerified == nil)
+	invalidWitness := buildWitnesses(invalidR1CS, publicVariables, privateVariables)
+	invalidPublicWitnesses, _ := invalidWitness.Public()
+	invalidVerified := groth16.Verify(proof, vk, invalidPublicWitnesses)
+
+	fmt.Println("Valid Public Witnesses: ", publicWitnesses.Vector().(fr_bn254.Vector).String())
+	fmt.Println("Invalid Public Witnesses: ", invalidPublicWitnesses.Vector().(fr_bn254.Vector).String())
+	fmt.Println()
+
+	fmt.Println("Verifies with invalid public inputs: ", invalidVerified == nil)
 }
