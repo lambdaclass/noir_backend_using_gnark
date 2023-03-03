@@ -103,6 +103,14 @@ fn random_mul_term() -> MulTerm {
     }
 }
 
+fn random_mul_terms(count: usize) -> Vec<MulTerm> {
+    (0..count).into_iter().map(|_| random_mul_term()).collect()
+}
+
+fn random_add_terms(count: usize) -> Vec<AddTerm> {
+    (0..count).into_iter().map(|_| random_add_term()).collect()
+}
+
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
@@ -193,25 +201,9 @@ fn test_mul_term_serialization() {
 
 #[test]
 fn test_mul_terms_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random multiplicand.
-    let multiplicand = acvm::Witness::new(rand::random());
-    // Sample a random multiplier.
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    // Sample a random mul term.
-    let mul_terms = vec![
-        MulTerm {
-            coefficient,
-            multiplicand,
-            multiplier,
-        },
-        MulTerm {
-            coefficient,
-            multiplicand,
-            multiplier,
-        },
-    ];
+    // Sample `count` random MulTerm
+    let count = 2;
+    let mul_terms = random_mul_terms(count);
 
     println!("| RUST |");
     println!("{mul_terms:?}");
@@ -249,12 +241,9 @@ fn test_add_term_serialization() {
 
 #[test]
 fn test_add_terms_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random sum.
-    let sum = acvm::Witness::new(rand::random());
-    // Sample a random mul term.
-    let add_terms = vec![AddTerm { coefficient, sum }, AddTerm { coefficient, sum }];
+    // Sample `count` random AddTerm
+    let count = 2;
+    let add_terms = random_add_terms(count);
 
     println!("| RUST |");
     println!("{add_terms:?}");
