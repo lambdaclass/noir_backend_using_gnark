@@ -63,6 +63,28 @@ fn serialize_felts(felts: &[gnark_backend_wrapper::Fr]) -> Vec<u8> {
     buff
 }
 
+fn execute_ping_pong(
+    serialized_felts: Vec<u8>,
+    integration_test_function: unsafe extern "C" fn(
+        gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char,
+) -> &'static [u8] {
+    // Encode the felt.
+    let encoded_felt = hex::encode(serialized_felts);
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(encoded_felt).unwrap();
+    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let pong: *const ffi::c_char = unsafe { integration_test_function(ping) };
+
+    // Prepare pong for Rust.
+    let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
+
+    go_pre_serialized_felt.to_str().unwrap().as_bytes()
+}
+
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
@@ -73,19 +95,7 @@ fn test_felt_serialization() {
     // Serialize the random felt.
     let serialized_felt = serialize_felt(&felt);
 
-    // Encode the felt.
-    let encoded_felt = hex::encode(serialized_felt);
-
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(encoded_felt).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { IntegrationTestFeltSerialization(ping) };
-
-    // Prepare pong for Rust.
-    let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
-    let go_serialized_felt = go_pre_serialized_felt.to_str().unwrap().as_bytes();
+    let go_serialized_felt = execute_ping_pong(serialized_felt, IntegrationTestFeltSerialization);
 
     let go_felt = deserialize_felt(go_serialized_felt);
 
@@ -105,19 +115,7 @@ fn test_felts_serialization() {
     // Serialize the random felts and pack them into one byte array.
     let serialized_felts = serialize_felts(&felts);
 
-    // Encode the packed felts.
-    let encoded_felts = hex::encode(serialized_felts);
-
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(encoded_felts).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { IntegrationTestFeltsSerialization(ping) };
-
-    // Prepare pong for Rust.
-    let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
-    let go_serialized_felt = go_pre_serialized_felt.to_str().unwrap().as_bytes();
+    let go_serialized_felt = execute_ping_pong(serialized_felts, IntegrationTestFeltsSerialization);
 
     // Decode and deserialize the unpacked felts.
     let go_felts: Vec<gnark_backend_wrapper::Fr> = hex::decode(go_serialized_felt).unwrap()[4..] // Skip the vector length corresponding to the first four bytes.
