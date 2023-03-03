@@ -75,7 +75,10 @@ impl ProofSystemCompiler for Gnark {
     ) -> Vec<u8> {
         let num_witnesses = circuit.num_vars();
         let values = (1..num_witnesses)
-            .map(|wit_index| *witness_to_value(&witness_values, Witness(wit_index)).unwrap_or(&FieldElement::zero()))
+            .map(|wit_index| {
+                *witness_to_value(&witness_values, Witness(wit_index))
+                    .unwrap_or(&FieldElement::zero())
+            })
             .collect();
         gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
@@ -89,7 +92,10 @@ impl ProofSystemCompiler for Gnark {
     ) -> bool {
         let num_witnesses = circuit.num_vars();
         let public: Vec<FieldElement> = (1..num_witnesses)
-            .map(|wit_index| *witness_to_value(&public_inputs, Witness(wit_index)).unwrap_or(&FieldElement::zero()))
+            .map(|wit_index| {
+                *witness_to_value(&public_inputs, Witness(wit_index))
+                    .unwrap_or(&FieldElement::zero())
+            })
             .collect();
         gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
     }
