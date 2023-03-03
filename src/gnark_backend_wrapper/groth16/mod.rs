@@ -86,21 +86,21 @@ pub fn prove_with_pk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
 
-    let proving_key_serialized = String::from_utf8(proving_key.to_vec())
-        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
+    let proving_key_serialized = hex::encode(proving_key);
     let proving_key_c_str = CString::new(proving_key_serialized)
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
     let proving_key_go_string = GoString::try_from(&proving_key_c_str)
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
 
-    let result: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
-    let c_str = unsafe { CStr::from_ptr(result) };
-    let bytes = c_str
+    let proof: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
+    let proof_c_str = unsafe { CStr::from_ptr(proof) };
+    let proof_str = proof_c_str
         .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?
-        .as_bytes();
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
+    let decoded_proof = hex::decode(proof_str)
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
 
-    Ok(bytes.to_vec())
+    Ok(decoded_proof)
 }
 
 pub fn verify_with_meta(
@@ -146,21 +146,19 @@ pub fn verify_with_vk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
 
-    let proof_serialized = String::from_utf8(proof.to_vec())
-        .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
+    let proof_serialized = hex::encode(proof);
     let proof_c_str = CString::new(proof_serialized)
         .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
     let proof_go_string = GoString::try_from(&proof_c_str)?;
 
-    let verifying_key_serialized = String::from_utf8(verifying_key.to_vec())
-        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
+    let verifying_key_serialized = hex::encode(verifying_key);
     let verifying_key_c_str = CString::new(verifying_key_serialized)
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
     let verifying_key_go_string = GoString::try_from(&verifying_key_c_str)?;
 
-    let result =
+    let verifies =
         unsafe { VerifyWithVK(rawr1cs_go_string, proof_go_string, verifying_key_go_string) };
-    match result {
+    match verifies {
         0 => Ok(false),
         1 => Ok(true),
         _ => Err(GnarkBackendError::VerifyInvalidBoolError),
