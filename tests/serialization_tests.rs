@@ -111,6 +111,24 @@ fn random_add_terms(count: usize) -> Vec<AddTerm> {
     (0..count).into_iter().map(|_| random_add_term()).collect()
 }
 
+fn random_raw_gate(term_count: usize) -> RawGate {
+    let add_terms = random_add_terms(term_count);
+    let mul_terms = random_mul_terms(term_count);
+    let constant_term: gnark_backend_wrapper::Fr = rand::random();
+    RawGate {
+        mul_terms,
+        add_terms,
+        constant_term,
+    }
+}
+
+fn random_raw_gates(count: usize, term_count: usize) -> Vec<RawGate> {
+    (0..count)
+        .into_iter()
+        .map(|_| random_raw_gate(term_count))
+        .collect()
+}
+
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
@@ -262,24 +280,8 @@ fn test_add_terms_serialization() {
 
 #[test]
 fn test_raw_gate_serialization() {
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    let multiplicand = acvm::Witness::new(rand::random());
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    let sum = acvm::Witness::new(rand::random());
-    let add_term = AddTerm { coefficient, sum };
-    let add_terms = vec![add_term, add_term];
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
-    let mul_terms = vec![mul_term, mul_term];
-    let constant_term: gnark_backend_wrapper::Fr = rand::random();
-    let raw_gate = RawGate {
-        mul_terms,
-        add_terms,
-        constant_term,
-    };
+    let term_count = 2;
+    let raw_gate = random_raw_gate(term_count);
 
     println!("| RUST |");
     println!("{raw_gate:?}");
@@ -298,25 +300,9 @@ fn test_raw_gate_serialization() {
 
 #[test]
 fn test_raw_gates_serialization() {
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    let multiplicand = acvm::Witness::new(rand::random());
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    let sum = acvm::Witness::new(rand::random());
-    let add_term = AddTerm { coefficient, sum };
-    let add_terms = vec![add_term, add_term];
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
-    let mul_terms = vec![mul_term, mul_term];
-    let constant_term: gnark_backend_wrapper::Fr = rand::random();
-    let raw_gate = RawGate {
-        mul_terms,
-        add_terms,
-        constant_term,
-    };
-    let raw_gates = vec![raw_gate.clone(), raw_gate];
+    let count = 2;
+    let term_count = 2;
+    let raw_gates = random_raw_gates(count, term_count);
 
     println!("| RUST |");
     println!("{raw_gates:?}");
