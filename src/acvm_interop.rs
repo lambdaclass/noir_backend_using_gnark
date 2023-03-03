@@ -4,6 +4,7 @@
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
+use acvm::pwg::witness_to_value;
 use acvm::{
     FieldElement, Language, OpcodeResolutionError, PartialWitnessGenerator, ProofSystemCompiler,
     SmartContract,
@@ -74,12 +75,7 @@ impl ProofSystemCompiler for Gnark {
     ) -> Vec<u8> {
         let num_witnesses = circuit.num_vars();
         let values = (1..num_witnesses)
-            .map(|wit_index| {
-                // Get the value if it exists, if not then default to zero value.
-                witness_values
-                    .get(&Witness(wit_index))
-                    .map_or(FieldElement::zero(), |field| *field)
-            })
+            .map(|wit_index| *witness_to_value(&witness_values, Witness(wit_index)).unwrap_or(&FieldElement::zero()))
             .collect();
         gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
@@ -92,14 +88,9 @@ impl ProofSystemCompiler for Gnark {
         verification_key: &[u8],
     ) -> bool {
         let num_witnesses = circuit.num_vars();
-        let public = (1..num_witnesses)
-            .map(|wit_index| {
-                // Get the value if it exists, if not then default to zero value.
-                public_inputs
-                    .get(&Witness(wit_index))
-                    .map_or(FieldElement::zero(), |field| *field)
-            })
-            .collect::<Vec<FieldElement>>();
+        let public: Vec<FieldElement> = (1..num_witnesses)
+            .map(|wit_index| *witness_to_value(&public_inputs, Witness(wit_index)).unwrap_or(&FieldElement::zero()))
+            .collect();
         gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
     }
 }
