@@ -47,13 +47,18 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 			coefficient := r1cs.FromInterface(mul_term.Coefficient)
 			multiplicand := r.Values[mul_term.Multiplicand]
 			multiplier := r.Values[mul_term.Multiplier]
-
 			var product fr_bn254.Element
 			product.Mul(&multiplicand, &multiplier)
 
 			productVariable := r1cs.AddInternalVariable()
 
-			terms = append(terms, r1cs.MakeTerm(&coefficient, productVariable))
+			mulR1C := constraint.R1C{
+				L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, int(mul_term.Multiplicand))},
+				R: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, int(mul_term.Multiplier))},
+				O: constraint.LinearExpression{r1cs.MakeTerm(&coefficient, productVariable)},
+			}
+
+			r1cs.AddConstraint(mulR1C)
 		}
 
 		for _, add_term := range gate.AddTerms {
