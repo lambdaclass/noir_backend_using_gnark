@@ -205,16 +205,21 @@ pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendE
     let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
     let proving_key_bytes = proving_key_c_str
         .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?
-        .as_bytes();
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
+    let proving_key_str = proving_key_c_str
+        .to_str()
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
+    let decoded_proving_key = hex::decode(proving_key_str)
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
 
     let verifying_key_c_str = unsafe { CStr::from_ptr(key_pair.verifying_key) };
-    let verifying_key_bytes = verifying_key_c_str
+    let verifying_key_str = verifying_key_c_str
         .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?
-        .as_bytes();
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
+    let decoded_verifying_key = hex::decode(verifying_key_str)
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
 
-    Ok((proving_key_bytes.to_vec(), verifying_key_bytes.to_vec()))
+    Ok((decoded_proving_key, decoded_verifying_key))
 }
 
 #[cfg(test)]
