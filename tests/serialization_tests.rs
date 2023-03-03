@@ -88,6 +88,21 @@ fn random_add_term() -> AddTerm {
     AddTerm { coefficient, sum }
 }
 
+fn random_mul_term() -> MulTerm {
+    // Sample random coefficient.
+    let coefficient: gnark_backend_wrapper::Fr = rand::random();
+    // Sample a random multiplicand.
+    let multiplicand = acvm::Witness::new(rand::random());
+    // Sample a random multiplier.
+    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
+
+    MulTerm {
+        coefficient,
+        multiplicand,
+        multiplier,
+    }
+}
+
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
@@ -159,18 +174,8 @@ fn test_u64_serialization() {
 
 #[test]
 fn test_mul_term_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random multiplicand.
-    let multiplicand = acvm::Witness::new(rand::random());
-    // Sample a random multiplier.
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
     // Sample a random mul term.
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
+    let mul_term = random_mul_term();
 
     println!("| RUST |");
     println!("{mul_term:?}");
