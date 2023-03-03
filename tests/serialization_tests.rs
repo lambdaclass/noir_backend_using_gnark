@@ -81,69 +81,48 @@ fn ping_pong(
 }
 
 fn random_add_term() -> AddTerm {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random sum.
-    let sum = acvm::Witness::new(rand::random());
-    AddTerm { coefficient, sum }
+    AddTerm {
+        coefficient: rand::random(),
+        sum: acvm::Witness::new(rand::random()),
+    }
 }
 
 fn random_mul_term() -> MulTerm {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random multiplicand.
-    let multiplicand = acvm::Witness::new(rand::random());
-    // Sample a random multiplier.
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-
     MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
+        coefficient: rand::random(),
+        multiplicand: acvm::Witness::new(rand::random()),
+        multiplier: acvm::Witness::new(rand::random()),
     }
 }
 
 fn random_mul_terms(count: usize) -> Vec<MulTerm> {
-    (0..count).into_iter().map(|_| random_mul_term()).collect()
+    vec![random_mul_term(); count]
 }
 
 fn random_add_terms(count: usize) -> Vec<AddTerm> {
-    (0..count).into_iter().map(|_| random_add_term()).collect()
+    vec![random_add_term(); count]
 }
 
 fn random_raw_gate(term_count: usize) -> RawGate {
-    let add_terms = random_add_terms(term_count);
-    let mul_terms = random_mul_terms(term_count);
-    let constant_term: gnark_backend_wrapper::Fr = rand::random();
     RawGate {
-        mul_terms,
-        add_terms,
-        constant_term,
+        mul_terms: random_mul_terms(term_count),
+        add_terms: random_add_terms(term_count),
+        constant_term: rand::random(),
     }
 }
 
 fn random_raw_gates(count: usize, term_count: usize) -> Vec<RawGate> {
-    (0..count)
-        .into_iter()
-        .map(|_| random_raw_gate(term_count))
-        .collect()
+    vec![random_raw_gate(term_count); count]
 }
 
 fn random_raw_r1cs(gate_count: usize, term_count: usize) -> RawR1CS {
-    let raw_gates = random_raw_gates(gate_count, term_count);
-    let public_inputs = vec![
-        acvm::Witness::new(rand::random()),
-        acvm::Witness::new(rand::random()),
-    ];
     let values: [gnark_backend_wrapper::Fr; 2] = rand::random();
-    let num_constraints: u64 = rand::random();
-    let num_variables: u64 = rand::random();
     RawR1CS {
-        gates: raw_gates,
-        public_inputs,
+        gates: random_raw_gates(gate_count, term_count),
+        public_inputs: vec![acvm::Witness::new(rand::random()); 2],
         values: values.to_vec(),
-        num_variables,
-        num_constraints,
+        num_variables: rand::random(),
+        num_constraints: rand::random(),
     }
 }
 
