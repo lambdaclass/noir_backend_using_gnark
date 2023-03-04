@@ -239,7 +239,7 @@ func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey strin
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = proof.ReadFrom(bytes.NewReader([]byte(decodedProof)))
+	_, err = proof.ReadFrom(bytes.NewReader(decodedProof))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -281,22 +281,22 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	r1cs, _, _ := buildR1CS(r)
 
 	// Setup.
-	pk, vk, err := groth16.Setup(r1cs)
+	provingKey, verifyingKey, err := groth16.Setup(r1cs)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Serialize proving key.
-	var serialized_pk bytes.Buffer
-	pk.WriteTo(&serialized_pk)
-	pk_string := hex.EncodeToString(serialized_pk.Bytes())
+	var serializedProvingKey bytes.Buffer
+	provingKey.WriteTo(&serializedProvingKey)
+	provingKeyString := hex.EncodeToString(serializedProvingKey.Bytes())
 
 	// Serialize verifying key.
-	var serialized_vk bytes.Buffer
-	vk.WriteTo(&serialized_vk)
-	vk_string := hex.EncodeToString(serialized_vk.Bytes())
+	var serializedVerifyingKey bytes.Buffer
+	verifyingKey.WriteTo(&serializedVerifyingKey)
+	verifyingKeyString := hex.EncodeToString(serializedVerifyingKey.Bytes())
 
-	return C.CString(pk_string), C.CString(vk_string)
+	return C.CString(provingKeyString), C.CString(verifyingKeyString)
 }
 
 //export IntegrationTestFeltSerialization
