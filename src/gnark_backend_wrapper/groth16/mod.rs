@@ -201,14 +201,14 @@ pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBa
         .to_str()
         .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
     let decoded_proving_key = hex::decode(proving_key_str)
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
 
     let verifying_key_c_str = unsafe { CStr::from_ptr(key_pair.verifying_key) };
     let verifying_key_str = verifying_key_c_str
         .to_str()
         .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
     let decoded_verifying_key = hex::decode(verifying_key_str)
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
 
     Ok((decoded_proving_key, decoded_verifying_key))
 }
