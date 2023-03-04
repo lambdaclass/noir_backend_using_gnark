@@ -22,7 +22,7 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
 
 	// Define the R1CS variables.
-	ONE := r1cs.AddPublicVariable("1")
+	_ = r1cs.AddPublicVariable("1") // ONE_WIRE
 	var publicVariables fr_bn254.Vector
 	var privateVariables fr_bn254.Vector
 	for i, value := range r.Values {
@@ -71,7 +71,7 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 		}
 
 		r1c := constraint.R1C{
-			L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, ONE)},
+			L: constraint.LinearExpression{r1cs.MakeTerm(&COEFFICIENT_ONE, 0)},
 			R: terms,
 			O: constraint.LinearExpression{},
 		}
