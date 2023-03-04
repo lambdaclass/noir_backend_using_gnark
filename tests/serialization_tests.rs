@@ -63,6 +63,69 @@ fn serialize_felts(felts: &[gnark_backend_wrapper::Fr]) -> Vec<u8> {
     buff
 }
 
+fn ping_pong(
+    encoded_element: String,
+    go_function: unsafe extern "C" fn(gnark_backend_wrapper::GoString) -> *const ffi::c_char,
+) -> &'static [u8] {
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(encoded_element).unwrap();
+    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let pong: *const ffi::c_char = unsafe { go_function(ping) };
+
+    // Prepare pong for Rust.
+    let go_pre_serialized_element = unsafe { ffi::CStr::from_ptr(pong) };
+
+    go_pre_serialized_element.to_str().unwrap().as_bytes()
+}
+
+fn random_add_term() -> AddTerm {
+    AddTerm {
+        coefficient: rand::random(),
+        sum: acvm::Witness::new(rand::random()),
+    }
+}
+
+fn random_mul_term() -> MulTerm {
+    MulTerm {
+        coefficient: rand::random(),
+        multiplicand: acvm::Witness::new(rand::random()),
+        multiplier: acvm::Witness::new(rand::random()),
+    }
+}
+
+fn random_mul_terms(count: usize) -> Vec<MulTerm> {
+    vec![random_mul_term(); count]
+}
+
+fn random_add_terms(count: usize) -> Vec<AddTerm> {
+    vec![random_add_term(); count]
+}
+
+fn random_raw_gate(term_count: usize) -> RawGate {
+    RawGate {
+        mul_terms: random_mul_terms(term_count),
+        add_terms: random_add_terms(term_count),
+        constant_term: rand::random(),
+    }
+}
+
+fn random_raw_gates(count: usize, term_count: usize) -> Vec<RawGate> {
+    vec![random_raw_gate(term_count); count]
+}
+
+fn random_raw_r1cs(gate_count: usize, term_count: usize) -> RawR1CS {
+    let values: [gnark_backend_wrapper::Fr; 2] = rand::random();
+    RawR1CS {
+        gates: random_raw_gates(gate_count, term_count),
+        public_inputs: vec![acvm::Witness::new(rand::random()); 2],
+        values: values.to_vec(),
+        num_variables: rand::random(),
+        num_constraints: rand::random(),
+    }
+}
+
 #[test]
 fn test_felt_serialization() {
     // Sample a random felt.
@@ -76,16 +139,7 @@ fn test_felt_serialization() {
     // Encode the felt.
     let encoded_felt = hex::encode(serialized_felt);
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(encoded_felt).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { IntegrationTestFeltSerialization(ping) };
-
-    // Prepare pong for Rust.
-    let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
-    let go_serialized_felt = go_pre_serialized_felt.to_str().unwrap().as_bytes();
+    let go_serialized_felt = ping_pong(encoded_felt, IntegrationTestFeltSerialization);
 
     let go_felt = deserialize_felt(go_serialized_felt);
 
@@ -105,19 +159,10 @@ fn test_felts_serialization() {
     // Serialize the random felts and pack them into one byte array.
     let serialized_felts = serialize_felts(&felts);
 
-    // Encode the packed felts.
+    // Encode the felts.
     let encoded_felts = hex::encode(serialized_felts);
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(encoded_felts).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let pong: *const ffi::c_char = unsafe { IntegrationTestFeltsSerialization(ping) };
-
-    // Prepare pong for Rust.
-    let go_pre_serialized_felt = unsafe { ffi::CStr::from_ptr(pong) };
-    let go_serialized_felt = go_pre_serialized_felt.to_str().unwrap().as_bytes();
+    let go_serialized_felt = ping_pong(encoded_felts, IntegrationTestFeltsSerialization);
 
     // Decode and deserialize the unpacked felts.
     let go_felts: Vec<gnark_backend_wrapper::Fr> = hex::decode(go_serialized_felt).unwrap()[4..] // Skip the vector length corresponding to the first four bytes.
@@ -152,18 +197,8 @@ fn test_u64_serialization() {
 
 #[test]
 fn test_mul_term_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random multiplicand.
-    let multiplicand = acvm::Witness::new(rand::random());
-    // Sample a random multiplier.
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
     // Sample a random mul term.
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
+    let mul_term = random_mul_term();
 
     println!("| RUST |");
     println!("{mul_term:?}");
@@ -171,13 +206,8 @@ fn test_mul_term_serialization() {
     // Serialize the mul term.
     let serialized_mul_term = serde_json::to_string(&mul_term).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_mul_term).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestMulTermSerialization(ping) };
-
+    let _go_serialized_mul_term =
+        ping_pong(serialized_mul_term, IntegrationTestMulTermSerialization);
     // TODO:
     // * Prepare pong for Rust.
     // * Assert that mul_term and go_mul_term are the same (go_mul_term is
@@ -186,25 +216,9 @@ fn test_mul_term_serialization() {
 
 #[test]
 fn test_mul_terms_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random multiplicand.
-    let multiplicand = acvm::Witness::new(rand::random());
-    // Sample a random multiplier.
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    // Sample a random mul term.
-    let mul_terms = vec![
-        MulTerm {
-            coefficient,
-            multiplicand,
-            multiplier,
-        },
-        MulTerm {
-            coefficient,
-            multiplicand,
-            multiplier,
-        },
-    ];
+    // Sample `count` random MulTerm
+    let count = 2;
+    let mul_terms = random_mul_terms(count);
 
     println!("| RUST |");
     println!("{mul_terms:?}");
@@ -212,13 +226,8 @@ fn test_mul_terms_serialization() {
     // Serialize the mul term.
     let serialized_mul_terms = serde_json::to_string(&mul_terms).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_mul_terms).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestMulTermsSerialization(ping) };
-
+    let _go_serialized_mul_terms =
+        ping_pong(serialized_mul_terms, IntegrationTestMulTermsSerialization);
     // TODO:
     // * Prepare pong for Rust.
     // * Assert that mul_term and go_mul_term are the same (go_mul_term is
@@ -227,12 +236,8 @@ fn test_mul_terms_serialization() {
 
 #[test]
 fn test_add_term_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random sum.
-    let sum = acvm::Witness::new(rand::random());
-    // Sample a random mul term.
-    let add_term = AddTerm { coefficient, sum };
+    // Sample a random add term.
+    let add_term = random_add_term();
 
     println!("| RUST |");
     println!("{add_term:?}");
@@ -240,12 +245,8 @@ fn test_add_term_serialization() {
     // Serialize the mul term.
     let serialized_add_term = serde_json::to_string(&add_term).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_add_term).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestAddTermSerialization(ping) };
+    let _go_serialized_add_term =
+        ping_pong(serialized_add_term, IntegrationTestAddTermSerialization);
 
     // TODO:
     // * Prepare pong for Rust.
@@ -255,12 +256,9 @@ fn test_add_term_serialization() {
 
 #[test]
 fn test_add_terms_serialization() {
-    // Sample random coefficient.
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    // Sample a random sum.
-    let sum = acvm::Witness::new(rand::random());
-    // Sample a random mul term.
-    let add_terms = vec![AddTerm { coefficient, sum }, AddTerm { coefficient, sum }];
+    // Sample `count` random AddTerm
+    let count = 2;
+    let add_terms = random_add_terms(count);
 
     println!("| RUST |");
     println!("{add_terms:?}");
@@ -268,12 +266,8 @@ fn test_add_terms_serialization() {
     // Serialize the mul term.
     let serialized_add_terms = serde_json::to_string(&add_terms).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_add_terms).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestAddTermsSerialization(ping) };
+    let _go_serialized_add_terms =
+        ping_pong(serialized_add_terms, IntegrationTestAddTermsSerialization);
 
     // TODO:
     // * Prepare pong for Rust.
@@ -283,24 +277,8 @@ fn test_add_terms_serialization() {
 
 #[test]
 fn test_raw_gate_serialization() {
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    let multiplicand = acvm::Witness::new(rand::random());
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    let sum = acvm::Witness::new(rand::random());
-    let add_term = AddTerm { coefficient, sum };
-    let add_terms = vec![add_term, add_term];
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
-    let mul_terms = vec![mul_term, mul_term];
-    let constant_term: gnark_backend_wrapper::Fr = rand::random();
-    let raw_gate = RawGate {
-        mul_terms,
-        add_terms,
-        constant_term,
-    };
+    let term_count = 2;
+    let raw_gate = random_raw_gate(term_count);
 
     println!("| RUST |");
     println!("{raw_gate:?}");
@@ -308,12 +286,8 @@ fn test_raw_gate_serialization() {
     // Serialize the raw gate.
     let serialized_raw_gate = serde_json::to_string(&raw_gate).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_raw_gate).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestRawGateSerialization(ping) };
+    let _go_serialized_raw_gate =
+        ping_pong(serialized_raw_gate, IntegrationTestRawGateSerialization);
 
     // TODO:
     // * Prepare pong for Rust.
@@ -323,25 +297,9 @@ fn test_raw_gate_serialization() {
 
 #[test]
 fn test_raw_gates_serialization() {
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    let multiplicand = acvm::Witness::new(rand::random());
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    let sum = acvm::Witness::new(rand::random());
-    let add_term = AddTerm { coefficient, sum };
-    let add_terms = vec![add_term, add_term];
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
-    let mul_terms = vec![mul_term, mul_term];
-    let constant_term: gnark_backend_wrapper::Fr = rand::random();
-    let raw_gate = RawGate {
-        mul_terms,
-        add_terms,
-        constant_term,
-    };
-    let raw_gates = vec![raw_gate.clone(), raw_gate];
+    let count = 2;
+    let term_count = 2;
+    let raw_gates = random_raw_gates(count, term_count);
 
     println!("| RUST |");
     println!("{raw_gates:?}");
@@ -349,12 +307,8 @@ fn test_raw_gates_serialization() {
     // Serialize the raw gate.
     let serialized_raw_gates = serde_json::to_string(&raw_gates).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_raw_gates).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestRawGatesSerialization(ping) };
+    let _go_serialized_raw_gates =
+        ping_pong(serialized_raw_gates, IntegrationTestRawGatesSerialization);
 
     // TODO:
     // * Prepare pong for Rust.
@@ -364,52 +318,18 @@ fn test_raw_gates_serialization() {
 
 #[test]
 fn test_raw_r1cs_serialization() {
-    let coefficient: gnark_backend_wrapper::Fr = rand::random();
-    let multiplicand = acvm::Witness::new(rand::random());
-    let multiplier: acvm::Witness = acvm::Witness::new(rand::random());
-    let sum = acvm::Witness::new(rand::random());
-    let add_term = AddTerm { coefficient, sum };
-    let add_terms = vec![add_term, add_term];
-    let mul_term = MulTerm {
-        coefficient,
-        multiplicand,
-        multiplier,
-    };
-    let mul_terms = vec![mul_term, mul_term];
-    let constant_term: gnark_backend_wrapper::Fr = rand::random();
-    let raw_gate = RawGate {
-        mul_terms,
-        add_terms,
-        constant_term,
-    };
-    let raw_gates = vec![raw_gate.clone(), raw_gate];
-    let public_inputs = vec![
-        acvm::Witness::new(rand::random()),
-        acvm::Witness::new(rand::random()),
-    ];
-    let values: [gnark_backend_wrapper::Fr; 2] = rand::random();
-    let num_constraints: u64 = rand::random();
-    let num_variables: u64 = rand::random();
-    let raw_r1cs = RawR1CS {
-        gates: raw_gates,
-        public_inputs,
-        values: values.to_vec(),
-        num_variables,
-        num_constraints,
-    };
+    let gate_count = 2;
+    let term_count = 2;
+    let raw_r1cs = random_raw_r1cs(gate_count, term_count);
 
     println!("| RUST |");
     println!("{raw_r1cs:?}");
 
-    // Serialize the raw gate.
-    let serialized_raw_gates = serde_json::to_string(&raw_r1cs).unwrap();
+    // Serialize the raw r1cs.
+    let serialized_raw_r1cs = serde_json::to_string(&raw_r1cs).unwrap();
 
-    // Prepare ping for Go.
-    let pre_ping = ffi::CString::new(serialized_raw_gates).unwrap();
-    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
-
-    // Send and receive pong from Go.
-    let _pong: *const ffi::c_char = unsafe { IntegrationTestRawR1CSSerialization(ping) };
+    let _go_serialized_raw_r1cs =
+        ping_pong(serialized_raw_r1cs, IntegrationTestRawR1CSSerialization);
 
     // TODO:
     // * Prepare pong for Rust.
