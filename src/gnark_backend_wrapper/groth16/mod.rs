@@ -171,19 +171,11 @@ pub fn get_exact_circuit_size(circuit: &acvm::Circuit) -> Result<u32, GnarkBacke
 }
 
 pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
-    // TODO: Sample random public_inputs
-    let mut witness_values = BTreeMap::new();
-    witness_values.insert(acvm::Witness(1), acvm::FieldElement::from(3_u128));
-    witness_values.insert(acvm::Witness(2), acvm::FieldElement::from(3_u128));
-    let backend = Gnark;
-    acvm::PartialWitnessGenerator::solve(&backend, &mut witness_values, circuit.opcodes.clone())?;
-    let num_witnesses = circuit.num_vars();
-    let values = (1..num_witnesses)
-        .map(|wit_index| {
-            *acvm::witness_to_value(&witness_values, acvm::Witness(wit_index))
-                .unwrap_or(&acvm::FieldElement::zero())
-        })
-        .collect();
+    let num_witnesses: usize = circuit
+        .num_vars()
+        .try_into()
+        .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
+    let values = vec![acvm::FieldElement::from(rand::random::<u128>()); num_witnesses - 1];
 
     let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
 
