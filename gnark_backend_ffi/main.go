@@ -59,6 +59,8 @@ func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vec
 			}
 
 			r1cs.AddConstraint(mulR1C)
+
+			terms = append(terms, r1cs.MakeTerm(&coefficient, productVariable))
 		}
 
 		for _, add_term := range gate.AddTerms {
