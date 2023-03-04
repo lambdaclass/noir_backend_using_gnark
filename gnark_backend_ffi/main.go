@@ -494,179 +494,195 @@ func IntegrationTestRawR1CSSerialization(rawR1CSJSON string) *C.char {
 	return C.CString(string(serializedRawR1CS))
 }
 
-func ExampleR1CS() {
-	// build a constraint system; this is (usually) done by the frontend package
-	// for this Example we want to manipulate the constraints and output a string representation
-	// and build the linear expressions "manually".
-	r1cs := cs_bn254.NewR1CS(0)
+func ExampleSimpleCircuit() {
+	publicVariables := []fr_bn254.Element{fr_bn254.NewElement(2), fr_bn254.NewElement(6)}
+	secretVariables := []fr_bn254.Element{fr_bn254.NewElement(3)}
 
-	ONE := r1cs.AddPublicVariable("1") // the "ONE" wire
+	/* R1CS Building */
+
+	fmt.Println("Building R1CS...")
+	// x * y == z
+	// x is secret
+	// y is public
+	r1cs := cs_bn254.NewR1CS(1)
+
+	// Variables
+	_ = r1cs.AddPublicVariable("1") // the ONE_WIRE
 	Y := r1cs.AddPublicVariable("Y")
+	Z := r1cs.AddPublicVariable("Z")
 	X := r1cs.AddSecretVariable("X")
 
-	v0 := r1cs.AddInternalVariable() // X²
-	v1 := r1cs.AddInternalVariable() // X³
-
-	// coefficients
+	// Coefficients
 	cOne := r1cs.FromInterface(1)
-	cFive := r1cs.FromInterface(5)
 
-	// X² == X * X
+	// Constraints
+	fmt.Println("Adding constraints...")
 	r1cs.AddConstraint(constraint.R1C{
 		L: constraint.LinearExpression{r1cs.MakeTerm(&cOne, X)},
-		R: constraint.LinearExpression{r1cs.MakeTerm(&cOne, X)},
-		O: constraint.LinearExpression{r1cs.MakeTerm(&cOne, v0)},
+		R: constraint.LinearExpression{r1cs.MakeTerm(&cOne, Y)},
+		O: constraint.LinearExpression{r1cs.MakeTerm(&cOne, Z)},
 	})
+	fmt.Println("Constraints added.")
+	fmt.Println("R1CS built.")
 
-	// X³ == X² * X
-	r1cs.AddConstraint(constraint.R1C{
-		L: constraint.LinearExpression{r1cs.MakeTerm(&cOne, v0)},
-		R: constraint.LinearExpression{r1cs.MakeTerm(&cOne, X)},
-		O: constraint.LinearExpression{r1cs.MakeTerm(&cOne, v1)},
-	})
-
-	// Y == X³ + X + 5
-	r1cs.AddConstraint(constraint.R1C{
-		R: constraint.LinearExpression{r1cs.MakeTerm(&cOne, ONE)},
-		L: constraint.LinearExpression{r1cs.MakeTerm(&cOne, Y)},
-		O: constraint.LinearExpression{
-			r1cs.MakeTerm(&cFive, ONE),
-			r1cs.MakeTerm(&cOne, X),
-			r1cs.MakeTerm(&cOne, v1),
-		},
-	})
-
-	fmt.Println("Number of constraints", r1cs.GetNbConstraints())
-	fmt.Println("Number of coefficients", r1cs.GetNbCoefficients())
-	fmt.Println("Number of internal variables", r1cs.GetNbInternalVariables())
-	fmt.Println("Number of public variables", r1cs.GetNbPublicVariables())
-	fmt.Println("Number of secret variables", r1cs.GetNbSecretVariables())
-	fmt.Println("Coefficients", r1cs.Coefficients)
-
-	// get the constraints
 	constraints, r := r1cs.GetConstraints()
 
 	for _, r1c := range constraints {
 		fmt.Println(r1c.String(r))
-		// for more granularity use constraint.NewStringBuilder(r) that embeds a string.Builder
-		// and has WriteLinearExpression and WriteTerm methods.
 	}
 
-	// Output:
-	// X ⋅ X == v0
-	// v0 ⋅ X == v1
-	// Y ⋅ 1 == 5 + X + v1
+	/* Universal SRS Generation */
+
+	fmt.Println("Generating SRS...")
+
+	pk, vk, _ := groth16.Setup(r1cs)
+
+	fmt.Println("VERIFYING KEY", vk)
+	var vkBuff bytes.Buffer
+	vk.WriteTo(&vkBuff)
+	encodedVK := hex.EncodeToString(vkBuff.Bytes())
+	decodedVK, _ := hex.DecodeString(encodedVK)
+	vk2 := groth16.NewVerifyingKey(r1cs.CurveID())
+	vk2.ReadFrom(bytes.NewReader(decodedVK))
+	fmt.Println("VERIFYING KEY", vk2)
+	fmt.Println("VERIFYING KEYS MATCH", !vk.IsDifferent(vk2))
+
+	fmt.Println("SRS generated.")
+
+	/* Proving */
+
+	fmt.Println("Proving...")
+
+	witness := buildWitnesses(r1cs, publicVariables, secretVariables)
+
+	p, _ := groth16.Prove(r1cs, pk, witness)
+
+	fmt.Println("Proof generated.")
+
+	/* Verification */
+
+	fmt.Println("Verifying...")
+
+	publicWitness, _ := witness.Public()
+
+	verifies := groth16.Verify(p, vk, publicWitness)
+
+	fmt.Println("Verifies:", verifies == nil)
 }
 
 func main() {
-	// ExampleR1CS()
+	ExampleSimpleCircuit()
 
-	// constrain x == y
-	// constrain 0 == 0
-	// rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
-	// constrain 1 == 1
-	// rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
-	// constrain 2 == 2
+	// // constrain x == y
+	// // constrain 0 == 0
+	// // rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// // constrain 1 == 1
+	// // rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// // constrain 2 == 2
 	// rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
-	// constrain 3 == 3
-	rawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
-	// Invalid
-	invalidRawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
+	// // constrain 3 == 3
+	// // rawR1CS := `{"gates":[{"mul_terms":[],"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}],"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"},{"mul_terms":[],"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000"}],"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","num_variables":7,"num_constraints":11}`
+	// // Invalid
+	// invalidRawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
 
-	var r structs.RawR1CS
-	err := json.Unmarshal([]byte(rawR1CS), &r)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// var r structs.RawR1CS
+	// err := json.Unmarshal([]byte(rawR1CS), &r)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	fmt.Println("Gates: ", len(r.Gates))
-	mulTerms := 0
-	addTerms := 0
-	for g, gate := range r.Gates {
-		fmt.Println("Gate", g)
-		fmt.Println()
+	// // fmt.Println("Gates: ", len(r.Gates))
+	// // mulTerms := 0
+	// // addTerms := 0
+	// // for g, gate := range r.Gates {
+	// // 	fmt.Println("Gate", g)
+	// // 	fmt.Println()
 
-		fmt.Println("MulTerms:")
-		mulTerms += len(gate.MulTerms)
-		for _, mulTerm := range gate.MulTerms {
-			fmt.Println("MulTerm:", mulTerm)
-			var product fr_bn254.Element
-			product.Mul(&r.Values[mulTerm.Multiplier], &r.Values[mulTerm.Multiplicand])
-			fmt.Println("Multiplication", mulTerm.Coefficient.String(), "*", r.Values[mulTerm.Multiplier].String(), "*", r.Values[mulTerm.Multiplicand].String(), "=", product.String())
-			fmt.Println("Product:", product.String())
-		}
-		fmt.Println()
+	// // 	fmt.Println("MulTerms:")
+	// // 	mulTerms += len(gate.MulTerms)
+	// // 	for _, mulTerm := range gate.MulTerms {
+	// // 		fmt.Println("MulTerm:", mulTerm)
+	// // 		var product fr_bn254.Element
+	// // 		product.Mul(&r.Values[mulTerm.Multiplier], &r.Values[mulTerm.Multiplicand])
+	// // 		fmt.Println("Multiplication", mulTerm.Coefficient.String(), "*", r.Values[mulTerm.Multiplier].String(), "*", r.Values[mulTerm.Multiplicand].String(), "=", product.String())
+	// // 		fmt.Println("Product:", product.String())
+	// // 	}
+	// // 	fmt.Println()
 
-		addTerms += len(gate.AddTerms)
-		fmt.Println("AddTerms:")
-		for _, addTerm := range gate.AddTerms {
-			fmt.Println("AddTerm:", addTerm)
-			fmt.Println("Addition", addTerm.Coefficient.String(), "*", r.Values[addTerm.Sum].String())
-		}
-		fmt.Println()
+	// // 	addTerms += len(gate.AddTerms)
+	// // 	fmt.Println("AddTerms:")
+	// // 	for _, addTerm := range gate.AddTerms {
+	// // 		fmt.Println("AddTerm:", addTerm)
+	// // 		fmt.Println("Addition", addTerm.Coefficient.String(), "*", r.Values[addTerm.Sum].String())
+	// // 	}
+	// // 	fmt.Println()
 
-		fmt.Println("ConstantTerm:", gate.ConstantTerm)
-		fmt.Println()
+	// // 	fmt.Println("ConstantTerm:", gate.ConstantTerm)
+	// // 	fmt.Println()
 
-		fmt.Println()
-	}
-	fmt.Println("MulTerms: ", mulTerms)
-	fmt.Println("AddTerms: ", mulTerms)
+	// // 	fmt.Println()
+	// // }
+	// // fmt.Println("MulTerms: ", mulTerms)
+	// // fmt.Println("AddTerms: ", mulTerms)
 
-	r1cs, publicVariables, privateVariables := buildR1CS(r)
+	// r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	constraints, res := r1cs.GetConstraints()
-	for _, r1c := range constraints {
-		fmt.Println(r1c.String(res))
-	}
-	fmt.Println()
-	fmt.Println("NbValues: ", len(r.Values))
-	for _, value := range r.Values {
-		fmt.Println("Value: ", value.String())
-	}
-	fmt.Println("NbPublicInputs: ", len(r.PublicInputs), "PublicInputs: ", r.PublicInputs)
+	// constraints, res := r1cs.GetConstraints()
+	// for _, r1c := range constraints {
+	// 	fmt.Println(r1c.String(res))
+	// }
+	// fmt.Println()
+	// fmt.Println("NbValues: ", len(r.Values))
+	// for _, value := range r.Values {
+	// 	fmt.Println("Value: ", value.String())
+	// }
+	// fmt.Println("NbPublicInputs: ", len(r.PublicInputs), "PublicInputs: ", r.PublicInputs)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
-	publicWitnesses, _ := witness.Public()
+	// witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	// publicWitnesses, _ := witness.Public()
 
-	// Setup.
-	pk, vk, err := groth16.Setup(r1cs)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// // Setup.
+	// fmt.Println("Setting up...")
+	// pk, vk, err := groth16.Setup(r1cs)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println("Set up")
 
-	// Prove.
-	proof, err := groth16.Prove(r1cs, pk, witness)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// // Prove.
+	// fmt.Println("Proving...")
+	// proof, err := groth16.Prove(r1cs, pk, witness)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println("Proved")
 
-	// Verify.
-	verified := groth16.Verify(proof, vk, publicWitnesses)
+	// // Verify.
+	// verified := groth16.Verify(proof, vk, publicWitnesses)
 
-	fmt.Println("Verifies with valid public inputs: ", verified == nil)
-	fmt.Println()
+	// fmt.Println("Verifies with valid public inputs: ", verified == nil)
+	// fmt.Println()
 
-	// Invalid verification (same proof, wrong public value).
-	err = json.Unmarshal([]byte(invalidRawR1CS), &r)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// // Invalid verification (same proof, wrong public value).
+	// err = json.Unmarshal([]byte(invalidRawR1CS), &r)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	invalidR1CS, publicVariables, privateVariables := buildR1CS(r)
+	// invalidR1CS, publicVariables, privateVariables := buildR1CS(r)
 
-	constraints, res = invalidR1CS.GetConstraints()
-	for _, r1c := range constraints {
-		fmt.Println(r1c.String(res))
-	}
+	// constraints, res = invalidR1CS.GetConstraints()
+	// for _, r1c := range constraints {
+	// 	fmt.Println(r1c.String(res))
+	// }
 
-	invalidWitness := buildWitnesses(invalidR1CS, publicVariables, privateVariables)
-	invalidPublicWitnesses, _ := invalidWitness.Public()
-	invalidVerified := groth16.Verify(proof, vk, invalidPublicWitnesses)
+	// invalidWitness := buildWitnesses(invalidR1CS, publicVariables, privateVariables)
+	// invalidPublicWitnesses, _ := invalidWitness.Public()
+	// invalidVerified := groth16.Verify(proof, vk, invalidPublicWitnesses)
 
-	fmt.Println("Valid Public Witnesses: ", publicWitnesses.Vector().(fr_bn254.Vector).String())
-	fmt.Println("Invalid Public Witnesses: ", invalidPublicWitnesses.Vector().(fr_bn254.Vector).String())
-	fmt.Println()
+	// fmt.Println("Valid Public Witnesses: ", publicWitnesses.Vector().(fr_bn254.Vector).String())
+	// fmt.Println("Invalid Public Witnesses: ", invalidPublicWitnesses.Vector().(fr_bn254.Vector).String())
+	// fmt.Println()
 
-	fmt.Println("Verifies with invalid public inputs: ", invalidVerified == nil)
+	// fmt.Println("Verifies with invalid public inputs: ", invalidVerified == nil)
 }
