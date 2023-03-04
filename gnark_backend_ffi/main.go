@@ -100,9 +100,8 @@ func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privat
 		log.Fatal(err)
 	}
 
-	// -1 because the first variable is the constant 1.
-	realNbPublicVariables := r1cs.GetNbPublicVariables() - 1
-	witness.Fill(realNbPublicVariables, r1cs.GetNbSecretVariables(), witnessValues)
+	// -1 because the first variable is the ONE_WIRE.
+	witness.Fill(r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables(), witnessValues)
 
 	return witness
 }
