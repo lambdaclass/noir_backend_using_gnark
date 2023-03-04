@@ -537,16 +537,6 @@ func ExampleSimpleCircuit() {
 
 	pk, vk, _ := groth16.Setup(r1cs)
 
-	fmt.Println("VERIFYING KEY", vk)
-	var vkBuff bytes.Buffer
-	vk.WriteTo(&vkBuff)
-	encodedVK := hex.EncodeToString(vkBuff.Bytes())
-	decodedVK, _ := hex.DecodeString(encodedVK)
-	vk2 := groth16.NewVerifyingKey(r1cs.CurveID())
-	vk2.ReadFrom(bytes.NewReader(decodedVK))
-	fmt.Println("VERIFYING KEY", vk2)
-	fmt.Println("VERIFYING KEYS MATCH", !vk.IsDifferent(vk2))
-
 	fmt.Println("SRS generated.")
 
 	/* Proving */
