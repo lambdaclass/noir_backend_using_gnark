@@ -1,6 +1,4 @@
-use acvm::acir::native_types::Witness;
-use acvm::PartialWitnessGenerator;
-use acvm::{acir::circuit::Circuit, FieldElement};
+use crate::acvm;
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
@@ -50,8 +48,8 @@ extern "C" {
 }
 
 pub fn prove_with_meta(
-    circuit: Circuit,
-    values: Vec<FieldElement>,
+    circuit: acvm::Circuit,
+    values: Vec<acvm::FieldElement>,
 ) -> Result<Vec<u8>, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit, values)?;
 
@@ -73,8 +71,8 @@ pub fn prove_with_meta(
 }
 
 pub fn prove_with_pk(
-    circuit: &Circuit,
-    values: Vec<FieldElement>,
+    circuit: &acvm::Circuit,
+    values: Vec<acvm::FieldElement>,
     proving_key: &[u8],
 ) -> Result<Vec<u8>, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
@@ -104,9 +102,9 @@ pub fn prove_with_pk(
 }
 
 pub fn verify_with_meta(
-    circuit: Circuit,
+    circuit: acvm::Circuit,
     proof: &[u8],
-    public_inputs: &[FieldElement],
+    public_inputs: &[acvm::FieldElement],
 ) -> Result<bool, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
 
@@ -132,9 +130,9 @@ pub fn verify_with_meta(
 }
 
 pub fn verify_with_vk(
-    circuit: &Circuit,
+    circuit: &acvm::Circuit,
     proof: &[u8],
-    public_inputs: &[FieldElement],
+    public_inputs: &[acvm::FieldElement],
     verifying_key: &[u8],
 ) -> Result<bool, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit.clone(), public_inputs.to_vec())?;
@@ -165,27 +163,25 @@ pub fn verify_with_vk(
     }
 }
 
-pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32, GnarkBackendError> {
+pub fn get_exact_circuit_size(circuit: &acvm::Circuit) -> Result<u32, GnarkBackendError> {
     let size: u32 = RawR1CS::num_constraints(circuit)?
         .try_into()
         .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
     Ok(size)
 }
 
-pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
+pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
     // TODO: Sample random public_inputs
     let mut witness_values = BTreeMap::new();
-    witness_values.insert(Witness(1), FieldElement::from(3_u128));
-    witness_values.insert(Witness(2), FieldElement::from(3_u128));
+    witness_values.insert(acvm::Witness(1), acvm::FieldElement::from(3_u128));
+    witness_values.insert(acvm::Witness(2), acvm::FieldElement::from(3_u128));
     let backend = Gnark;
-    backend.solve(&mut witness_values, circuit.opcodes.clone())?;
+    acvm::PartialWitnessGenerator::solve(&backend, &mut witness_values, circuit.opcodes.clone())?;
     let num_witnesses = circuit.num_vars();
     let values = (1..num_witnesses)
         .map(|wit_index| {
-            // Get the value if it exists, if not then default to zero value.
-            witness_values
-                .get(&Witness(wit_index))
-                .map_or(FieldElement::zero(), |field| *field)
+            *acvm::witness_to_value(&witness_values, acvm::Witness(wit_index))
+                .unwrap_or(&acvm::FieldElement::zero())
         })
         .collect();
 
@@ -201,9 +197,6 @@ pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendE
     let key_pair: KeyPair = unsafe { Preprocess(rawr1cs_go_string) };
 
     let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
-    let proving_key_bytes = proving_key_c_str
-        .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
     let proving_key_str = proving_key_c_str
         .to_str()
         .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
@@ -236,7 +229,7 @@ mod tests {
 
     #[test]
     fn get_exact_circuit_size_should_return_zero_with_an_empty_circuit() {
-        let size = get_exact_circuit_size(&Circuit::default()).unwrap();
+        let size = get_exact_circuit_size(&acvm::Circuit::default()).unwrap();
         assert_eq!(size, 0);
     }
 }
