@@ -35,7 +35,7 @@ cfg_if::cfg_if! {
 }
 
 extern "C" {
-    fn VerifyWithMeta(rawr1cs: GoString, proof: GoString) -> c_uchar;
+    fn PlonkVerifyWithMeta(circuit: GoString, values: GoString, proof: GoString) -> c_uchar;
     fn PlonkProveWithMeta(circuit: GoString, values: GoString) -> *const c_char;
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn PlonkProveWithPK(
@@ -114,14 +114,18 @@ pub fn verify_with_meta(
     proof: &[u8],
     public_inputs: &[acvm::FieldElement],
 ) -> Result<bool, GnarkBackendError> {
-    let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
-
     // Serialize to json and then convert to GoString
-    let rawr1cs_json = serde_json::to_string(&rawr1cs)
+    let acir_json = serde_json::to_string(&circuit)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let c_str = CString::new(rawr1cs_json)
+    let acir_c_str = CString::new(acir_json)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let go_string_rawr1cs = GoString::try_from(&c_str)?;
+    let acir_go_string = GoString::try_from(&acir_c_str)?;
+
+    let values_json = serde_json::to_string(&circuit)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_c_str = CString::new(values_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_go_string = GoString::try_from(&values_c_str)?;
 
     let serialized_proof = String::from_utf8(proof.to_vec())
         .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
@@ -129,7 +133,8 @@ pub fn verify_with_meta(
         .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
     let go_string_proof = GoString::try_from(&c_str)?;
 
-    let result = unsafe { VerifyWithMeta(go_string_rawr1cs, go_string_proof) };
+    let result =
+        unsafe { PlonkVerifyWithMeta(circuit_go_string, values_go_string, go_string_proof) };
     match result {
         0 => Ok(false),
         1 => Ok(true),
