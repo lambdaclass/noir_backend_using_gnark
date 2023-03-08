@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"gnark_backend_ffi/backend"
-	"gnark_backend_ffi/backend/groth16/structs"
+	groth16_backend "gnark_backend_ffi/backend/groth16"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/groth16"
@@ -18,7 +18,7 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
-func buildR1CS(r structs.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector) {
+func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	// Create R1CS.
 	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
 
@@ -110,7 +110,7 @@ func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privat
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
 	// Deserialize rawR1CS.
-	var r structs.RawR1CS
+	var r groth16_backend.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -143,7 +143,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 //export ProveWithPK
 func ProveWithPK(rawR1CS string, encodedProvingKey string) *C.char {
 	// Deserialize rawR1CS.
-	var r structs.RawR1CS
+	var r groth16_backend.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -181,7 +181,7 @@ func ProveWithPK(rawR1CS string, encodedProvingKey string) *C.char {
 //export VerifyWithMeta
 func VerifyWithMeta(rawR1CS string, encodedProof string) bool {
 	// Deserialize rawR1CS.
-	var r structs.RawR1CS
+	var r groth16_backend.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -225,7 +225,7 @@ func VerifyWithMeta(rawR1CS string, encodedProof string) bool {
 //export VerifyWithVK
 func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey string) bool {
 	// Deserialize rawR1CS.
-	var r structs.RawR1CS
+	var r groth16_backend.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -274,7 +274,7 @@ func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey strin
 //export Preprocess
 func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	// Deserialize rawR1CS.
-	var r structs.RawR1CS
+	var r groth16_backend.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CS), &r)
 	if err != nil {
 		log.Fatal(err)
@@ -427,7 +427,7 @@ func IntegrationTestAddTermsSerialization(addTermsJSON string) *C.char {
 
 //export IntegrationTestRawGateSerialization
 func IntegrationTestRawGateSerialization(rawGateJSON string) *C.char {
-	var deserializedRawGate structs.RawGate
+	var deserializedRawGate groth16_backend.RawGate
 	err := json.Unmarshal([]byte(rawGateJSON), &deserializedRawGate)
 	if err != nil {
 		log.Fatal(err)
@@ -449,7 +449,7 @@ func IntegrationTestRawGateSerialization(rawGateJSON string) *C.char {
 
 //export IntegrationTestRawGatesSerialization
 func IntegrationTestRawGatesSerialization(rawGatesJSON string) *C.char {
-	var deserializedRawGates []structs.RawGate
+	var deserializedRawGates []groth16_backend.RawGate
 	err := json.Unmarshal([]byte(rawGatesJSON), &deserializedRawGates)
 	if err != nil {
 		log.Fatal(err)
@@ -473,7 +473,7 @@ func IntegrationTestRawGatesSerialization(rawGatesJSON string) *C.char {
 
 //export IntegrationTestRawR1CSSerialization
 func IntegrationTestRawR1CSSerialization(rawR1CSJSON string) *C.char {
-	var deserializedRawR1CS structs.RawR1CS
+	var deserializedRawR1CS groth16_backend.RawR1CS
 	err := json.Unmarshal([]byte(rawR1CSJSON), &deserializedRawR1CS)
 	if err != nil {
 		log.Fatal(err)

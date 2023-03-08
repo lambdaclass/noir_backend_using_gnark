@@ -1,4 +1,4 @@
-package structs
+package groth16
 
 import "gnark_backend_ffi/backend"
 
