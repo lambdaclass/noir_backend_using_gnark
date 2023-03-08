@@ -37,7 +37,7 @@ cfg_if::cfg_if! {
 extern "C" {
     fn PlonkVerifyWithMeta(circuit: GoString, values: GoString, proof: GoString) -> c_uchar;
     fn PlonkProveWithMeta(circuit: GoString, values: GoString) -> *const c_char;
-    fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
+    fn PlonkVerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn PlonkProveWithPK(
         circuit: GoString,
         values: GoString,
@@ -148,14 +148,18 @@ pub fn verify_with_vk(
     public_inputs: &[acvm::FieldElement],
     verifying_key: &[u8],
 ) -> Result<bool, GnarkBackendError> {
-    let rawr1cs = RawR1CS::new(circuit.clone(), public_inputs.to_vec())?;
-
     // Serialize to json and then convert to GoString
-    let rawr1cs_json = serde_json::to_string(&rawr1cs)
+    let acir_json = serde_json::to_string(&circuit)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let rawr1cs_c_str = CString::new(rawr1cs_json)
+    let acir_c_str = CString::new(acir_json)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
+    let acir_go_string = GoString::try_from(&acir_c_str)?;
+
+    let values_json = serde_json::to_string(&circuit)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_c_str = CString::new(values_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_go_string = GoString::try_from(&values_c_str)?;
 
     let proof_serialized = hex::encode(proof);
     let proof_c_str = CString::new(proof_serialized)
@@ -167,8 +171,14 @@ pub fn verify_with_vk(
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
     let verifying_key_go_string = GoString::try_from(&verifying_key_c_str)?;
 
-    let verifies =
-        unsafe { VerifyWithVK(rawr1cs_go_string, proof_go_string, verifying_key_go_string) };
+    let verifies = unsafe {
+        PlonkVerifyWithVK(
+            circuit_go_string,
+            values_go_string,
+            proof_go_string,
+            verifying_key_go_string,
+        )
+    };
     match verifies {
         0 => Ok(false),
         1 => Ok(true),
