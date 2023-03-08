@@ -8,13 +8,13 @@ import (
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
 
-type OpcodeArithmetic struct {
+type ArithmeticOpcode struct {
 	MulTerms []backend.MulTerm
 	AddTerms []backend.AddTerm
 	qM       fr_bn254.Element
 }
 
-func (g *OpcodeArithmetic) UnmarshalJSON(data []byte) error {
+func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	var gateMap map[string]interface{}
 	err := json.Unmarshal(data, &gateMap)
 	if err != nil {

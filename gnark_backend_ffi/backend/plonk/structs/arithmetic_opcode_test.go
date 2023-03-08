@@ -13,7 +13,7 @@ import (
 
 // TODO: Test error cases.
 
-func TestOpcodeArithmeticUnmarshalJSON(t *testing.T) {
+func TestArithmeticOpcodeUnmarshalJSON(t *testing.T) {
 	encodedCoefficient, _ := backend.SampleEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
@@ -21,10 +21,10 @@ func TestOpcodeArithmeticUnmarshalJSON(t *testing.T) {
 	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
 	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
 	encodedConstantTerm, nonEncodedConstantTerm := backend.SampleEncodedFelt()
-	opcode_arithmetic := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
+	arithmetic_opcode := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
 
-	var r OpcodeArithmetic
-	err := json.Unmarshal([]byte(opcode_arithmetic), &r)
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,11 +43,11 @@ func TestRawGatesTermUnmarshalJSON(t *testing.T) {
 	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
 	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
 	encodedConstantTerm, nonEncodedConstantTerm := backend.SampleEncodedFelt()
-	opcode_arithmetic := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
-	opcode_arithmetics := fmt.Sprintf(`[%s,%s]`, opcode_arithmetic, opcode_arithmetic)
+	arithmetic_opcode := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
+	arithmetic_opcodes := fmt.Sprintf(`[%s,%s]`, arithmetic_opcode, arithmetic_opcode)
 
-	var r []OpcodeArithmetic
-	err := json.Unmarshal([]byte(opcode_arithmetics), &r)
+	var r []ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcodes), &r)
 	if err != nil {
 		log.Fatal(err)
 	}
