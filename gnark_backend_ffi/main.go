@@ -10,6 +10,7 @@ import (
 
 	"gnark_backend_ffi/backend"
 	groth16_backend "gnark_backend_ffi/backend/groth16"
+	plonk_backend "gnark_backend_ffi/backend/plonk"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/groth16"
