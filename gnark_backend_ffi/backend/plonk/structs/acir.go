@@ -7,7 +7,7 @@ import (
 )
 
 type ACIR struct {
-	CurrentWitness uint32
+	CurrentWitness backend.Witness
 	Opcodes        []Opcode
 	PublicInputs   backend.Witnesses
 }

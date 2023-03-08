@@ -26,12 +26,14 @@ func TestACIRUnmarshalJSON(t *testing.T) {
 	invertDirective := fmt.Sprintf(`{"Invert": {"x":%d,"result":%d}}`, x, result)
 	opcodes := fmt.Sprintf(`[%s,%s]`, arithmetic_opcode, invertDirective)
 	publicInputs := fmt.Sprintf("[%d,%d,%d]", multiplicand, multiplier, sum)
-	currentWitness := 1
+	currentWitness := uint32(1)
 	acirJson := fmt.Sprintf(`{"current_witness_index": %d, "opcodes": %s, "public_inputs": %s}`, currentWitness, opcodes, publicInputs)
 
 	var a ACIR
 	err := json.Unmarshal([]byte(acirJson), &a)
 
 	assert.NoError(t, err)
-	//Todo check params
+	assert.Equal(t, currentWitness, a.CurrentWitness)
+	assert.Equal(t, UncheckedDeserializeOpcodes(opcodes), a.Opcodes)
+	assert.Equal(t, backend.Witnesses{multiplicand, multiplier, sum}, a.PublicInputs)
 }
