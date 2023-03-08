@@ -4,11 +4,6 @@ use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
 
-mod acir_to_r1cs;
-mod c_go_structures;
-mod errors;
-
-mod serialize;
 pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, RawGate, RawR1CS};
 pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
 use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
@@ -41,7 +36,7 @@ cfg_if::cfg_if! {
 
 extern "C" {
     fn VerifyWithMeta(rawr1cs: GoString, proof: GoString) -> c_uchar;
-    fn ProveWithMeta(rawr1cs: GoString) -> *const c_char;
+    fn PlonkProveWithMeta(circuit: GoString, values: GoString) -> *const c_char;
     fn VerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
     fn ProveWithPK(rawr1cs: GoString, proving_key: GoString) -> *const c_char;
     fn Preprocess(circuit: GoString) -> KeyPair;
@@ -51,16 +46,19 @@ pub fn prove_with_meta(
     circuit: acvm::Circuit,
     values: Vec<acvm::FieldElement>,
 ) -> Result<Vec<u8>, GnarkBackendError> {
-    let rawr1cs = RawR1CS::new(circuit, values)?;
-
-    // Serialize to json and then convert to GoString
-    let serialized_rawr1cs = serde_json::to_string(&rawr1cs)
+    let acir_json = serde_json::to_string(&circuit)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let c_str = CString::new(serialized_rawr1cs)
+    let acir_c_str = CString::new(acir_json)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let go_string_rawr1cs = GoString::try_from(&c_str)?;
+    let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let result: *const c_char = unsafe { ProveWithMeta(go_string_rawr1cs) };
+    let values_json = serde_json::to_string(&circuit)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_c_str = CString::new(values_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_go_string = GoString::try_from(&values_c_str)?;
+
+    let result: *const c_char = unsafe { PlonkProveWithMeta(acir_go_string, values_go_string) };
     let c_str = unsafe { CStr::from_ptr(result) };
     let bytes = c_str
         .to_str()
