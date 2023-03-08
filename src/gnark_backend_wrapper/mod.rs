@@ -1,3 +1,6 @@
+mod errors;
+pub use errors::GnarkBackendError;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "groth16")] {
         mod groth16;

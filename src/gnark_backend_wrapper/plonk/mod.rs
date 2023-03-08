@@ -6,12 +6,13 @@ use std::os::raw::{c_char, c_uchar};
 
 mod acir_to_r1cs;
 mod c_go_structures;
+mod errors;
 
 mod serialize;
-use crate::gnark_backend_wrapper::errors::GnarkBackendError;
 pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, RawGate, RawR1CS};
 pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
 use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
+use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
 use crate::Gnark;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
