@@ -96,7 +96,6 @@ impl ProofSystemCompiler for Gnark {
         circuit: &Circuit,
         verification_key: &[u8],
     ) -> bool {
-        let num_witnesses = circuit.num_vars();
         let public: Vec<FieldElement> =
             get_values_from_witness_tree(circuit.num_vars(), public_inputs);
         gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
