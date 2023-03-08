@@ -4,6 +4,7 @@ use crate::gnark_backend_wrapper::groth16::serialize::{
     deserialize_felt, deserialize_felts, serialize_felt, serialize_felts,
 };
 use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
+use crate::gnark_backend_wrapper::num_constraints;
 use std::num::TryFromIntError;
 
 // AcirCircuit and AcirArithGate are R1CS-friendly structs.
@@ -66,7 +67,7 @@ impl RawR1CS {
         acir: acvm::Circuit,
         values: Vec<acvm::FieldElement>,
     ) -> Result<Self, GnarkBackendError> {
-        let num_constraints: u64 = Self::num_constraints(&acir)?
+        let num_constraints: u64 = num_constraints(&acir)?
             .try_into()
             .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
         // Currently non-arithmetic gates are not supported
@@ -92,25 +93,6 @@ impl RawR1CS {
             public_inputs: acir.public_inputs.0.into_iter().collect(),
             num_constraints,
         })
-    }
-
-    pub fn num_constraints(acir: &acvm::Circuit) -> Result<usize, GnarkBackendError> {
-        // each multiplication term adds an extra constraint
-        let mut num_opcodes = acir.opcodes.len();
-
-        for opcode in acir.opcodes.iter() {
-            match opcode {
-                acvm::Opcode::Arithmetic(arith) => num_opcodes += arith.num_mul_terms() + 1, // plus one for the linear combination gate
-                acvm::Opcode::Directive(_) => (),
-                _ => {
-                    return Err(GnarkBackendError::UnsupportedOpcodeError(
-                        opcode.to_string(),
-                    ))
-                }
-            }
-        }
-
-        Ok(num_opcodes)
     }
 }
 

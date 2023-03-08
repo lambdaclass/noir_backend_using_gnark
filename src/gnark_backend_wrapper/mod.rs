@@ -1,6 +1,7 @@
 mod errors;
 pub use errors::GnarkBackendError;
 mod c_go_structures;
+use crate::acvm;
 pub use c_go_structures::{GoString, KeyPair};
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
@@ -46,4 +47,23 @@ cfg_if::cfg_if! {
         pub use plonk::get_exact_circuit_size;
         pub use plonk::preprocess;
     }
+}
+
+pub fn num_constraints(acir: &acvm::Circuit) -> Result<usize, GnarkBackendError> {
+    // each multiplication term adds an extra constraint
+    let mut num_opcodes = acir.opcodes.len();
+
+    for opcode in acir.opcodes.iter() {
+        match opcode {
+            acvm::Opcode::Arithmetic(arith) => num_opcodes += arith.num_mul_terms() + 1, // plus one for the linear combination gate
+            acvm::Opcode::Directive(_) => (),
+            _ => {
+                return Err(GnarkBackendError::UnsupportedOpcodeError(
+                    opcode.to_string(),
+                ))
+            }
+        }
+    }
+
+    Ok(num_opcodes)
 }

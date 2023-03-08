@@ -161,7 +161,7 @@ pub fn verify_with_vk(
 }
 
 pub fn get_exact_circuit_size(circuit: &acvm::Circuit) -> Result<u32, GnarkBackendError> {
-    let size: u32 = RawR1CS::num_constraints(circuit)?
+    let size: u32 = num_constraints(circuit)?
         .try_into()
         .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
     Ok(size)
