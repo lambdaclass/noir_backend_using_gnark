@@ -33,8 +33,8 @@
 
 pub mod acvm;
 
-pub mod acvm_interop;
-pub use acvm_interop::Gnark;
+pub mod backend;
+pub use backend::Gnark;
 
 // TODO: This is exposed for testing only, we should find a way to not expose it for
 // the users.

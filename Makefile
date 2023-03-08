@@ -20,3 +20,6 @@ test: build-go
 clippy:
 	$ cargo clippy --all-targets -- -D warnings
 
+nargo:
+	$ cargo install --force --locked --git https://github.com/lambdaclass/noir --branch fork nargo
+

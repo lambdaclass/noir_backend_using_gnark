@@ -1,4 +1,5 @@
-use acvm::{acir::circuit::Circuit, FieldElement};
+use crate::acvm;
+use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
@@ -12,6 +13,7 @@ pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, 
 pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
 use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
 use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
+use crate::Gnark;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.
@@ -46,8 +48,8 @@ extern "C" {
 }
 
 pub fn prove_with_meta(
-    circuit: Circuit,
-    values: Vec<FieldElement>,
+    circuit: acvm::Circuit,
+    values: Vec<acvm::FieldElement>,
 ) -> Result<Vec<u8>, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit, values)?;
 
@@ -69,8 +71,8 @@ pub fn prove_with_meta(
 }
 
 pub fn prove_with_pk(
-    circuit: &Circuit,
-    values: Vec<FieldElement>,
+    circuit: &acvm::Circuit,
+    values: Vec<acvm::FieldElement>,
     proving_key: &[u8],
 ) -> Result<Vec<u8>, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
@@ -82,27 +84,27 @@ pub fn prove_with_pk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
 
-    let proving_key_serialized = String::from_utf8(proving_key.to_vec())
-        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
+    let proving_key_serialized = hex::encode(proving_key);
     let proving_key_c_str = CString::new(proving_key_serialized)
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
     let proving_key_go_string = GoString::try_from(&proving_key_c_str)
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
 
-    let result: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
-    let c_str = unsafe { CStr::from_ptr(result) };
-    let bytes = c_str
+    let proof: *const c_char = unsafe { ProveWithPK(rawr1cs_go_string, proving_key_go_string) };
+    let proof_c_str = unsafe { CStr::from_ptr(proof) };
+    let proof_str = proof_c_str
         .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?
-        .as_bytes();
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
+    let decoded_proof = hex::decode(proof_str)
+        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?;
 
-    Ok(bytes.to_vec())
+    Ok(decoded_proof)
 }
 
 pub fn verify_with_meta(
-    circuit: Circuit,
+    circuit: acvm::Circuit,
     proof: &[u8],
-    public_inputs: &[FieldElement],
+    public_inputs: &[acvm::FieldElement],
 ) -> Result<bool, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit, public_inputs.to_vec())?;
 
@@ -128,9 +130,9 @@ pub fn verify_with_meta(
 }
 
 pub fn verify_with_vk(
-    circuit: &Circuit,
+    circuit: &acvm::Circuit,
     proof: &[u8],
-    public_inputs: &[FieldElement],
+    public_inputs: &[acvm::FieldElement],
     verifying_key: &[u8],
 ) -> Result<bool, GnarkBackendError> {
     let rawr1cs = RawR1CS::new(circuit.clone(), public_inputs.to_vec())?;
@@ -142,57 +144,65 @@ pub fn verify_with_vk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
 
-    let proof_serialized = String::from_utf8(proof.to_vec())
-        .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
+    let proof_serialized = hex::encode(proof);
     let proof_c_str = CString::new(proof_serialized)
         .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
     let proof_go_string = GoString::try_from(&proof_c_str)?;
 
-    let verifying_key_serialized = String::from_utf8(verifying_key.to_vec())
-        .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
+    let verifying_key_serialized = hex::encode(verifying_key);
     let verifying_key_c_str = CString::new(verifying_key_serialized)
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
     let verifying_key_go_string = GoString::try_from(&verifying_key_c_str)?;
 
-    let result =
+    let verifies =
         unsafe { VerifyWithVK(rawr1cs_go_string, proof_go_string, verifying_key_go_string) };
-    match result {
+    match verifies {
         0 => Ok(false),
         1 => Ok(true),
         _ => Err(GnarkBackendError::VerifyInvalidBoolError),
     }
 }
 
-pub fn get_exact_circuit_size(circuit: &Circuit) -> Result<u32, GnarkBackendError> {
+pub fn get_exact_circuit_size(circuit: &acvm::Circuit) -> Result<u32, GnarkBackendError> {
     let size: u32 = RawR1CS::num_constraints(circuit)?
         .try_into()
         .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
     Ok(size)
 }
 
-pub fn preprocess(circuit: &Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
-    // Serialize to json and then convert to GoString
-    let circuit_json = serde_json::to_string(circuit)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let circuit_c_str = CString::new(circuit_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let circuit_go_string = GoString::try_from(&circuit_c_str)?;
+pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBackendError> {
+    let num_witnesses: usize = circuit
+        .num_vars()
+        .try_into()
+        .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
+    let values = vec![acvm::FieldElement::from(rand::random::<u128>()); num_witnesses - 1];
 
-    let key_pair: KeyPair = unsafe { Preprocess(circuit_go_string) };
+    let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
+
+    // Serialize to json and then convert to GoString
+    let rawr1cs_json = serde_json::to_string(&rawr1cs)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let rawr1cs_c_str = CString::new(rawr1cs_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
+
+    let key_pair: KeyPair = unsafe { Preprocess(rawr1cs_go_string) };
 
     let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
-    let proving_key_bytes = proving_key_c_str
+    let proving_key_str = proving_key_c_str
         .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeProofError(e.to_string()))?
-        .as_bytes();
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
+    let decoded_proving_key = hex::decode(proving_key_str)
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
 
     let verifying_key_c_str = unsafe { CStr::from_ptr(key_pair.verifying_key) };
-    let verifying_key_bytes = verifying_key_c_str
+    let verifying_key_str = verifying_key_c_str
         .to_str()
-        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?
-        .as_bytes();
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
+    let decoded_verifying_key = hex::decode(verifying_key_str)
+        .map_err(|e| GnarkBackendError::DeserializeKeyError(e.to_string()))?;
 
-    Ok((proving_key_bytes.to_vec(), verifying_key_bytes.to_vec()))
+    Ok((decoded_proving_key, decoded_verifying_key))
 }
 
 #[cfg(test)]
@@ -211,7 +221,7 @@ mod tests {
 
     #[test]
     fn get_exact_circuit_size_should_return_zero_with_an_empty_circuit() {
-        let size = get_exact_circuit_size(&Circuit::default()).unwrap();
+        let size = get_exact_circuit_size(&acvm::Circuit::default()).unwrap();
         assert_eq!(size, 0);
     }
 }

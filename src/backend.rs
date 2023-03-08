@@ -4,6 +4,7 @@
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
+use acvm::pwg::witness_to_value;
 use acvm::{
     FieldElement, Language, OpcodeResolutionError, PartialWitnessGenerator, ProofSystemCompiler,
     SmartContract,
@@ -72,19 +73,31 @@ impl ProofSystemCompiler for Gnark {
         witness_values: std::collections::BTreeMap<Witness, FieldElement>,
         proving_key: &[u8],
     ) -> Vec<u8> {
-        // TODO: modify gnark serializer to accept the BTreeMap
-        let values: Vec<FieldElement> = witness_values.values().copied().collect();
+        let num_witnesses = circuit.num_vars();
+        let values = (1..num_witnesses)
+            .map(|wit_index| {
+                *witness_to_value(&witness_values, Witness(wit_index))
+                    .unwrap_or(&FieldElement::zero())
+            })
+            .collect();
         gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
 
     fn verify_with_vk(
         &self,
         proof: &[u8],
-        public_inputs: Vec<FieldElement>,
+        public_inputs: BTreeMap<Witness, FieldElement>,
         circuit: &Circuit,
         verification_key: &[u8],
     ) -> bool {
-        gnark_backend::verify_with_vk(circuit, proof, &public_inputs, verification_key).unwrap()
+        let num_witnesses = circuit.num_vars();
+        let public: Vec<FieldElement> = (1..num_witnesses)
+            .map(|wit_index| {
+                *witness_to_value(&public_inputs, Witness(wit_index))
+                    .unwrap_or(&FieldElement::zero())
+            })
+            .collect();
+        gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
     }
 }
 
