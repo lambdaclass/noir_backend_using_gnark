@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"log"
 
-	"gnark_backend_ffi/structs"
+	"gnark_backend_ffi/backend"
+	"gnark_backend_ffi/backend/groth16/structs"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/groth16"
@@ -302,7 +303,7 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 
 //export IntegrationTestFeltSerialization
 func IntegrationTestFeltSerialization(encodedFelt string) *C.char {
-	deserializedFelt := structs.DeserializeFelt(encodedFelt)
+	deserializedFelt := backend.DeserializeFelt(encodedFelt)
 	fmt.Printf("| GO |n%vn", deserializedFelt)
 
 	// Serialize the felt.
@@ -316,7 +317,7 @@ func IntegrationTestFeltSerialization(encodedFelt string) *C.char {
 
 //export IntegrationTestFeltsSerialization
 func IntegrationTestFeltsSerialization(encodedFelts string) *C.char {
-	deserializedFelts := structs.DeserializeFelts(encodedFelts)
+	deserializedFelts := backend.DeserializeFelts(encodedFelts)
 
 	// Serialize the felt.
 	serializedFelts, err := deserializedFelts.MarshalBinary()
@@ -338,7 +339,7 @@ func IntegrationTestU64Serialization(number uint64) uint64 {
 
 //export IntegrationTestMulTermSerialization
 func IntegrationTestMulTermSerialization(mulTermJSON string) *C.char {
-	var deserializedMulTerm structs.MulTerm
+	var deserializedMulTerm backend.MulTerm
 	err := json.Unmarshal([]byte(mulTermJSON), &deserializedMulTerm)
 	if err != nil {
 		log.Fatal(err)
@@ -359,7 +360,7 @@ func IntegrationTestMulTermSerialization(mulTermJSON string) *C.char {
 
 //export IntegrationTestMulTermsSerialization
 func IntegrationTestMulTermsSerialization(mulTermsJSON string) *C.char {
-	var deserializedMulTerms []structs.MulTerm
+	var deserializedMulTerms []backend.MulTerm
 	err := json.Unmarshal([]byte(mulTermsJSON), &deserializedMulTerms)
 	if err != nil {
 		log.Fatal(err)
@@ -383,7 +384,7 @@ func IntegrationTestMulTermsSerialization(mulTermsJSON string) *C.char {
 
 //export IntegrationTestAddTermSerialization
 func IntegrationTestAddTermSerialization(addTermJSON string) *C.char {
-	var deserializedAddTerm structs.AddTerm
+	var deserializedAddTerm backend.AddTerm
 	err := json.Unmarshal([]byte(addTermJSON), &deserializedAddTerm)
 	if err != nil {
 		log.Fatal(err)
@@ -403,7 +404,7 @@ func IntegrationTestAddTermSerialization(addTermJSON string) *C.char {
 
 //export IntegrationTestAddTermsSerialization
 func IntegrationTestAddTermsSerialization(addTermsJSON string) *C.char {
-	var deserializedAddTerms []structs.AddTerm
+	var deserializedAddTerms []backend.AddTerm
 	err := json.Unmarshal([]byte(addTermsJSON), &deserializedAddTerms)
 	if err != nil {
 		log.Fatal(err)
@@ -575,7 +576,7 @@ func main() {
 	// // Invalid
 	// invalidRawR1CS := `{"gates":[{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":1},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":2},{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":4}]},{"add_terms":[{"coefficient":"30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000","sum":3}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","multiplicand":3,"multiplier":5}]},{"add_terms":[{"coefficient":"0000000000000000000000000000000000000000000000000000000000000001","sum":5}],"constant_term":"0000000000000000000000000000000000000000000000000000000000000000","mul_terms":[]}],"num_constraints":11,"num_variables":7,"public_inputs":[2],"values":"00000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}`
 
-	// var r structs.RawR1CS
+	// var r backend.RawR1CS
 	// err := json.Unmarshal([]byte(rawR1CS), &r)
 	// if err != nil {
 	// 	log.Fatal(err)

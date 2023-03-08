@@ -2,10 +2,10 @@ package structs
 
 import "gnark_backend_ffi/backend"
 
-type BlackBoxFunction = int
+type BlackBoxFunctionName = int
 
 const (
-	AES BlackBoxFunction = iota
+	AES BlackBoxFunctionName = iota
 	AND
 	XOR
 	RANGE
@@ -27,9 +27,8 @@ type FunctionInput struct {
 	NumBits uint32
 }
 
-type BlackBoxFunctionFields struct {
-	Opcode  Opcode
-	Name    BlackBoxFunction
+type BlackBoxFunction struct {
+	Name    BlackBoxFunctionName
 	Inputs  []FunctionInput
 	Outputs backend.Witnesses
 }
