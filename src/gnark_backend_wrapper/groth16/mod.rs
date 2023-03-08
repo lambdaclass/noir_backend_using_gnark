@@ -1,5 +1,4 @@
 use crate::acvm;
-use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
@@ -13,7 +12,6 @@ pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, 
 pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
 use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
 use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
-use crate::Gnark;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.

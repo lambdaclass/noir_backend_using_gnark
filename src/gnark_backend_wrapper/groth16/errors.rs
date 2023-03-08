@@ -27,6 +27,9 @@ pub enum GnarkBackendError {
     #[error("Opcode resolution error: {0}")]
     OpcodeResolutionError(#[from] OpcodeResolutionError),
 
+    #[error("an error occurred while serializing felt: {0}")]
+    SerializeFeltError(String),
+
     #[error("an error occurred: {0}")]
     Error(String),
 }

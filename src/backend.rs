@@ -17,6 +17,17 @@ pub struct Gnark;
 
 impl acvm::Backend for Gnark {}
 
+fn get_values_from_witness_tree(
+    num_witnesses: u32,
+    witness_values: std::collections::BTreeMap<Witness, FieldElement>,
+) -> Vec<FieldElement> {
+    (1..num_witnesses)
+        .map(|wit_index| {
+            *witness_to_value(&witness_values, Witness(wit_index)).unwrap_or(&FieldElement::zero())
+        })
+        .collect()
+}
+
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
         Language::R1CS
@@ -46,7 +57,7 @@ impl ProofSystemCompiler for Gnark {
         witness_values: std::collections::BTreeMap<Witness, FieldElement>,
     ) -> Vec<u8> {
         // TODO: modify gnark serializer to accept the BTreeMap
-        let values: Vec<FieldElement> = witness_values.values().copied().collect();
+        let values = get_values_from_witness_tree(circuit.num_vars(), witness_values);
         gnark_backend::prove_with_meta(circuit, values).unwrap()
     }
 
@@ -73,13 +84,8 @@ impl ProofSystemCompiler for Gnark {
         witness_values: std::collections::BTreeMap<Witness, FieldElement>,
         proving_key: &[u8],
     ) -> Vec<u8> {
-        let num_witnesses = circuit.num_vars();
-        let values = (1..num_witnesses)
-            .map(|wit_index| {
-                *witness_to_value(&witness_values, Witness(wit_index))
-                    .unwrap_or(&FieldElement::zero())
-            })
-            .collect();
+        // TODO: modify gnark serializer to accept the BTreeMap
+        let values = get_values_from_witness_tree(circuit.num_vars(), witness_values);
         gnark_backend::prove_with_pk(circuit, values, proving_key).unwrap()
     }
 
@@ -91,12 +97,8 @@ impl ProofSystemCompiler for Gnark {
         verification_key: &[u8],
     ) -> bool {
         let num_witnesses = circuit.num_vars();
-        let public: Vec<FieldElement> = (1..num_witnesses)
-            .map(|wit_index| {
-                *witness_to_value(&public_inputs, Witness(wit_index))
-                    .unwrap_or(&FieldElement::zero())
-            })
-            .collect();
+        let public: Vec<FieldElement> =
+            get_values_from_witness_tree(circuit.num_vars(), public_inputs);
         gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
     }
 }
