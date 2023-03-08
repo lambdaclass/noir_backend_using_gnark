@@ -32,7 +32,7 @@ func TestArithmeticOpcodeUnmarshalJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, backend.UncheckedDeserializeMulTerms(mulTerms), r.MulTerms)
 	assert.Equal(t, backend.UncheckedDeserializeAddTerms(addTerms), r.AddTerms)
-	assert.Equal(t, nonEncodedConstantTerm, r.qM)
+	assert.Equal(t, nonEncodedConstantTerm, r.QC)
 }
 
 func TestArithmeticOpcodesTermUnmarshalJSON(t *testing.T) {
@@ -56,6 +56,6 @@ func TestArithmeticOpcodesTermUnmarshalJSON(t *testing.T) {
 	for _, op := range r {
 		assert.Equal(t, backend.UncheckedDeserializeMulTerms(mulTerms), op.MulTerms)
 		assert.Equal(t, backend.UncheckedDeserializeAddTerms(addTerms), op.AddTerms)
-		assert.Equal(t, nonEncodedConstantTerm, op.qM)
+		assert.Equal(t, nonEncodedConstantTerm, op.QC)
 	}
 }

@@ -11,7 +11,7 @@ import (
 type ArithmeticOpcode struct {
 	MulTerms []backend.MulTerm
 	AddTerms []backend.AddTerm
-	qM       fr_bn254.Element
+	QC       fr_bn254.Element
 }
 
 func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
@@ -70,7 +70,7 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 
 	g.MulTerms = mulTerms
 	g.AddTerms = addTerms
-	g.qM = constantTerm
+	g.QC = constantTerm
 
 	return nil
 }
