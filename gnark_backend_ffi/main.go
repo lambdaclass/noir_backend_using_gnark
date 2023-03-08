@@ -18,6 +18,79 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
+// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
+func buildSparseR1CS(a plonk_backend.ACIR) {
+	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+
+	for _, opcode := range a.Opcodes {
+		if gate, ok := opcode.(plonk_backend.ArithmeticOpcode); ok {
+			var xa, xb, xc int
+			var qL, qR, qO, qC, qM constraint.Coeff
+
+			// Case qM⋅(xa⋅xb)
+			if len(gate.MulTerms) == 0 {
+				mulTerm := gate.MulTerms[0]
+				qM = sparseR1CS.FromInterface(mulTerm.Coefficient)
+				xa = int(mulTerm.Multiplicand)
+				xb = int(mulTerm.Multiplier)
+			}
+
+			// Case qO⋅xc
+			if len(gate.AddTerms) == 1 {
+				qOwOTerm := gate.AddTerms[0]
+				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
+				xc = int(qOwOTerm.Sum)
+			}
+
+			// Case qL⋅xa + qR⋅xb
+			if len(gate.AddTerms) == 2 {
+				// qL⋅xa
+				qLwLTerm := gate.AddTerms[0]
+				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
+				xa = int(qLwLTerm.Sum)
+				// qR⋅xb
+				qRwRTerm := gate.AddTerms[1]
+				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
+				xb = int(qRwRTerm.Sum)
+				// qO⋅xc
+				qOwOTerm := gate.AddTerms[2]
+				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
+				xc = int(qOwOTerm.Sum)
+			}
+
+			// Case qL⋅xa + qR⋅xb + qO⋅xc
+			if len(gate.AddTerms) == 2 {
+				// qL⋅xa
+				qLwLTerm := gate.AddTerms[0]
+				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
+				xa = int(qLwLTerm.Sum)
+				// qR⋅xb
+				qRwRTerm := gate.AddTerms[1]
+				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
+				xb = int(qRwRTerm.Sum)
+			}
+
+			// Add the qC term
+			qC = sparseR1CS.FromInterface(gate.QC)
+
+			K := sparseR1CS.MakeTerm(&qC, 0)
+			K.MarkConstant()
+
+			constraint := constraint.SparseR1C{
+				L: sparseR1CS.MakeTerm(&qL, xa),
+				R: sparseR1CS.MakeTerm(&qR, xb),
+				O: sparseR1CS.MakeTerm(&qO, xc),
+				M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM, xa), sparseR1CS.MakeTerm(&qM, xb)},
+				K: K.CoeffID(),
+			}
+
+			sparseR1CS.AddConstraint(constraint)
+		} else {
+			log.Fatal("unhandled opcode")
+		}
+	}
+}
+
 func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	// Create R1CS.
 	r1cs := cs_bn254.NewR1CS(int(r.NumConstraints))
