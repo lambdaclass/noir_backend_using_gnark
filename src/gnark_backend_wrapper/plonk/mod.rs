@@ -43,7 +43,7 @@ extern "C" {
         values: GoString,
         proving_key: GoString,
     ) -> *const c_char;
-    fn Preprocess(circuit: GoString) -> KeyPair;
+    fn PlonkPreprocess(circuit: GoString, values: GoString) -> KeyPair;
 }
 
 pub fn prove_with_meta(
@@ -200,16 +200,20 @@ pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBa
         .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
     let values = vec![acvm::FieldElement::from(rand::random::<u128>()); num_witnesses - 1];
 
-    let rawr1cs = RawR1CS::new(circuit.clone(), values)?;
-
     // Serialize to json and then convert to GoString
-    let rawr1cs_json = serde_json::to_string(&rawr1cs)
+    let acir_json = serde_json::to_string(&circuit)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let rawr1cs_c_str = CString::new(rawr1cs_json)
+    let acir_c_str = CString::new(acir_json)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let rawr1cs_go_string = GoString::try_from(&rawr1cs_c_str)?;
+    let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let key_pair: KeyPair = unsafe { Preprocess(rawr1cs_go_string) };
+    let values_json = serde_json::to_string(&circuit)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_c_str = CString::new(values_json)
+        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
+    let values_go_string = GoString::try_from(&values_c_str)?;
+
+    let key_pair: KeyPair = unsafe { PlonkPreprocess(circuit_go_string, values_go_string) };
 
     let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
     let proving_key_str = proving_key_c_str
