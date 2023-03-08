@@ -31,11 +31,11 @@ pub fn prove_with_meta(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let values_json = serde_json::to_string(&circuit)
+    let felts = values.iter().map(|f| from_felt(f)).collect();
+    let felts_serialized = serialize_felts(felts).to_string();
+    let felts_c_str = CString::new(felts_serialized)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_c_str = CString::new(values_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&values_c_str)?;
+    let values_go_string = GoString::try_from(&felts_c_str)?;
 
     let result: *const c_char = unsafe { PlonkProveWithMeta(acir_go_string, values_go_string) };
     let c_str = unsafe { CStr::from_ptr(result) };
@@ -59,11 +59,11 @@ pub fn prove_with_pk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let values_json = serde_json::to_string(&circuit)
+    let felts = values.iter().map(|f| from_felt(f)).collect();
+    let felts_serialized = serialize_felts(felts).to_string();
+    let felts_c_str = CString::new(felts_serialized)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_c_str = CString::new(values_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&values_c_str)?;
+    let values_go_string = GoString::try_from(&felts_c_str)?;
 
     let proving_key_serialized = hex::encode(proving_key);
     let proving_key_c_str = CString::new(proving_key_serialized)
@@ -95,11 +95,11 @@ pub fn verify_with_meta(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let values_json = serde_json::to_string(&circuit)
+    let felts = values.iter().map(|f| from_felt(f)).collect();
+    let felts_serialized = serialize_felts(felts).to_string();
+    let felts_c_str = CString::new(felts_serialized)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_c_str = CString::new(values_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&values_c_str)?;
+    let values_go_string = GoString::try_from(&felts_c_str)?;
 
     let serialized_proof = String::from_utf8(proof.to_vec())
         .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
@@ -129,11 +129,11 @@ pub fn verify_with_vk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let values_json = serde_json::to_string(&circuit)
+    let felts = values.iter().map(|f| from_felt(f)).collect();
+    let felts_serialized = serialize_felts(felts).to_string();
+    let felts_c_str = CString::new(felts_serialized)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_c_str = CString::new(values_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&values_c_str)?;
+    let values_go_string = GoString::try_from(&felts_c_str)?;
 
     let proof_serialized = hex::encode(proof);
     let proof_c_str = CString::new(proof_serialized)
@@ -181,11 +181,11 @@ pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBa
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let values_json = serde_json::to_string(&circuit)
+    let felts = values.iter().map(|f| from_felt(f)).collect();
+    let felts_serialized = serialize_felts(felts).to_string();
+    let felts_c_str = CString::new(felts_serialized)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_c_str = CString::new(values_json)
-        .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&values_c_str)?;
+    let values_go_string = GoString::try_from(&felts_c_str)?;
 
     let key_pair: KeyPair = unsafe { PlonkPreprocess(circuit_go_string, values_go_string) };
 
