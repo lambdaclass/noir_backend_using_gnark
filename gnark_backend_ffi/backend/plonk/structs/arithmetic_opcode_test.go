@@ -35,7 +35,7 @@ func TestArithmeticOpcodeUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, nonEncodedConstantTerm, r.qM)
 }
 
-func TestRawGatesTermUnmarshalJSON(t *testing.T) {
+func TestArithmeticOpcodesTermUnmarshalJSON(t *testing.T) {
 	encodedCoefficient, _ := backend.SampleEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
