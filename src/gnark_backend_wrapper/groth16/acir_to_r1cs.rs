@@ -1,4 +1,4 @@
-use super::{from_felt, Fr};
+use super::super::{from_felt, Fr};
 use crate::acvm;
 use crate::gnark_backend_wrapper::groth16::serialize::{
     deserialize_felt, deserialize_felts, serialize_felt, serialize_felts,
