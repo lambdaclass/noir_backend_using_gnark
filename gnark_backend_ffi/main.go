@@ -20,8 +20,24 @@ import (
 )
 
 // qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
-func buildSparseR1CS(a plonk_backend.ACIR) *cs_bn254.SparseR1CS {
+func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+
+	var publicVariables fr_bn254.Vector
+	var secretVariables fr_bn254.Vector
+	_ = sparseR1CS.AddPublicVariable("1")
+	for i, value := range values {
+		i++
+		for _, publicInput := range a.PublicInputs {
+			if uint32(i) == publicInput {
+				sparseR1CS.AddPublicVariable(fmt.Sprintf("public_%d", i))
+				publicVariables = append(publicVariables, value)
+			} else {
+				sparseR1CS.AddSecretVariable(fmt.Sprintf("secret_%d", i))
+				secretVariables = append(secretVariables, value)
+			}
+		}
+	}
 
 	for _, opcode := range a.Opcodes {
 		if gate, ok := opcode.Data.(plonk_backend.ArithmeticOpcode); ok {
@@ -86,12 +102,12 @@ func buildSparseR1CS(a plonk_backend.ACIR) *cs_bn254.SparseR1CS {
 			}
 
 			sparseR1CS.AddConstraint(constraint)
-		} else {
-			log.Print("unhandled opcode:", opcode)
+		} else if _, ok := opcode.Data.(plonk_backend.DirectiveOpcode); ok {
+			continue
 		}
 	}
 
-	return sparseR1CS
+	return sparseR1CS, publicVariables, secretVariables
 }
 
 func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector) {
