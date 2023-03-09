@@ -31,9 +31,14 @@ pub fn prove_with_meta(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let felts = values.iter().map(from_felt).collect();
-    let felts_serialized = serialize_felts(felts).to_string();
-    let felts_c_str = CString::new(felts_serialized)
+    let felts: Vec<super::Fr> = values.into_iter().map(from_felt).collect();
+    let felts_serialized: Vec<u8> = Vec::new();
+    let mut serializer = serde_json::Serializer::new(felts_serialized);
+    serialize_felts(&felts, &mut serializer)
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_felts = String::from_utf8(serializer.into_inner())
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let values_go_string = GoString::try_from(&felts_c_str)?;
 
@@ -59,9 +64,14 @@ pub fn prove_with_pk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let felts = values.iter().map(from_felt).collect();
-    let felts_serialized = serialize_felts(felts).to_string();
-    let felts_c_str = CString::new(felts_serialized)
+    let felts: Vec<super::Fr> = values.into_iter().map(from_felt).collect();
+    let felts_serialized: Vec<u8> = Vec::new();
+    let mut serializer = serde_json::Serializer::new(felts_serialized);
+    serialize_felts(&felts, &mut serializer)
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_felts = String::from_utf8(serializer.into_inner())
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let values_go_string = GoString::try_from(&felts_c_str)?;
 
@@ -72,7 +82,7 @@ pub fn prove_with_pk(
         .map_err(|e| GnarkBackendError::SerializeKeyError(e.to_string()))?;
 
     let proof: *const c_char =
-        unsafe { PlonkProveWithPK(circuit_go_string, values_go_string, proving_key_go_string) };
+        unsafe { PlonkProveWithPK(acir_go_string, values_go_string, proving_key_go_string) };
     let proof_c_str = unsafe { CStr::from_ptr(proof) };
     let proof_str = proof_c_str
         .to_str()
@@ -95,9 +105,14 @@ pub fn verify_with_meta(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let felts = values.iter().map(from_felt).collect();
-    let felts_serialized = serialize_felts(felts).to_string();
-    let felts_c_str = CString::new(felts_serialized)
+    let felts: Vec<super::Fr> = public_inputs.iter().cloned().map(from_felt).collect();
+    let felts_serialized: Vec<u8> = Vec::new();
+    let mut serializer = serde_json::Serializer::new(felts_serialized);
+    serialize_felts(&felts, &mut serializer)
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_felts = String::from_utf8(serializer.into_inner())
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let values_go_string = GoString::try_from(&felts_c_str)?;
 
@@ -129,9 +144,14 @@ pub fn verify_with_vk(
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let felts = values.iter().map(from_felt).collect();
-    let felts_serialized = serialize_felts(felts).to_string();
-    let felts_c_str = CString::new(felts_serialized)
+    let felts: Vec<super::Fr> = public_inputs.iter().cloned().map(from_felt).collect();
+    let felts_serialized: Vec<u8> = Vec::new();
+    let mut serializer = serde_json::Serializer::new(felts_serialized);
+    serialize_felts(&felts, &mut serializer)
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_felts = String::from_utf8(serializer.into_inner())
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let values_go_string = GoString::try_from(&felts_c_str)?;
 
@@ -172,7 +192,6 @@ pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBa
         .num_vars()
         .try_into()
         .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
-    let values = vec![acvm::FieldElement::from(rand::random::<u128>()); num_witnesses - 1];
 
     // Serialize to json and then convert to GoString
     let acir_json = serde_json::to_string(&circuit)
@@ -181,11 +200,16 @@ pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBa
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
-    let felts = values.iter().map(from_felt).collect();
-    let felts_serialized = serialize_felts(felts).to_string();
-    let felts_c_str = CString::new(felts_serialized)
+    let random_values: Vec<super::Fr> = vec![rand::random(); num_witnesses - 1];
+    let serialized_random_values: Vec<u8> = Vec::new();
+    let mut serializer = serde_json::Serializer::new(serialized_random_values);
+    serialize_felts(&random_values, &mut serializer)
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_random_values = String::from_utf8(serializer.into_inner())
+        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let random_values_c_str = CString::new(encoded_random_values)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&felts_c_str)?;
+    let random_values_go_string = GoString::try_from(&random_values_c_str)?;
 
     let key_pair: KeyPair = unsafe { PlonkPreprocess(circuit_go_string, values_go_string) };
 
