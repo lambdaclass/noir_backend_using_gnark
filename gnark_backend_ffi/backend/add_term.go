@@ -13,34 +13,34 @@ type AddTerm struct {
 }
 
 func (m *AddTerm) UnmarshalJSON(data []byte) error {
-	var add_term_map map[string]interface{}
-	err := json.Unmarshal(data, &add_term_map)
+	var addTerm []interface{}
+	err := json.Unmarshal(data, &addTerm)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 
 	var coefficient fr_bn254.Element
-	var sum Witness
+	var x Witness
 
 	// Deserialize coefficient.
-	if encodedCoefficient, ok := add_term_map["coefficient"].(string); ok {
-		coefficient = DeserializeFelt(encodedCoefficient)
+	if coefficientValue, ok := addTerm[0].(string); ok {
+		coefficient = DeserializeFelt(coefficientValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize coefficient.")
+		log.Print("Error: couldn't deserialize coefficient.")
 		return &json.UnmarshalTypeError{}
 	}
 
 	// Deserialize sum.
-	if m, ok := add_term_map["sum"].(float64); ok {
-		sum = Witness(m)
+	if xValue, ok := addTerm[1].(float64); ok {
+		x = Witness(xValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize sum.")
+		log.Print("Error: couldn't deserialize x.")
 		return &json.UnmarshalTypeError{}
 	}
 
 	m.Coefficient = coefficient
-	m.Sum = sum
+	m.Sum = x
 
 	return nil
 }
