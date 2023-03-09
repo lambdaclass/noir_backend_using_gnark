@@ -65,23 +65,25 @@ func (d *DirectiveOpcode) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if invertDirectiveValue, ok := directiveMap["Invert"]; ok {
-		var dir InvertDirective
-		invertDirectiveJSON, err := json.Marshal(invertDirectiveValue)
-		if err != nil {
-			log.Print(err)
-			return err
+	if directiveValue, ok := directiveMap["Directive"].(map[string]interface{}); ok {
+		if invertDirectiveValue, ok := directiveValue["Invert"]; ok {
+			var dir InvertDirective
+			invertDirectiveJSON, err := json.Marshal(invertDirectiveValue)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+			err = json.Unmarshal(invertDirectiveJSON, &dir)
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+			d.Name = Invert
+			d.Directive = dir
+		} else {
+			log.Print("Error: couldn't deserialize directive.")
+			return &json.UnmarshalTypeError{}
 		}
-		err = json.Unmarshal(invertDirectiveJSON, &dir)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
-		d.Name = Invert
-		d.Directive = dir
-	} else {
-		log.Print("Error: couldn't deserialize directive.")
-		return &json.UnmarshalTypeError{}
 	}
 
 	return nil
