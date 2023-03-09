@@ -1,12 +1,14 @@
 package plonk
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
-type OpcodeUnpacker struct {
+type Opcode struct {
 	Data interface{}
 }
 
-func (o *OpcodeUnpacker) UnmarshalJSON(b []byte) error {
+func (o *Opcode) UnmarshalJSON(b []byte) error {
 	arithmetic_opcode := &ArithmeticOpcode{}
 	err := json.Unmarshal(b, arithmetic_opcode)
 	if err == nil {

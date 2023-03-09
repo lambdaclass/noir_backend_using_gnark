@@ -8,7 +8,7 @@ import (
 
 type ACIR struct {
 	CurrentWitness backend.Witness
-	Opcodes        []OpcodeUnpacker
+	Opcodes        []Opcode
 	PublicInputs   backend.Witnesses
 }
 
@@ -20,11 +20,11 @@ func (a *ACIR) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	var opcodes []OpcodeUnpacker
+	var opcodes []Opcode
 	var publicInputs backend.Witnesses
 	var currentWitness uint32
 
-	if opcodesValue, ok := acirMap["opcodes"]; ok {
+	if opcodesValue, ok := acirMap["opcodes"].([]interface{}); ok {
 		opcodesJSON, err := json.Marshal(opcodesValue)
 		if err != nil {
 			log.Print(err)
