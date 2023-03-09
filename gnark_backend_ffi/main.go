@@ -24,7 +24,7 @@ func buildSparseR1CS(a plonk_backend.ACIR) *cs_bn254.SparseR1CS {
 	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
 
 	for _, opcode := range a.Opcodes {
-		if gate, ok := opcode.(plonk_backend.ArithmeticOpcode); ok {
+		if gate, ok := opcode.Data.(plonk_backend.ArithmeticOpcode); ok {
 			var xa, xb, xc int
 			var qL, qR, qO, qC, qM constraint.Coeff
 
