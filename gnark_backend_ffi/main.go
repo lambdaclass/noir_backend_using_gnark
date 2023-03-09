@@ -571,6 +571,28 @@ func IntegrationTestRawR1CSSerialization(rawR1CSJSON string) *C.char {
 	return C.CString(string(serializedRawR1CS))
 }
 
+//export IntegrationTestCircuitSerialization
+func IntegrationTestCircuitSerialization(acirJSON string) *C.char {
+	var acir plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &acir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("| GO |")
+	fmt.Println("Current Witness: ", acir.CurrentWitness)
+	fmt.Println("Opcodes: ", acir.Opcodes)
+	fmt.Println("Public Inputs: ", acir.PublicInputs)
+	fmt.Println()
+
+	serializedAcir, err := json.Marshal(acir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return C.CString(string(serializedAcir))
+}
+
 func ExampleSimpleCircuit() {
 	publicVariables := []fr_bn254.Element{fr_bn254.NewElement(2), fr_bn254.NewElement(6)}
 	secretVariables := []fr_bn254.Element{fr_bn254.NewElement(3)}

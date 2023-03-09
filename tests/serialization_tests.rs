@@ -1,8 +1,10 @@
+use ::acvm::acir::circuit::directives::Directive;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use noir_backend_using_gnark::{
-    acvm,
+    acvm::{self, Circuit, Expression, Opcode, PublicInputs},
     gnark_backend_wrapper::{self, AddTerm, MulTerm, RawGate, RawR1CS},
 };
+use std::collections::BTreeSet;
 use std::ffi;
 
 extern "C" {
@@ -33,6 +35,9 @@ extern "C" {
     ) -> *const ffi::c_char;
     fn IntegrationTestRawR1CSSerialization(
         raw_r1cs: gnark_backend_wrapper::GoString,
+    ) -> *const ffi::c_char;
+    fn IntegrationTestCircuitSerialization(
+        circuit: gnark_backend_wrapper::GoString,
     ) -> *const ffi::c_char;
 }
 
@@ -408,6 +413,59 @@ fn test_raw_r1cs_serialization() {
 
     // Send and receive pong from Go.
     let _pong: *const ffi::c_char = unsafe { IntegrationTestRawR1CSSerialization(ping) };
+
+    // TODO:
+    // * Prepare pong for Rust.
+    // * Assert that add_terms and go_add_terms are the same (go_add_terms is
+    //   the pong's deserialization)
+}
+
+#[test]
+fn test_acir_serialization() {
+    let current_witness_index: u32 = rand::random();
+    let mul_terms = vec![(
+        acvm::FieldElement::zero(),
+        acvm::Witness::new(rand::random()),
+        acvm::Witness::new(rand::random()),
+    )];
+    let linear_combinations = vec![(
+        acvm::FieldElement::zero(),
+        acvm::Witness::new(rand::random()),
+    )];
+    let q_c = acvm::FieldElement::zero();
+    let arithmetic_expression = Expression {
+        mul_terms,
+        linear_combinations,
+        q_c,
+    };
+    let arithmetic_opcode = Opcode::Arithmetic(arithmetic_expression);
+    let directive = Directive::Invert {
+        x: acvm::Witness::new(rand::random()),
+        result: acvm::Witness::new(rand::random()),
+    };
+    let directive_opcode = Opcode::Directive(directive);
+
+    let opcodes = vec![arithmetic_opcode, directive_opcode];
+    let mut public_inputs_tree = BTreeSet::new();
+    public_inputs_tree.insert(acvm::Witness::new(rand::random()));
+    public_inputs_tree.insert(acvm::Witness::new(rand::random()));
+    let public_inputs = PublicInputs(public_inputs_tree);
+
+    let acir = Circuit {
+        current_witness_index,
+        opcodes,
+        public_inputs,
+    };
+
+    // Serialize the raw gate.
+    let serialized_acir = serde_json::to_string(&acir).unwrap();
+
+    // Prepare ping for Go.
+    let pre_ping = ffi::CString::new(serialized_acir).unwrap();
+    let ping = gnark_backend_wrapper::GoString::try_from(&pre_ping).unwrap();
+
+    // Send and receive pong from Go.
+    let _pong: *const ffi::c_char = unsafe { IntegrationTestCircuitSerialization(ping) };
 
     // TODO:
     // * Prepare pong for Rust.
