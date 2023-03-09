@@ -1,4 +1,7 @@
+use super::{from_felt, num_constraints, serialize::serialize_felts};
 use crate::acvm;
+use crate::gnark_backend_wrapper::c_go_structures::{GoString, KeyPair};
+use crate::gnark_backend_wrapper::errors::GnarkBackendError;
 use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
