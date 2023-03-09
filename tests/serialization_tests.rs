@@ -1,7 +1,7 @@
-use ::acvm::{acir::circuit::directives::Directive, pwg::arithmetic};
+use ::acvm::acir::circuit::directives::Directive;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use noir_backend_using_gnark::{
-    acvm::{self, Circuit, Expression, FieldElement, Opcode, PublicInputs},
+    acvm::{self, Circuit, Expression, Opcode, PublicInputs},
     gnark_backend_wrapper::{self, AddTerm, MulTerm, RawGate, RawR1CS},
 };
 use std::collections::BTreeSet;
