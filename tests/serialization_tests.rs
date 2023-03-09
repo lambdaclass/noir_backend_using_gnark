@@ -1,9 +1,10 @@
 use ::acvm::{acir::circuit::directives::Directive, pwg::arithmetic};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use noir_backend_using_gnark::{
-    acvm::{self, Circuit, Expression, Opcode, PublicInputs},
+    acvm::{self, Circuit, Expression, FieldElement, Opcode, PublicInputs},
     gnark_backend_wrapper::{self, AddTerm, MulTerm, RawGate, RawR1CS},
 };
+use std::collections::BTreeSet;
 use std::ffi;
 
 extern "C" {
@@ -422,7 +423,21 @@ fn test_raw_r1cs_serialization() {
 #[test]
 fn test_acir_serialization() {
     let current_witness_index: u32 = rand::random();
-    let arithmetic_expression = Expression::default();
+    let mul_terms = vec![(
+        acvm::FieldElement::zero(),
+        acvm::Witness::new(rand::random()),
+        acvm::Witness::new(rand::random()),
+    )];
+    let linear_combinations = vec![(
+        acvm::FieldElement::zero(),
+        acvm::Witness::new(rand::random()),
+    )];
+    let q_c = acvm::FieldElement::zero();
+    let arithmetic_expression = Expression {
+        mul_terms,
+        linear_combinations,
+        q_c,
+    };
     let arithmetic_opcode = Opcode::Arithmetic(arithmetic_expression);
     let directive = Directive::Invert {
         x: acvm::Witness::new(rand::random()),
@@ -431,7 +446,10 @@ fn test_acir_serialization() {
     let directive_opcode = Opcode::Directive(directive);
 
     let opcodes = vec![arithmetic_opcode, directive_opcode];
-    let public_inputs = PublicInputs::default();
+    let mut public_inputs_tree = BTreeSet::new();
+    public_inputs_tree.insert(acvm::Witness::new(rand::random()));
+    public_inputs_tree.insert(acvm::Witness::new(rand::random()));
+    let public_inputs = PublicInputs(public_inputs_tree);
 
     let acir = Circuit {
         current_witness_index,
