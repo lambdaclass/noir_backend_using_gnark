@@ -22,9 +22,6 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 		log.Print(err)
 		return err
 	}
-	for k := range opcodeMap {
-		log.Print(k)
-	}
 
 	if gateValue, ok := opcodeMap["Arithmetic"]; ok {
 		gateJSON, err := json.Marshal(gateValue)
