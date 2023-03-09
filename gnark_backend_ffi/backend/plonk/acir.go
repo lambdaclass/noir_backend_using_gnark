@@ -2,7 +2,6 @@ package plonk
 
 import (
 	"encoding/json"
-	"fmt"
 	"gnark_backend_ffi/backend"
 	"log"
 )
@@ -31,7 +30,7 @@ func (a *ACIR) UnmarshalJSON(data []byte) error {
 			log.Print(err)
 			return err
 		}
-		fmt.Printf("opcodesJSON: %v\n", opcodesJSON)
+
 		err = json.Unmarshal(opcodesJSON, &opcodes)
 
 		if err != nil {
