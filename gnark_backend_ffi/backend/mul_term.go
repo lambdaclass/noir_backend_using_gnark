@@ -14,10 +14,10 @@ type MulTerm struct {
 }
 
 func (m *MulTerm) UnmarshalJSON(data []byte) error {
-	var mul_term_map map[string]interface{}
-	err := json.Unmarshal(data, &mul_term_map)
+	var mulTerm []interface{}
+	err := json.Unmarshal(data, &mulTerm)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 
@@ -26,26 +26,26 @@ func (m *MulTerm) UnmarshalJSON(data []byte) error {
 	var multiplier Witness
 
 	// Deserialize coefficient.
-	if encodedCoefficient, ok := mul_term_map["coefficient"].(string); ok {
-		coefficient = DeserializeFelt(encodedCoefficient)
+	if coefficientValue, ok := mulTerm[0].(string); ok {
+		coefficient = DeserializeFelt(coefficientValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize coefficient.")
+		log.Print("Error: couldn't deserialize coefficient.")
 		return &json.UnmarshalTypeError{}
 	}
 
 	// Deserialize multiplicand.
-	if m, ok := mul_term_map["multiplicand"].(float64); ok {
-		multiplicand = Witness(m)
+	if multiplicandValue, ok := mulTerm[1].(float64); ok {
+		multiplicand = Witness(multiplicandValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize multiplicand.")
+		log.Print("Error: couldn't deserialize multiplicand.")
 		return &json.UnmarshalTypeError{}
 	}
 
 	// Deserialize multiplier.
-	if m, ok := mul_term_map["multiplier"].(float64); ok {
-		multiplier = Witness(m)
+	if multiplierValue, ok := mulTerm[2].(float64); ok {
+		multiplier = Witness(multiplierValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize multiplier.")
+		log.Print("Error: couldn't deserialize multiplier.")
 		return &json.UnmarshalTypeError{}
 	}
 

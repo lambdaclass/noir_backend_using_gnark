@@ -1,4 +1,4 @@
-package groth16
+package plonk
 
 import (
 	"encoding/json"
@@ -24,13 +24,15 @@ func (a *ACIR) UnmarshalJSON(data []byte) error {
 	var publicInputs backend.Witnesses
 	var currentWitness uint32
 
-	if opcodesValue, ok := acirMap["opcodes"]; ok {
+	if opcodesValue, ok := acirMap["opcodes"].([]interface{}); ok {
 		opcodesJSON, err := json.Marshal(opcodesValue)
 		if err != nil {
 			log.Print(err)
 			return err
 		}
+
 		err = json.Unmarshal(opcodesJSON, &opcodes)
+
 		if err != nil {
 			log.Print(err)
 			return err
