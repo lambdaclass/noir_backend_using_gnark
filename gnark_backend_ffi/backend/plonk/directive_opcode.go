@@ -39,7 +39,7 @@ func (d *InvertDirective) UnmarshalJSON(data []byte) error {
 	if XValue, ok := invertDirectiveMap["x"].(float64); ok {
 		X = backend.Witness(XValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize X.")
+		log.Print("Error: couldn't deserialize X.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -47,7 +47,7 @@ func (d *InvertDirective) UnmarshalJSON(data []byte) error {
 	if ResultValue, ok := invertDirectiveMap["result"].(float64); ok {
 		Result = backend.Witness(ResultValue)
 	} else {
-		log.Fatal("Error: couldn't deserialize Result.")
+		log.Print("Error: couldn't deserialize Result.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -61,7 +61,7 @@ func (d *DirectiveOpcode) UnmarshalJSON(data []byte) error {
 	var directiveMap map[string]interface{}
 	err := json.Unmarshal(data, &directiveMap)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 
