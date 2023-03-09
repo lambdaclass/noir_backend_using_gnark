@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-func UncheckedDeserializeOpcodes(opcodes string) []OpcodeUnpacker {
-	var o []OpcodeUnpacker
+func UncheckedDeserializeOpcodes(opcodes string) []Opcode {
+	var o []Opcode
 	err := json.Unmarshal([]byte(opcodes), &o)
 	if err != nil {
 		log.Fatal(err)
