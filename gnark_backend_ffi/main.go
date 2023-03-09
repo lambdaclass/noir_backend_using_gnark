@@ -377,6 +377,170 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 	return C.CString(provingKeyString), C.CString(verifyingKeyString)
 }
 
+//export PlonkProveWithMeta
+func PlonkProveWithMeta(acirJSON string, encodedValues string) *C.char {
+	return C.CString("Unimplemented")
+}
+
+//export PlonkProveWithPK
+func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey string) *C.char {
+	// Deserialize ACIR.
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode values.
+	var valuesToDecode string
+	err = json.Unmarshal([]byte(encodedValues), &valuesToDecode)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decodedValues := backend.DeserializeFelts(valuesToDecode)
+
+	// Build sparse R1CS.
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedValues)
+
+	// Build witness.
+	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	// Deserialize proving key.
+	provingKey := plonk.NewProvingKey(sparseR1CS.CurveID())
+	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = provingKey.ReadFrom(bytes.NewReader([]byte(decodedProvingKey)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Prove.
+	proof, err := plonk.Prove(sparseR1CS, provingKey, witness)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Serialize proof
+	var serialized_proof bytes.Buffer
+	proof.WriteTo(&serialized_proof)
+	proof_string := hex.EncodeToString(serialized_proof.Bytes())
+
+	return C.CString(proof_string)
+}
+
+//export PlonkVerifyWithMeta
+func PlonkVerifyWithMeta(acirJSON string, encodedValues string, encodedProof string) bool {
+	return false
+}
+
+//export PlonkVerifyWithVK
+func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs string, encodedVerifyingKey string) bool {
+	// Deserialize ACIR.
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode public inputs.
+	var publicInputsToDecode string
+	err = json.Unmarshal([]byte(encodedPublicInputs), &publicInputsToDecode)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decodedPublicInputs := backend.DeserializeFelts(publicInputsToDecode)
+
+	// Build sparse R1CS.
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedPublicInputs)
+
+	// Build witness.
+	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	// Deserialize proof.
+	proof := plonk.NewProof(sparseR1CS.CurveID())
+	decodedProof, err := hex.DecodeString(encodedProof)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = proof.ReadFrom(bytes.NewReader(decodedProof))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Deserialize verifying key.
+	verifyingKey := plonk.NewVerifyingKey(sparseR1CS.CurveID())
+	decodedVerifyingKey, err := hex.DecodeString(encodedVerifyingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = verifyingKey.ReadFrom(bytes.NewReader(decodedVerifyingKey))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Retrieve public inputs.
+	publicInputs, err := witness.Public()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Verify.
+	if plonk.Verify(proof, verifyingKey, publicInputs) != nil {
+		return false
+	}
+
+	return true
+}
+
+//export PlonkPreprocess
+func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.char) {
+	// Deserialize ACIR.
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode values.
+	var valuesToDecode string
+	err = json.Unmarshal([]byte(encodedRandomValues), &valuesToDecode)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decodedRandomValues := backend.DeserializeFelts(valuesToDecode)
+
+	// Build sparse R1CS.
+	sparseR1CS, _, _ := buildSparseR1CS(a, decodedRandomValues)
+
+	// Setup.
+	alpha, err := rand.Int(rand.Reader, sparseR1CS.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	srs, err := kzg.NewSRS(128, alpha)
+	if err != nil {
+		log.Fatal(err)
+	}
+	provingKey, verifyingKey, err := plonk.Setup(sparseR1CS, srs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Serialize proving key.
+	var serializedProvingKey bytes.Buffer
+	provingKey.WriteTo(&serializedProvingKey)
+	provingKeyString := hex.EncodeToString(serializedProvingKey.Bytes())
+
+	// Serialize verifying key.
+	var serializedVerifyingKey bytes.Buffer
+	verifyingKey.WriteTo(&serializedVerifyingKey)
+	verifyingKeyString := hex.EncodeToString(serializedVerifyingKey.Bytes())
+
+	return C.CString(provingKeyString), C.CString(verifyingKeyString)
+}
+
 //export IntegrationTestFeltSerialization
 func IntegrationTestFeltSerialization(encodedFelt string) *C.char {
 	deserializedFelt := backend.DeserializeFelt(encodedFelt)
