@@ -175,7 +175,7 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 	return r1cs, publicVariables, secretVariables
 }
 
-func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector) witness.Witness {
+func buildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nbPublicVariables int, nbSecretVariables int) witness.Witness {
 	witnessValues := make(chan any)
 
 	go func() {
@@ -188,13 +188,12 @@ func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privat
 		}
 	}()
 
-	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	witness, err := witness.New(scalarField)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// -1 because the first variable is the ONE_WIRE.
-	witness.Fill(r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables(), witnessValues)
+	witness.Fill(nbPublicVariables, nbSecretVariables, witnessValues)
 
 	return witness
 }
@@ -210,7 +209,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Setup.
 	provingKey, _, err := groth16.Setup(r1cs)
@@ -243,7 +242,7 @@ func ProveWithPK(rawR1CS string, encodedProvingKey string) *C.char {
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Deserialize proving key.
 	provingKey := groth16.NewProvingKey(r1cs.CurveID())
@@ -281,7 +280,7 @@ func VerifyWithMeta(rawR1CS string, encodedProof string) bool {
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Deserialize proof.
 	proof := groth16.NewProof(r1cs.CurveID())
@@ -325,7 +324,7 @@ func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey strin
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Deserialize proof.
 	proof := groth16.NewProof(r1cs.CurveID())
@@ -800,7 +799,7 @@ func ExampleSimpleCircuit() {
 
 	fmt.Println("Proving...")
 
-	witness := buildWitnesses(r1cs, publicVariables, secretVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, secretVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	p, _ := groth16.Prove(r1cs, pk, witness)
 
