@@ -15,11 +15,31 @@ type ArithmeticOpcode struct {
 }
 
 func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
+	var opcodeMap map[string]interface{}
 	var gateMap map[string]interface{}
-	err := json.Unmarshal(data, &gateMap)
+	err := json.Unmarshal(data, &opcodeMap)
 	if err != nil {
 		log.Print(err)
 		return err
+	}
+	for k := range opcodeMap {
+		log.Print(k)
+	}
+
+	if gateValue, ok := opcodeMap["Arithmetic"]; ok {
+		gateJSON, err := json.Marshal(gateValue)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		err = json.Unmarshal(gateJSON, &gateMap)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+	} else {
+		log.Print("Error: couldn't deserialize gate.")
+		return &json.UnmarshalTypeError{}
 	}
 
 	var mulTerms []backend.MulTerm
@@ -44,7 +64,7 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	}
 
 	// Deserialize add terms.
-	if addTermsValue, ok := gateMap["add_terms"].([]interface{}); ok {
+	if addTermsValue, ok := gateMap["linear_combinations"].([]interface{}); ok {
 		addTermsJSON, err := json.Marshal(addTermsValue)
 		if err != nil {
 			log.Print(err)
@@ -61,7 +81,7 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	}
 
 	// Deserialize constant term.
-	if encodedConstantTerm, ok := gateMap["constant_term"].(string); ok {
+	if encodedConstantTerm, ok := gateMap["q_c"].(string); ok {
 		constantTerm = backend.DeserializeFelt(encodedConstantTerm)
 	} else {
 		log.Print("Error: coefficient is not a felt.")
