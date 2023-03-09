@@ -1,4 +1,4 @@
-use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
+use crate::gnark_backend_wrapper::GnarkBackendError;
 use std::ffi::CString;
 use std::os::raw::c_char;
 
