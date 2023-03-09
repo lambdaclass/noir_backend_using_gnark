@@ -117,7 +117,7 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 	// Define the R1CS variables.
 	_ = r1cs.AddPublicVariable("1") // ONE_WIRE
 	var publicVariables fr_bn254.Vector
-	var privateVariables fr_bn254.Vector
+	var secretVariables fr_bn254.Vector
 	for i, value := range r.Values {
 		i++
 		for _, publicInput := range r.PublicInputs {
@@ -126,7 +126,7 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 				publicVariables = append(publicVariables, value)
 			} else {
 				r1cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
-				privateVariables = append(privateVariables, value)
+				secretVariables = append(secretVariables, value)
 			}
 		}
 	}
@@ -172,7 +172,7 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 		r1cs.AddConstraint(r1c)
 	}
 
-	return r1cs, publicVariables, privateVariables
+	return r1cs, publicVariables, secretVariables
 }
 
 func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector) witness.Witness {
