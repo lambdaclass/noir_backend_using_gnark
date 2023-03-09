@@ -3,20 +3,21 @@ use std::ffi::{CStr, CString};
 use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
 
-use crate::gnark_backend_wrapper::c_go_structures::{GoString, KeyPair};
-use crate::gnark_backend_wrapper::errors::GnarkBackendError;
-use crate::Gnark;
-
 extern "C" {
-    fn PlonkVerifyWithMeta(circuit: GoString, values: GoString, proof: GoString) -> c_uchar;
-    fn PlonkProveWithMeta(circuit: GoString, values: GoString) -> *const c_char;
-    fn PlonkVerifyWithVK(rawr1cs: GoString, proof: GoString, verifying_key: GoString) -> c_uchar;
+    fn PlonkVerifyWithMeta(acir: GoString, encoded_values: GoString, proof: GoString) -> c_uchar;
+    fn PlonkProveWithMeta(acir: GoString, encoded_values: GoString) -> *const c_char;
+    fn PlonkVerifyWithVK(
+        acir: GoString,
+        proof: GoString,
+        public_inputs: GoString,
+        verifying_key: GoString,
+    ) -> c_uchar;
     fn PlonkProveWithPK(
-        circuit: GoString,
-        values: GoString,
+        acir: GoString,
+        encoded_values: GoString,
         proving_key: GoString,
     ) -> *const c_char;
-    fn PlonkPreprocess(circuit: GoString, values: GoString) -> KeyPair;
+    fn PlonkPreprocess(acir: GoString, encoded_random_values: GoString) -> KeyPair;
 }
 
 pub fn prove_with_meta(
