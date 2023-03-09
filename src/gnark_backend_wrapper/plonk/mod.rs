@@ -125,8 +125,7 @@ pub fn verify_with_meta(
         .map_err(|e| GnarkBackendError::SerializeProofError(e.to_string()))?;
     let go_string_proof = GoString::try_from(&c_str)?;
 
-    let result =
-        unsafe { PlonkVerifyWithMeta(circuit_go_string, values_go_string, go_string_proof) };
+    let result = unsafe { PlonkVerifyWithMeta(acir_go_string, values_go_string, go_string_proof) };
     match result {
         0 => Ok(false),
         1 => Ok(true),
@@ -156,7 +155,7 @@ pub fn verify_with_vk(
         .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
     let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
-    let values_go_string = GoString::try_from(&felts_c_str)?;
+    let public_inputs_go_string = GoString::try_from(&felts_c_str)?;
 
     let proof_serialized = hex::encode(proof);
     let proof_c_str = CString::new(proof_serialized)
@@ -170,8 +169,8 @@ pub fn verify_with_vk(
 
     let verifies = unsafe {
         PlonkVerifyWithVK(
-            circuit_go_string,
-            values_go_string,
+            acir_go_string,
+            public_inputs_go_string,
             proof_go_string,
             verifying_key_go_string,
         )
@@ -214,7 +213,7 @@ pub fn preprocess(circuit: &acvm::Circuit) -> Result<(Vec<u8>, Vec<u8>), GnarkBa
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let random_values_go_string = GoString::try_from(&random_values_c_str)?;
 
-    let key_pair: KeyPair = unsafe { PlonkPreprocess(circuit_go_string, values_go_string) };
+    let key_pair: KeyPair = unsafe { PlonkPreprocess(acir_go_string, random_values_go_string) };
 
     let proving_key_c_str = unsafe { CStr::from_ptr(key_pair.proving_key) };
     let proving_key_str = proving_key_c_str
