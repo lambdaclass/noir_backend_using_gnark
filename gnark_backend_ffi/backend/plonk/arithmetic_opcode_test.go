@@ -52,3 +52,102 @@ func TestArithmeticOpcodesTermUnmarshalJSON(t *testing.T) {
 		assert.Equal(t, nonEncodedConstantTerm, op.QC)
 	}
 }
+
+func TestArithmeticOpcodeUnmarshalJSONMulTermCoeffError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"c":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONMulTermMultiplicandError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multi":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONMlTermMultiplierError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multi":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONAddTermCoeffError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coeff":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONAddTermSumError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","su":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONMissingArithmeticKeyError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"ari": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONMissingMulTermError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONMissingLinearCombinationsError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul":%s,"linear":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
+
+func TestArithmeticOpcodeUnmarshalJSONMissingQCError(t *testing.T) {
+	encodedCoefficient, _ := backend.SampleEncodedFelt()
+	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":0,"multiplier":0},{"coefficient":"%s","multiplicand":0,"multiplier":0}]`, encodedCoefficient, encodedCoefficient)
+	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":0},{"coefficient":"%s","sum":0}]`, encodedCoefficient, encodedCoefficient)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul":%s,"linear_combinations":%s,"a":"%s"}}`, mulTerms, addTerms, encodedCoefficient)
+
+	var r ArithmeticOpcode
+	err := json.Unmarshal([]byte(arithmetic_opcode), &r)
+	assert.Error(t, err)
+}
