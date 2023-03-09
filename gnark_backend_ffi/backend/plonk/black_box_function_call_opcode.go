@@ -1,4 +1,4 @@
-package groth16
+package plonk
 
 import "gnark_backend_ffi/backend"
 

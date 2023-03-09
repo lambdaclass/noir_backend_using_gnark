@@ -1,14 +1,15 @@
-package groth16
+package plonk
 
 import (
 	"encoding/json"
+	"fmt"
 	"gnark_backend_ffi/backend"
 	"log"
 )
 
 type ACIR struct {
 	CurrentWitness backend.Witness
-	Opcodes        []Opcode
+	Opcodes        []OpcodeUnpacker
 	PublicInputs   backend.Witnesses
 }
 
@@ -20,7 +21,7 @@ func (a *ACIR) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	var opcodes []Opcode
+	var opcodes []OpcodeUnpacker
 	var publicInputs backend.Witnesses
 	var currentWitness uint32
 
@@ -30,7 +31,9 @@ func (a *ACIR) UnmarshalJSON(data []byte) error {
 			log.Print(err)
 			return err
 		}
+		fmt.Printf("opcodesJSON: %v\n", opcodesJSON)
 		err = json.Unmarshal(opcodesJSON, &opcodes)
+
 		if err != nil {
 			log.Print(err)
 			return err
