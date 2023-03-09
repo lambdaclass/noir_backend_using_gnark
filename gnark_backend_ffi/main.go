@@ -29,7 +29,7 @@ func buildSparseR1CS(a plonk_backend.ACIR) *cs_bn254.SparseR1CS {
 			var qL, qR, qO, qC, qM constraint.Coeff
 
 			// Case qM⋅(xa⋅xb)
-			if len(gate.MulTerms) == 0 {
+			if len(gate.MulTerms) != 0 {
 				mulTerm := gate.MulTerms[0]
 				qM = sparseR1CS.FromInterface(mulTerm.Coefficient)
 				xa = int(mulTerm.Multiplicand)
