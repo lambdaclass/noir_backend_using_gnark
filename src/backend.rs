@@ -4,6 +4,7 @@
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
+use acvm::pwg::witness_to_value;
 use acvm::{
     FieldElement, Language, OpcodeResolutionError, PartialWitnessGenerator, ProofSystemCompiler,
     SmartContract,
@@ -22,10 +23,7 @@ fn get_values_from_witness_tree(
 ) -> Vec<FieldElement> {
     (1..num_witnesses)
         .map(|wit_index| {
-            // Get the value if it exists, if not then default to zero value.
-            witness_values
-                .get(&Witness(wit_index))
-                .map_or(FieldElement::zero(), |field| *field)
+            *witness_to_value(&witness_values, Witness(wit_index)).unwrap_or(&FieldElement::zero())
         })
         .collect()
 }
@@ -94,11 +92,13 @@ impl ProofSystemCompiler for Gnark {
     fn verify_with_vk(
         &self,
         proof: &[u8],
-        public_inputs: Vec<FieldElement>,
+        public_inputs: BTreeMap<Witness, FieldElement>,
         circuit: &Circuit,
         verification_key: &[u8],
     ) -> bool {
-        gnark_backend::verify_with_vk(circuit, proof, &public_inputs, verification_key).unwrap()
+        let public: Vec<FieldElement> =
+            get_values_from_witness_tree(circuit.num_vars(), public_inputs);
+        gnark_backend::verify_with_vk(circuit, proof, &public, verification_key).unwrap()
     }
 }
 

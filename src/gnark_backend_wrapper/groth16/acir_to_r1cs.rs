@@ -1,6 +1,8 @@
 use super::{from_felt, Fr};
 use crate::acvm;
-use crate::gnark_backend_wrapper::groth16::serialize::{serialize_felt, serialize_felts};
+use crate::gnark_backend_wrapper::groth16::serialize::{
+    deserialize_felt, deserialize_felts, serialize_felt, serialize_felts,
+};
 use crate::gnark_backend_wrapper::groth16::GnarkBackendError;
 use std::num::TryFromIntError;
 
@@ -11,33 +13,47 @@ use std::num::TryFromIntError;
 // - These structures only support arithmetic gates, while the compiler has other
 // gate types. These can be added later once the backend knows how to deal with things like XOR
 // or once ACIR is taught how to do convert these black box functions to Arithmetic gates.
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct RawR1CS {
     pub gates: Vec<RawGate>,
     pub public_inputs: Vec<acvm::Witness>,
-    #[serde(serialize_with = "serialize_felts")]
+    #[serde(
+        serialize_with = "serialize_felts",
+        deserialize_with = "deserialize_felts"
+    )]
     pub values: Vec<Fr>,
     pub num_variables: u64,
     pub num_constraints: u64,
 }
 
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct RawGate {
     pub mul_terms: Vec<MulTerm>,
     pub add_terms: Vec<AddTerm>,
-    #[serde(serialize_with = "serialize_felt")]
+    #[serde(
+        serialize_with = "serialize_felt",
+        deserialize_with = "deserialize_felt"
+    )]
     pub constant_term: Fr,
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct MulTerm {
+    #[serde(
+        serialize_with = "serialize_felt",
+        deserialize_with = "deserialize_felt"
+    )]
     pub coefficient: Fr,
     pub multiplicand: acvm::Witness,
     pub multiplier: acvm::Witness,
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct AddTerm {
+    #[serde(
+        serialize_with = "serialize_felt",
+        deserialize_with = "deserialize_felt"
+    )]
     pub coefficient: Fr,
     pub sum: acvm::Witness,
 }
