@@ -20,7 +20,7 @@ func TestACIRUnmarshalJSON(t *testing.T) {
 	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
 	addTerms := fmt.Sprintf(`[{"coefficient":"%s","sum":%d},{"coefficient":"%s","sum":%d}]`, encodedCoefficient, sum, encodedCoefficient, sum)
 	encodedConstantTerm, _ := backend.SampleEncodedFelt()
-	arithmetic_opcode := fmt.Sprintf(`{"mul_terms":%s,"add_terms":%s,"constant_term":"%s"}`, mulTerms, addTerms, encodedConstantTerm)
+	arithmetic_opcode := fmt.Sprintf(`{"Arithmetic": {"mul_terms":%s,"linear_combinations":%s,"q_c":"%s"}}`, mulTerms, addTerms, encodedConstantTerm)
 	x := rand.Uint32()
 	result := rand.Uint32()
 	invertDirective := fmt.Sprintf(`{"Invert": {"x":%d,"result":%d}}`, x, result)
@@ -31,7 +31,6 @@ func TestACIRUnmarshalJSON(t *testing.T) {
 
 	var a ACIR
 	err := json.Unmarshal([]byte(acirJson), &a)
-
 	assert.NoError(t, err)
 	assert.Equal(t, currentWitness, a.CurrentWitness)
 	assert.Equal(t, UncheckedDeserializeOpcodes(opcodes), a.Opcodes)
