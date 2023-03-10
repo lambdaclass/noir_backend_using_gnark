@@ -161,8 +161,8 @@ pub fn verify_with_vk(
     let verifies = unsafe {
         PlonkVerifyWithVK(
             acir_go_string,
-            public_inputs_go_string,
             proof_go_string,
+            public_inputs_go_string,
             verifying_key_go_string,
         )
     };
