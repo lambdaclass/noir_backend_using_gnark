@@ -10,13 +10,16 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"os"
 
 	"gnark_backend_ffi/backend"
 	groth16_backend "gnark_backend_ffi/backend/groth16"
 	plonk_backend "gnark_backend_ffi/backend/plonk"
 
+	"github.com/consensys/gnark-crypto/ecc"
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	kzgg "github.com/consensys/gnark-crypto/kzg"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/backend/plonk"
 	"github.com/consensys/gnark/backend/witness"
@@ -436,6 +439,21 @@ func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey s
 		log.Fatal(err)
 	}
 
+	srsEncoded, err := os.ReadFile("srs.hex")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	decodedSrs, err := hex.DecodeString(string(srsEncoded))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	srs := kzgg.NewSRS(ecc.BN254)
+	srs.ReadFrom(bytes.NewReader(decodedSrs))
+
+	provingKey.InitKZG(srs)
+
 	// Prove.
 	proof, err := plonk.Prove(sparseR1CS, provingKey, witness)
 	if err != nil {
@@ -550,7 +568,10 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	encodedSRS := hex.EncodeToString(serializedSRS.Bytes())
 
 	// Save the encoded SRS in a file named srs.hex.
-	// TODO: Explain why we do this.
+	// We need to save the encoded SRS because the struct VerifyingKey has a pointer
+	// to a SRS struct but we can't rely on a pointer because memory is volatile.
+	// When we deserialize the VerifyingKey we will deserialize the SRS and insert
+	// a valid pointer.
 	err = ioutil.WriteFile("srs.hex", []byte(encodedSRS), 0644)
 	if err != nil {
 		log.Fatal(err)
