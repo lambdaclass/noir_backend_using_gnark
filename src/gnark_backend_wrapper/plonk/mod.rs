@@ -1,3 +1,4 @@
+use super::serialize;
 use super::{from_felt, num_constraints, serialize::serialize_felts};
 use crate::acvm;
 use crate::gnark_backend_wrapper::c_go_structures::{GoString, KeyPair};
@@ -68,12 +69,7 @@ pub fn prove_with_pk(
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
     let felts: Vec<super::Fr> = values.into_iter().map(from_felt).collect();
-    let felts_serialized: Vec<u8> = Vec::new();
-    let mut serializer = serde_json::Serializer::new(felts_serialized);
-    serialize_felts(&felts, &mut serializer)
-        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
-    let encoded_felts = String::from_utf8(serializer.into_inner())
-        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_felts = serialize::encode_felts(&felts)?;
     let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let values_go_string = GoString::try_from(&felts_c_str)?;
