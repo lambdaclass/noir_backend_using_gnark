@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
 
@@ -14,7 +15,6 @@ import (
 	groth16_backend "gnark_backend_ffi/backend/groth16"
 	plonk_backend "gnark_backend_ffi/backend/plonk"
 
-	"github.com/consensys/gnark-crypto/ecc"
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/consensys/gnark/backend/groth16"
@@ -543,6 +543,19 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Make a hex encode of the SRS.
+	var serializedSRS bytes.Buffer
+	srs.WriteTo(&serializedSRS)
+	encodedSRS := hex.EncodeToString(serializedSRS.Bytes())
+
+	// Save the encoded SRS in a file named srs.hex.
+	// TODO: Explain why we do this.
+	err = ioutil.WriteFile("srs.hex", []byte(encodedSRS), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	provingKey, verifyingKey, err := plonk.Setup(sparseR1CS, srs)
 	if err != nil {
 		log.Fatal(err)
