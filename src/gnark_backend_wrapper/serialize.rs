@@ -1,6 +1,9 @@
 use super::GnarkBackendError;
 use crate::gnark_backend_wrapper as gnark_backend;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+#[cfg(feature = "groth16")]
+use ark_serialize::CanonicalDeserialize;
+use ark_serialize::CanonicalSerialize;
+#[cfg(feature = "groth16")]
 use serde::Deserialize;
 use std::num::TryFromIntError;
 
@@ -13,6 +16,7 @@ pub fn serialize_felt_unchecked(felt: &gnark_backend::Fr) -> Vec<u8> {
     serialized_felt
 }
 
+#[cfg(feature = "groth16")]
 pub fn serialize_felt<S>(felt: &gnark_backend::Fr, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::ser::Serializer,
@@ -50,6 +54,7 @@ where
     serializer.serialize_str(&encoded_buff)
 }
 
+#[cfg(feature = "groth16")]
 pub fn deserialize_felt<'de, D>(deserializer: D) -> Result<gnark_backend::Fr, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -62,6 +67,7 @@ where
         .map_err(serde::de::Error::custom)
 }
 
+#[cfg(feature = "groth16")]
 pub fn deserialize_felts<'de, D>(deserializer: D) -> Result<Vec<gnark_backend::Fr>, D::Error>
 where
     D: serde::Deserializer<'de>,
