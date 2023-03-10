@@ -116,7 +116,6 @@ fn test_felts_serialization() {
     assert_eq!(felts.to_vec(), go_felts)
 }
 #[cfg(feature = "groth16")]
-
 #[test]
 fn test_u64_serialization() {
     // Sample a random number.

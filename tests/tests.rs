@@ -111,7 +111,10 @@ fn test_integration() {
         "priv_x_eq_pub_y",
         "priv_x_neq_pub_y",
     ];
-    let test_program_dirs: Vec<std::path::PathBuf> = test_dirs_names.into_iter().map(test_program_dir_path).collect();
+    let test_program_dirs: Vec<std::path::PathBuf> = test_dirs_names
+        .into_iter()
+        .map(test_program_dir_path)
+        .collect();
 
     // Ensure our nargo's fork is being used here.
     install_nargo();
@@ -125,5 +128,4 @@ fn test_integration() {
         assert_nargo_cmd_works("test", &test_program);
         assert_nargo_cmd_works("gates", &test_program);
     }
-
 }
