@@ -122,7 +122,6 @@ func handleOpcodes(a plonk_backend.ACIR, sparseR1CS constraint.SparseR1CS, index
 			sparseR1CS.AddConstraint(constraint)
 			break
 		case *plonk_backend.DirectiveOpcode:
-			log.Print("unhandled directive opcode")
 			break
 		default:
 			log.Fatal("unknown opcode type")
@@ -574,7 +573,7 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	if err != nil {
 		log.Fatal(err)
 	}
-	srs, err := kzg.NewSRS(128, alpha)
+	srs, err := kzg.NewSRS(1_000_000, alpha)
 	if err != nil {
 		log.Fatal(err)
 	}
