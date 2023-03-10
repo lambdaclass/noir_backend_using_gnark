@@ -29,7 +29,6 @@ func (d *InvertDirective) UnmarshalJSON(data []byte) error {
 	var invertDirectiveMap map[string]interface{}
 	err := json.Unmarshal(data, &invertDirectiveMap)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
@@ -69,7 +68,6 @@ func (d *ToRadixDirective) UnmarshalJSON(data []byte) error {
 	var invertDirectiveMap map[string]interface{}
 	err := json.Unmarshal(data, &invertDirectiveMap)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
@@ -123,12 +121,10 @@ func (d *DirectiveOpcode) UnmarshalJSON(data []byte) error {
 			var dir InvertDirective
 			invertDirectiveJSON, err := json.Marshal(invertDirectiveValue)
 			if err != nil {
-				log.Print(err)
 				return err
 			}
 			err = json.Unmarshal(invertDirectiveJSON, &dir)
 			if err != nil {
-				log.Print(err)
 				return err
 			}
 			d.Name = Invert
@@ -137,18 +133,15 @@ func (d *DirectiveOpcode) UnmarshalJSON(data []byte) error {
 			var dir ToRadixDirective
 			toRadixDirectiveJSON, err := json.Marshal(toRadixDirectiveValue)
 			if err != nil {
-				log.Print(err)
 				return err
 			}
 			err = json.Unmarshal(toRadixDirectiveJSON, &dir)
 			if err != nil {
-				log.Print(err)
 				return err
 			}
 			d.Name = ToRadix
 			d.Directive = dir
 		} else {
-			log.Print("Error: couldn't deserialize directive.")
 			return &json.UnmarshalTypeError{}
 		}
 	}
