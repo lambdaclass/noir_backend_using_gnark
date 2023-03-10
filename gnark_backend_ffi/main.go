@@ -504,19 +504,9 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 
 	// Decode public inputs.
 	decodedPublicInputs := backend.DeserializeFelts(encodedPublicInputs)
-	// TODO: Explain why we filter here.
-	filteredPublicInputs := fr_bn254.Vector{}
-	for _, felt := range decodedPublicInputs {
-		if !felt.IsZero() {
-			filteredPublicInputs = append(filteredPublicInputs, felt)
-		}
-	}
-	// TODO: Explain why we add one here.
-	publicInputs := fr_bn254.Vector{fr_bn254.One()}
-	publicInputs = append(publicInputs, filteredPublicInputs...)
 
 	// Build sparse R1CS.
-	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, publicInputs)
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedPublicInputs)
 
 	// Build witness.
 	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
