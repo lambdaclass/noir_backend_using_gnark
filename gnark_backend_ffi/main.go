@@ -206,6 +206,22 @@ func buildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, priva
 	return witness
 }
 
+func loadSRS() kzgg.SRS {
+	srsEncoded, err := os.ReadFile("srs.hex")
+	if err != nil {
+		log.Fatal(err)
+	}
+	decodedSrs, err := hex.DecodeString(string(srsEncoded))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	srs := kzgg.NewSRS(ecc.BN254)
+	srs.ReadFrom(bytes.NewReader(decodedSrs))
+
+	return srs
+}
+
 //export ProveWithMeta
 func ProveWithMeta(rawR1CS string) *C.char {
 	// Deserialize rawR1CS.
@@ -439,20 +455,7 @@ func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey s
 		log.Fatal(err)
 	}
 
-	srsEncoded, err := os.ReadFile("srs.hex")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	decodedSrs, err := hex.DecodeString(string(srsEncoded))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	srs := kzgg.NewSRS(ecc.BN254)
-	srs.ReadFrom(bytes.NewReader(decodedSrs))
-
-	provingKey.InitKZG(srs)
+	provingKey.InitKZG(loadSRS())
 
 	// Prove.
 	proof, err := plonk.Prove(sparseR1CS, provingKey, witness)
