@@ -871,7 +871,7 @@ func PlonkExample() {
 	fmt.Println()
 
 	fmt.Println("Setting up...")
-	alpha, err := rand.Int(rand.Reader, ecc.BLS24_315.ScalarField())
+	alpha, err := rand.Int(rand.Reader, sparseR1CS.CurveID().ScalarField())
 	if err != nil {
 		log.Fatal(err)
 	}
