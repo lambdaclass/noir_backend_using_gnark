@@ -1,6 +1,8 @@
+use super::GnarkBackendError;
 use crate::gnark_backend_wrapper as gnark_backend;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use serde::Deserialize;
+use std::num::TryFromIntError;
 
 pub fn serialize_felt_unchecked(felt: &gnark_backend::Fr) -> Vec<u8> {
     let mut serialized_felt = Vec::new();
@@ -24,12 +26,12 @@ where
     serializer.serialize_str(&encoded_coefficient)
 }
 
-pub fn serialize_felts<S>(felts: &[gnark_backend::Fr], serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::ser::Serializer,
-{
+pub fn encode_felts(felts: &[gnark_backend::Fr]) -> Result<String, GnarkBackendError> {
     let mut buff: Vec<u8> = Vec::new();
-    let n_felts: u32 = felts.len().try_into().map_err(serde::ser::Error::custom)?;
+    let n_felts: u32 = felts
+        .len()
+        .try_into()
+        .map_err(|e: TryFromIntError| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
     buff.extend_from_slice(&n_felts.to_be_bytes());
     buff.extend_from_slice(
         &felts
@@ -37,7 +39,14 @@ where
             .flat_map(serialize_felt_unchecked)
             .collect::<Vec<u8>>(),
     );
-    let encoded_buff = hex::encode(buff);
+    Ok(hex::encode(buff))
+}
+
+pub fn serialize_felts<S>(felts: &[gnark_backend::Fr], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::ser::Serializer,
+{
+    let encoded_buff = encode_felts(felts).map_err(serde::ser::Error::custom)?;
     serializer.serialize_str(&encoded_buff)
 }
 
