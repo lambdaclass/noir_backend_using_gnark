@@ -55,62 +55,58 @@ func handleValues(a plonk_backend.ACIR, sparseR1CS constraint.SparseR1CS, values
 	return
 }
 
-// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
-func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
-	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
-
-	publicVariables, secretVariables, indexMap := handleValues(a, sparseR1CS, values)
-
+func handleOpcodes(a plonk_backend.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
 	for _, opcode := range a.Opcodes {
-		if gate, ok := opcode.Data.(plonk_backend.ArithmeticOpcode); ok {
+		switch opcode := opcode.Data.(type) {
+		case *plonk_backend.ArithmeticOpcode:
 			var xa, xb, xc int
 			var qL, qR, qO, qC, qM constraint.Coeff
 
 			// Case qM⋅(xa⋅xb)
-			if len(gate.MulTerms) != 0 {
-				mulTerm := gate.MulTerms[0]
+			if len(opcode.MulTerms) != 0 {
+				mulTerm := opcode.MulTerms[0]
 				qM = sparseR1CS.FromInterface(mulTerm.Coefficient)
-				xa = int(mulTerm.Multiplicand)
-				xb = int(mulTerm.Multiplier)
+				xa = indexMap[fmt.Sprint(int(mulTerm.Multiplicand))]
+				xb = indexMap[fmt.Sprint(int(mulTerm.Multiplier))]
 			}
 
 			// Case qO⋅xc
-			if len(gate.AddTerms) == 1 {
-				qOwOTerm := gate.AddTerms[0]
+			if len(opcode.AddTerms) == 1 {
+				qOwOTerm := opcode.AddTerms[0]
 				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-				xc = int(qOwOTerm.Sum)
+				xc = indexMap[fmt.Sprint(int(qOwOTerm.Sum))]
 			}
 
 			// Case qL⋅xa + qR⋅xb
-			if len(gate.AddTerms) == 2 {
+			if len(opcode.AddTerms) == 2 {
 				// qL⋅xa
-				qLwLTerm := gate.AddTerms[0]
+				qLwLTerm := opcode.AddTerms[0]
 				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-				xa = int(qLwLTerm.Sum)
+				xa = indexMap[fmt.Sprint(int(qLwLTerm.Sum))]
 				// qR⋅xb
-				qRwRTerm := gate.AddTerms[1]
+				qRwRTerm := opcode.AddTerms[1]
 				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-				xb = int(qRwRTerm.Sum)
+				xb = indexMap[fmt.Sprint(int(qRwRTerm.Sum))]
 			}
 
 			// Case qL⋅xa + qR⋅xb + qO⋅xc
-			if len(gate.AddTerms) == 3 {
+			if len(opcode.AddTerms) == 3 {
 				// qL⋅xa
-				qLwLTerm := gate.AddTerms[0]
+				qLwLTerm := opcode.AddTerms[0]
 				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-				xa = int(qLwLTerm.Sum)
+				xa = indexMap[fmt.Sprint(int(qLwLTerm.Sum))]
 				// qR⋅xb
-				qRwRTerm := gate.AddTerms[1]
+				qRwRTerm := opcode.AddTerms[1]
 				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-				xb = int(qRwRTerm.Sum)
+				xb = indexMap[fmt.Sprint(int(qRwRTerm.Sum))]
 				// qO⋅xc
-				qOwOTerm := gate.AddTerms[2]
+				qOwOTerm := opcode.AddTerms[2]
 				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-				xc = int(qOwOTerm.Sum)
+				xc = indexMap[fmt.Sprint(int(qOwOTerm.Sum))]
 			}
 
 			// Add the qC term
-			qC = sparseR1CS.FromInterface(gate.QC)
+			qC = sparseR1CS.FromInterface(opcode.QC)
 
 			K := sparseR1CS.MakeTerm(&qC, 0)
 			K.MarkConstant()
@@ -124,10 +120,22 @@ func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.Sp
 			}
 
 			sparseR1CS.AddConstraint(constraint)
-		} else if _, ok := opcode.Data.(plonk_backend.DirectiveOpcode); ok {
-			continue
+			break
+		case *plonk_backend.DirectiveOpcode:
+			log.Print("unhandled directive opcode")
+			break
+		default:
+			log.Fatal("unknown opcode type")
 		}
 	}
+}
+
+// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
+func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
+	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+
+	publicVariables, secretVariables, indexMap := handleValues(a, sparseR1CS, values)
+	handleOpcodes(a, sparseR1CS, indexMap)
 
 	return sparseR1CS, publicVariables, secretVariables
 }
