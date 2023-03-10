@@ -147,12 +147,7 @@ pub fn verify_with_vk(
     let acir_go_string = GoString::try_from(&acir_c_str)?;
 
     let felts: Vec<super::Fr> = public_inputs.iter().cloned().map(from_felt).collect();
-    let felts_serialized: Vec<u8> = Vec::new();
-    let mut serializer = serde_json::Serializer::new(felts_serialized);
-    serialize_felts(&felts, &mut serializer)
-        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
-    let encoded_felts = String::from_utf8(serializer.into_inner())
-        .map_err(|e| GnarkBackendError::SerializeFeltsError(e.to_string()))?;
+    let encoded_felts = serialize::encode_felts(&felts)?;
     let felts_c_str = CString::new(encoded_felts)
         .map_err(|e| GnarkBackendError::SerializeCircuitError(e.to_string()))?;
     let public_inputs_go_string = GoString::try_from(&felts_c_str)?;

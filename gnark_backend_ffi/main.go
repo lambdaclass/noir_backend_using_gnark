@@ -486,15 +486,20 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 	}
 
 	// Decode public inputs.
-	var publicInputsToDecode string
-	err = json.Unmarshal([]byte(encodedPublicInputs), &publicInputsToDecode)
-	if err != nil {
-		log.Fatal(err)
+	decodedPublicInputs := backend.DeserializeFelts(encodedPublicInputs)
+	// TODO: Explain why we filter here.
+	filteredPublicInputs := fr_bn254.Vector{}
+	for _, felt := range decodedPublicInputs {
+		if !felt.IsZero() {
+			filteredPublicInputs = append(filteredPublicInputs, felt)
+		}
 	}
-	decodedPublicInputs := backend.DeserializeFelts(publicInputsToDecode)
+	// TODO: Explain why we add one here.
+	publicInputs := fr_bn254.Vector{fr_bn254.One()}
+	publicInputs = append(publicInputs, filteredPublicInputs...)
 
 	// Build sparse R1CS.
-	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedPublicInputs)
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, publicInputs)
 
 	// Build witness.
 	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
@@ -521,14 +526,16 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 		log.Fatal(err)
 	}
 
+	verifyingKey.InitKZG(loadSRS())
+
 	// Retrieve public inputs.
-	publicInputs, err := witness.Public()
+	witnessPublics, err := witness.Public()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Verify.
-	if plonk.Verify(proof, verifyingKey, publicInputs) != nil {
+	if plonk.Verify(proof, verifyingKey, witnessPublics) != nil {
 		return false
 	}
 
