@@ -27,25 +27,39 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
-// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
-func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
-	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
-
-	var publicVariables fr_bn254.Vector
-	var secretVariables fr_bn254.Vector
-	_ = sparseR1CS.AddPublicVariable("1")
+func handleValues(a plonk_backend.ACIR, sparseR1CS constraint.SparseR1CS, values fr_bn254.Vector) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
+	indexMap = make(map[string]int)
+	var index int
+	// _ = sparseR1CS.AddPublicVariable("1")
 	for i, value := range values {
 		i++
 		for _, publicInput := range a.PublicInputs {
 			if uint32(i) == publicInput {
-				sparseR1CS.AddPublicVariable(fmt.Sprintf("public_%d", i))
+				index = sparseR1CS.AddPublicVariable(fmt.Sprintf("public_%d", i))
 				publicVariables = append(publicVariables, value)
-			} else {
-				sparseR1CS.AddSecretVariable(fmt.Sprintf("secret_%d", i))
+				indexMap[fmt.Sprint(i)] = index
+			}
+		}
+
+	}
+	for i, value := range values {
+		i++
+		for _, publicInput := range a.PublicInputs {
+			if uint32(i) != publicInput {
+				index = sparseR1CS.AddSecretVariable(fmt.Sprintf("secret_%d", i))
 				secretVariables = append(secretVariables, value)
+				indexMap[fmt.Sprint(i)] = index
 			}
 		}
 	}
+	return
+}
+
+// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
+func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
+	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+
+	publicVariables, secretVariables, indexMap := handleValues(a, sparseR1CS, values)
 
 	for _, opcode := range a.Opcodes {
 		if gate, ok := opcode.Data.(plonk_backend.ArithmeticOpcode); ok {
