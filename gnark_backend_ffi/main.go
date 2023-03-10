@@ -454,12 +454,9 @@ func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey s
 
 	// Decode values.
 	decodedValues := backend.DeserializeFelts(encodedValues)
-	// TODO: Explain why we add one here.
-	values := fr_bn254.Vector{fr_bn254.One()}
-	values = append(values, decodedValues...)
 
 	// Build sparse R1CS.
-	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, values)
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedValues)
 
 	// Build witness.
 	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
