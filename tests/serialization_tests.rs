@@ -1,10 +1,15 @@
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use noir_backend_using_gnark::{
-    acvm,
-    gnark_backend_wrapper::{self, AddTerm, MulTerm, RawGate, RawR1CS},
-};
-use std::ffi;
+// TODO: We should organize this code better. It should be cleaner despite the
+// amount of backends (or features).
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "groth16")] {
+        use noir_backend_using_gnark::acvm;
+        use noir_backend_using_gnark::gnark_backend_wrapper::{AddTerm, MulTerm, RawGate, RawR1CS};
+        use std::ffi;
+    }
+}
+
+#[cfg(feature = "groth16")]
 extern "C" {
     fn IntegrationTestFeltSerialization(
         felt: gnark_backend_wrapper::GoString,
@@ -36,32 +41,9 @@ extern "C" {
     ) -> *const ffi::c_char;
 }
 
-fn serialize_felt(felt: &gnark_backend_wrapper::Fr) -> Vec<u8> {
-    let mut serialized_felt = Vec::new();
-    felt.serialize_uncompressed(&mut serialized_felt).unwrap();
-    // Turn little-endian to big-endian.
-    serialized_felt.reverse();
-    serialized_felt
-}
-
-fn deserialize_felt(felt_bytes: &[u8]) -> gnark_backend_wrapper::Fr {
-    let mut decoded = hex::decode(felt_bytes).unwrap();
-    // Turn big-endian to little-endian.
-    decoded.reverse();
-    gnark_backend_wrapper::Fr::deserialize_uncompressed(decoded.as_slice()).unwrap()
-}
-
-// This serialization mimics gnark's serialization of a field elements vector.
-// The length of the vector is encoded as a u32 on the first 4 bytes.
-fn serialize_felts(felts: &[gnark_backend_wrapper::Fr]) -> Vec<u8> {
-    let mut buff: Vec<u8> = Vec::new();
-    let n_felts: u32 = felts.len().try_into().unwrap();
-    buff.extend_from_slice(&n_felts.to_be_bytes());
-    buff.extend_from_slice(&felts.iter().flat_map(serialize_felt).collect::<Vec<u8>>());
-    buff
-}
-
+#[cfg(feature = "groth16")]
 #[test]
+
 fn test_felt_serialization() {
     // Sample a random felt.
     let felt: gnark_backend_wrapper::Fr = rand::random();
@@ -90,6 +72,7 @@ fn test_felt_serialization() {
     assert_eq!(felt, go_felt)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_felts_serialization() {
     // Sample a random felt.
@@ -132,7 +115,7 @@ fn test_felts_serialization() {
 
     assert_eq!(felts.to_vec(), go_felts)
 }
-
+#[cfg(feature = "groth16")]
 #[test]
 fn test_u64_serialization() {
     // Sample a random number.
@@ -148,6 +131,7 @@ fn test_u64_serialization() {
     assert_eq!(number, pong)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_mul_term_serialization() {
     // Sample random coefficient.
@@ -182,6 +166,7 @@ fn test_mul_term_serialization() {
     //   the pong's deserialization)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_mul_terms_serialization() {
     // Sample random coefficient.
@@ -223,6 +208,7 @@ fn test_mul_terms_serialization() {
     //   the pong's deserialization)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_add_term_serialization() {
     // Sample random coefficient.
@@ -251,6 +237,7 @@ fn test_add_term_serialization() {
     //   the pong's deserialization)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_add_terms_serialization() {
     // Sample random coefficient.
@@ -279,6 +266,7 @@ fn test_add_terms_serialization() {
     //   the pong's deserialization)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_raw_gate_serialization() {
     let coefficient: gnark_backend_wrapper::Fr = rand::random();
@@ -319,6 +307,7 @@ fn test_raw_gate_serialization() {
     //   the pong's deserialization)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_raw_gates_serialization() {
     let coefficient: gnark_backend_wrapper::Fr = rand::random();
@@ -360,6 +349,7 @@ fn test_raw_gates_serialization() {
     //   the pong's deserialization)
 }
 
+#[cfg(feature = "groth16")]
 #[test]
 fn test_raw_r1cs_serialization() {
     let coefficient: gnark_backend_wrapper::Fr = rand::random();

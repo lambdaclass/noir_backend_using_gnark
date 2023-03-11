@@ -12,6 +12,9 @@ pub enum GnarkBackendError {
     #[error("an error occurred while serializing a proof: {0}")]
     SerializeProofError(String),
 
+    #[error("an error ocurred while serializing felts: {0}")]
+    SerializeFeltsError(String),
+
     #[error("an error occurred while deserializing a proof: {0}")]
     DeserializeProofError(String),
 

@@ -3,7 +3,6 @@ package plonk
 import (
 	"encoding/json"
 	"gnark_backend_ffi/backend"
-	"log"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
@@ -19,23 +18,19 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	var gateMap map[string]interface{}
 	err := json.Unmarshal(data, &opcodeMap)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
 	if gateValue, ok := opcodeMap["Arithmetic"]; ok {
 		gateJSON, err := json.Marshal(gateValue)
 		if err != nil {
-			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(gateJSON, &gateMap)
 		if err != nil {
-			log.Print(err)
 			return err
 		}
 	} else {
-		log.Print("Error: couldn't deserialize gate.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -47,16 +42,13 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	if mulTermsValue, ok := gateMap["mul_terms"].([]interface{}); ok {
 		mulTermsJSON, err := json.Marshal(mulTermsValue)
 		if err != nil {
-			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(mulTermsJSON, &mulTerms)
 		if err != nil {
-			log.Print(err)
 			return err
 		}
 	} else {
-		log.Print("Error: couldn't deserialize mul terms.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -64,16 +56,13 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	if addTermsValue, ok := gateMap["linear_combinations"].([]interface{}); ok {
 		addTermsJSON, err := json.Marshal(addTermsValue)
 		if err != nil {
-			log.Print(err)
 			return err
 		}
 		err = json.Unmarshal(addTermsJSON, &addTerms)
 		if err != nil {
-			log.Print(err)
 			return err
 		}
 	} else {
-		log.Print("Error: couldn't deserialize add terms.")
 		return &json.UnmarshalTypeError{}
 	}
 
@@ -81,7 +70,6 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	if encodedConstantTerm, ok := gateMap["q_c"].(string); ok {
 		constantTerm = backend.DeserializeFelt(encodedConstantTerm)
 	} else {
-		log.Print("Error: coefficient is not a felt.")
 		return &json.UnmarshalTypeError{}
 	}
 

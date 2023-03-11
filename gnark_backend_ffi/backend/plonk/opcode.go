@@ -23,5 +23,8 @@ func (o *Opcode) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	return err
+	// TODO: Fix this. We should capture all directives in a general one because
+	// they are handled by the partial witness generator (Rust side).
+	o.Data = &DirectiveOpcode{0, InvertDirective{0, 0}}
+	return nil
 }

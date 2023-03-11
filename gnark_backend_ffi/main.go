@@ -3,76 +3,110 @@ package main
 import "C"
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math/big"
+	"os"
 
 	"gnark_backend_ffi/backend"
 	groth16_backend "gnark_backend_ffi/backend/groth16"
 	plonk_backend "gnark_backend_ffi/backend/plonk"
 
+	"github.com/consensys/gnark-crypto/ecc"
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	kzgg "github.com/consensys/gnark-crypto/kzg"
 	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/backend/plonk"
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
-// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
-func buildSparseR1CS(a plonk_backend.ACIR) *cs_bn254.SparseR1CS {
-	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+func handleValues(a plonk_backend.ACIR, sparseR1CS constraint.SparseR1CS, values fr_bn254.Vector) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
+	indexMap = make(map[string]int)
+	var index int
+	// _ = sparseR1CS.AddPublicVariable("1")
+	for i, value := range values {
+		i++
+		for _, publicInput := range a.PublicInputs {
+			if uint32(i) == publicInput {
+				index = sparseR1CS.AddPublicVariable(fmt.Sprintf("public_%d", i))
+				publicVariables = append(publicVariables, value)
+				indexMap[fmt.Sprint(i)] = index
+			}
+		}
 
+	}
+	for i, value := range values {
+		i++
+		for _, publicInput := range a.PublicInputs {
+			if uint32(i) != publicInput {
+				index = sparseR1CS.AddSecretVariable(fmt.Sprintf("secret_%d", i))
+				secretVariables = append(secretVariables, value)
+				indexMap[fmt.Sprint(i)] = index
+			}
+		}
+	}
+	return
+}
+
+func handleOpcodes(a plonk_backend.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
 	for _, opcode := range a.Opcodes {
-		if gate, ok := opcode.Data.(plonk_backend.ArithmeticOpcode); ok {
+		switch opcode := opcode.Data.(type) {
+		case *plonk_backend.ArithmeticOpcode:
 			var xa, xb, xc int
 			var qL, qR, qO, qC, qM constraint.Coeff
 
 			// Case qM⋅(xa⋅xb)
-			if len(gate.MulTerms) != 0 {
-				mulTerm := gate.MulTerms[0]
+			if len(opcode.MulTerms) != 0 {
+				mulTerm := opcode.MulTerms[0]
 				qM = sparseR1CS.FromInterface(mulTerm.Coefficient)
-				xa = int(mulTerm.Multiplicand)
-				xb = int(mulTerm.Multiplier)
+				xa = indexMap[fmt.Sprint(int(mulTerm.Multiplicand))]
+				xb = indexMap[fmt.Sprint(int(mulTerm.Multiplier))]
 			}
 
 			// Case qO⋅xc
-			if len(gate.AddTerms) == 1 {
-				qOwOTerm := gate.AddTerms[0]
+			if len(opcode.AddTerms) == 1 {
+				qOwOTerm := opcode.AddTerms[0]
 				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-				xc = int(qOwOTerm.Sum)
+				xc = indexMap[fmt.Sprint(int(qOwOTerm.Sum))]
 			}
 
 			// Case qL⋅xa + qR⋅xb
-			if len(gate.AddTerms) == 2 {
+			if len(opcode.AddTerms) == 2 {
 				// qL⋅xa
-				qLwLTerm := gate.AddTerms[0]
+				qLwLTerm := opcode.AddTerms[0]
 				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-				xa = int(qLwLTerm.Sum)
+				xa = indexMap[fmt.Sprint(int(qLwLTerm.Sum))]
 				// qR⋅xb
-				qRwRTerm := gate.AddTerms[1]
+				qRwRTerm := opcode.AddTerms[1]
 				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-				xb = int(qRwRTerm.Sum)
+				xb = indexMap[fmt.Sprint(int(qRwRTerm.Sum))]
 			}
 
 			// Case qL⋅xa + qR⋅xb + qO⋅xc
-			if len(gate.AddTerms) == 3 {
+			if len(opcode.AddTerms) == 3 {
 				// qL⋅xa
-				qLwLTerm := gate.AddTerms[0]
+				qLwLTerm := opcode.AddTerms[0]
 				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-				xa = int(qLwLTerm.Sum)
+				xa = indexMap[fmt.Sprint(int(qLwLTerm.Sum))]
 				// qR⋅xb
-				qRwRTerm := gate.AddTerms[1]
+				qRwRTerm := opcode.AddTerms[1]
 				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-				xb = int(qRwRTerm.Sum)
+				xb = indexMap[fmt.Sprint(int(qRwRTerm.Sum))]
 				// qO⋅xc
-				qOwOTerm := gate.AddTerms[2]
+				qOwOTerm := opcode.AddTerms[2]
 				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-				xc = int(qOwOTerm.Sum)
+				xc = indexMap[fmt.Sprint(int(qOwOTerm.Sum))]
 			}
 
 			// Add the qC term
-			qC = sparseR1CS.FromInterface(gate.QC)
+			qC = sparseR1CS.FromInterface(opcode.QC)
 
 			K := sparseR1CS.MakeTerm(&qC, 0)
 			K.MarkConstant()
@@ -86,12 +120,23 @@ func buildSparseR1CS(a plonk_backend.ACIR) *cs_bn254.SparseR1CS {
 			}
 
 			sparseR1CS.AddConstraint(constraint)
-		} else {
-			log.Print("unhandled opcode:", opcode)
+			break
+		case *plonk_backend.DirectiveOpcode:
+			break
+		default:
+			log.Fatal("unknown opcode type")
 		}
 	}
+}
 
-	return sparseR1CS
+// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
+func buildSparseR1CS(a plonk_backend.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
+	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+
+	publicVariables, secretVariables, indexMap := handleValues(a, sparseR1CS, values)
+	handleOpcodes(a, sparseR1CS, indexMap)
+
+	return sparseR1CS, publicVariables, secretVariables
 }
 
 func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_bn254.Vector) {
@@ -101,7 +146,7 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 	// Define the R1CS variables.
 	_ = r1cs.AddPublicVariable("1") // ONE_WIRE
 	var publicVariables fr_bn254.Vector
-	var privateVariables fr_bn254.Vector
+	var secretVariables fr_bn254.Vector
 	for i, value := range r.Values {
 		i++
 		for _, publicInput := range r.PublicInputs {
@@ -110,7 +155,7 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 				publicVariables = append(publicVariables, value)
 			} else {
 				r1cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
-				privateVariables = append(privateVariables, value)
+				secretVariables = append(secretVariables, value)
 			}
 		}
 	}
@@ -156,10 +201,10 @@ func buildR1CS(r groth16_backend.RawR1CS) (*cs_bn254.R1CS, fr_bn254.Vector, fr_b
 		r1cs.AddConstraint(r1c)
 	}
 
-	return r1cs, publicVariables, privateVariables
+	return r1cs, publicVariables, secretVariables
 }
 
-func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector) witness.Witness {
+func buildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nbPublicVariables int, nbSecretVariables int) witness.Witness {
 	witnessValues := make(chan any)
 
 	go func() {
@@ -172,15 +217,30 @@ func buildWitnesses(r1cs *cs_bn254.R1CS, publicVariables fr_bn254.Vector, privat
 		}
 	}()
 
-	witness, err := witness.New(r1cs.CurveID().ScalarField())
+	witness, err := witness.New(scalarField)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// -1 because the first variable is the ONE_WIRE.
-	witness.Fill(r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables(), witnessValues)
+	witness.Fill(nbPublicVariables, nbSecretVariables, witnessValues)
 
 	return witness
+}
+
+func loadSRS() kzgg.SRS {
+	srsEncoded, err := os.ReadFile("srs.hex")
+	if err != nil {
+		log.Fatal(err)
+	}
+	decodedSrs, err := hex.DecodeString(string(srsEncoded))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	srs := kzgg.NewSRS(ecc.BN254)
+	srs.ReadFrom(bytes.NewReader(decodedSrs))
+
+	return srs
 }
 
 //export ProveWithMeta
@@ -194,7 +254,7 @@ func ProveWithMeta(rawR1CS string) *C.char {
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Setup.
 	provingKey, _, err := groth16.Setup(r1cs)
@@ -227,7 +287,7 @@ func ProveWithPK(rawR1CS string, encodedProvingKey string) *C.char {
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Deserialize proving key.
 	provingKey := groth16.NewProvingKey(r1cs.CurveID())
@@ -265,7 +325,7 @@ func VerifyWithMeta(rawR1CS string, encodedProof string) bool {
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Deserialize proof.
 	proof := groth16.NewProof(r1cs.CurveID())
@@ -309,7 +369,7 @@ func VerifyWithVK(rawR1CS string, encodedProof string, encodedVerifyingKey strin
 
 	r1cs, publicVariables, privateVariables := buildR1CS(r)
 
-	witness := buildWitnesses(r1cs, publicVariables, privateVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, privateVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	// Deserialize proof.
 	proof := groth16.NewProof(r1cs.CurveID())
@@ -360,6 +420,180 @@ func Preprocess(rawR1CS string) (*C.char, *C.char) {
 
 	// Setup.
 	provingKey, verifyingKey, err := groth16.Setup(r1cs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Serialize proving key.
+	var serializedProvingKey bytes.Buffer
+	provingKey.WriteTo(&serializedProvingKey)
+	provingKeyString := hex.EncodeToString(serializedProvingKey.Bytes())
+
+	// Serialize verifying key.
+	var serializedVerifyingKey bytes.Buffer
+	verifyingKey.WriteTo(&serializedVerifyingKey)
+	verifyingKeyString := hex.EncodeToString(serializedVerifyingKey.Bytes())
+
+	return C.CString(provingKeyString), C.CString(verifyingKeyString)
+}
+
+//export PlonkProveWithMeta
+func PlonkProveWithMeta(acirJSON string, encodedValues string) *C.char {
+	return C.CString("Unimplemented")
+}
+
+//export PlonkProveWithPK
+func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey string) *C.char {
+	// Deserialize ACIR.
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode values.
+	decodedValues := backend.DeserializeFelts(encodedValues)
+
+	// Build sparse R1CS.
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedValues)
+
+	// Build witness.
+	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	// Deserialize proving key.
+	provingKey := plonk.NewProvingKey(sparseR1CS.CurveID())
+	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = provingKey.ReadFrom(bytes.NewReader([]byte(decodedProvingKey)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	provingKey.InitKZG(loadSRS())
+
+	// Prove.
+	proof, err := plonk.Prove(sparseR1CS, provingKey, witness)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Serialize proof
+	var serialized_proof bytes.Buffer
+	proof.WriteTo(&serialized_proof)
+	proof_string := hex.EncodeToString(serialized_proof.Bytes())
+
+	return C.CString(proof_string)
+}
+
+//export PlonkVerifyWithMeta
+func PlonkVerifyWithMeta(acirJSON string, encodedValues string, encodedProof string) bool {
+	return false
+}
+
+//export PlonkVerifyWithVK
+func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs string, encodedVerifyingKey string) bool {
+	// Deserialize ACIR.
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode public inputs.
+	decodedPublicInputs := backend.DeserializeFelts(encodedPublicInputs)
+
+	// Build sparse R1CS.
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, decodedPublicInputs)
+
+	// Build witness.
+	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	// Deserialize proof.
+	proof := plonk.NewProof(sparseR1CS.CurveID())
+	decodedProof, err := hex.DecodeString(encodedProof)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = proof.ReadFrom(bytes.NewReader(decodedProof))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Deserialize verifying key.
+	verifyingKey := plonk.NewVerifyingKey(sparseR1CS.CurveID())
+	decodedVerifyingKey, err := hex.DecodeString(encodedVerifyingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = verifyingKey.ReadFrom(bytes.NewReader(decodedVerifyingKey))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	verifyingKey.InitKZG(loadSRS())
+
+	// Retrieve public inputs.
+	witnessPublics, err := witness.Public()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Verify.
+	if plonk.Verify(proof, verifyingKey, witnessPublics) != nil {
+		return false
+	}
+
+	return true
+}
+
+//export PlonkPreprocess
+func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.char) {
+	// Deserialize ACIR.
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode values.
+	var valuesToDecode string
+	err = json.Unmarshal([]byte(encodedRandomValues), &valuesToDecode)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decodedRandomValues := backend.DeserializeFelts(valuesToDecode)
+
+	// Build sparse R1CS.
+	sparseR1CS, _, _ := buildSparseR1CS(a, decodedRandomValues)
+
+	// Setup.
+	alpha, err := rand.Int(rand.Reader, sparseR1CS.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	srs, err := kzg.NewSRS(1_000_000, alpha)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Make a hex encode of the SRS.
+	var serializedSRS bytes.Buffer
+	srs.WriteTo(&serializedSRS)
+	encodedSRS := hex.EncodeToString(serializedSRS.Bytes())
+
+	// Save the encoded SRS in a file named srs.hex.
+	// We need to save the encoded SRS because the struct VerifyingKey has a pointer
+	// to a SRS struct but we can't rely on a pointer because memory is volatile.
+	// When we deserialize the VerifyingKey we will deserialize the SRS and insert
+	// a valid pointer.
+	err = ioutil.WriteFile("srs.hex", []byte(encodedSRS), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	provingKey, verifyingKey, err := plonk.Setup(sparseR1CS, srs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -620,7 +854,7 @@ func ExampleSimpleCircuit() {
 
 	fmt.Println("Proving...")
 
-	witness := buildWitnesses(r1cs, publicVariables, secretVariables)
+	witness := buildWitnesses(r1cs.CurveID().ScalarField(), publicVariables, secretVariables, r1cs.GetNbPublicVariables()-1, r1cs.GetNbSecretVariables())
 
 	p, _ := groth16.Prove(r1cs, pk, witness)
 
@@ -637,8 +871,102 @@ func ExampleSimpleCircuit() {
 	fmt.Println("Verifies:", verifies == nil)
 }
 
+func PlonkExample(acir string, values fr_bn254.Vector) {
+	fmt.Println("Deserializing ACIR...")
+	var a plonk_backend.ACIR
+	err := json.Unmarshal([]byte(acir), &a)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("ACIR deserialized.")
+	fmt.Println()
+
+	fmt.Println("Building Sparse R1CS...")
+	sparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, values)
+	fmt.Println("Sparse R1CS built.")
+	fmt.Println("Constraints:")
+	constraints, res := sparseR1CS.GetConstraints()
+	for _, sparseR1C := range constraints {
+		fmt.Println(sparseR1C.String(res))
+	}
+	fmt.Println()
+
+	fmt.Println("Building witness...")
+	witness := buildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+	fmt.Println("Witness built.")
+	fmt.Println()
+
+	fmt.Println("Setting up...")
+	alpha, err := rand.Int(rand.Reader, sparseR1CS.CurveID().ScalarField())
+	if err != nil {
+		log.Fatal(err)
+	}
+	srs, err := kzg.NewSRS(128, alpha)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pk, vk, err := plonk.Setup(sparseR1CS, srs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Setup done.")
+	fmt.Println()
+
+	fmt.Println("Building proof...")
+	proof, err := plonk.Prove(sparseR1CS, pk, witness)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Proof built.")
+	fmt.Println()
+
+	fmt.Println("Verifying proof...")
+	publicWitnesses, err := witness.Public()
+	fmt.Println("Public witness:", publicWitnesses.Vector().(fr_bn254.Vector).String())
+	fmt.Println("Witness:", witness.Vector().(fr_bn254.Vector).String())
+	if err != nil {
+		log.Fatal(err)
+	}
+	verifies := plonk.Verify(proof, vk, publicWitnesses)
+	fmt.Println("Verifies with valid public inputs:", verifies == nil)
+	fmt.Println()
+
+	// err = json.Unmarshal([]byte(invalidACIR), &a)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// invalidSparseR1CS, publicVariables, secretVariables := buildSparseR1CS(a, values)
+	// invalidWitness := buildWitnesses(invalidSparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, invalidSparseR1CS.GetNbPublicVariables(), invalidSparseR1CS.GetNbSecretVariables())
+	// invalidPublicWitnesses, _ := invalidWitness.Public()
+	// invalidVerified := plonk.Verify(proof, vk, invalidPublicWitnesses)
+
+	// fmt.Println("Valid Public Witnesses: ", publicWitnesses.Vector().(fr_bn254.Vector).String())
+	// fmt.Println("Invalid Public Witnesses: ", invalidPublicWitnesses.Vector().(fr_bn254.Vector).String())
+	// fmt.Println()
+
+	// fmt.Println("Verifies with invalid public inputs: ", invalidVerified == nil)
+}
+
 func main() {
-	ExampleSimpleCircuit()
+	// ExampleSimpleCircuit()
+	zero := fr_bn254.NewElement(0)
+	one := fr_bn254.One()
+	two := fr_bn254.NewElement(2)
+	var minusOne fr_bn254.Element
+	minusOne.Sub(&zero, &one)
+
+	// 0 != 1
+	PlonkExample(
+		`{"current_witness_index":6,"opcodes":[{"Arithmetic":{"mul_terms":[],"linear_combinations":[["0000000000000000000000000000000000000000000000000000000000000001",1],["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",2],["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",3]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Directive":{"Invert":{"x":3,"result":4}}},{"Arithmetic":{"mul_terms":[["0000000000000000000000000000000000000000000000000000000000000001",3,4]],"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",5]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Arithmetic":{"mul_terms":[["0000000000000000000000000000000000000000000000000000000000000001",3,5]],"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",3]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Arithmetic":{"mul_terms":[],"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",5]],"q_c":"0000000000000000000000000000000000000000000000000000000000000001"}}],"public_inputs":[2]}`,
+		fr_bn254.Vector{zero, one, minusOne, minusOne, one, zero},
+	)
+
+	// 2 == 2
+	PlonkExample(
+		`{"current_witness_index":6,"opcodes":[{"Arithmetic":{"mul_terms":[],"linear_combinations":[["0000000000000000000000000000000000000000000000000000000000000001",1],["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",2],["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",3]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Directive":{"Invert":{"x":3,"result":4}}},{"Arithmetic":{"mul_terms":[["0000000000000000000000000000000000000000000000000000000000000001",3,4]],"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",5]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Arithmetic":{"mul_terms":[["0000000000000000000000000000000000000000000000000000000000000001",3,5]],"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",3]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Arithmetic":{"mul_terms":[],"linear_combinations":[["0000000000000000000000000000000000000000000000000000000000000001",5]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}}],"public_inputs":[2]}`,
+		fr_bn254.Vector{two, two, zero, zero, zero, zero},
+	)
 
 	// // constrain x == y
 	// // constrain 0 == 0

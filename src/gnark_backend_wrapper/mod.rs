@@ -1,8 +1,12 @@
+use crate::acvm;
+
 mod errors;
 pub use errors::GnarkBackendError;
+
 mod c_go_structures;
-use crate::acvm;
 pub use c_go_structures::{GoString, KeyPair};
+
+mod serialize;
 
 // Arkworks's types are generic for `Field` but Noir's types are concrete and
 // its value depends on the feature flag.

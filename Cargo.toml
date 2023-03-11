@@ -30,7 +30,7 @@ debug = true
 debug-assertions = true
 
 [features]
-default = ["bn254", "groth16"]
+default = ["bn254", "plonk"]
 groth16 = []
 plonk = []
 bn254 = ["acvm/bn254"]
