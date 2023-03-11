@@ -27,9 +27,6 @@ pub struct RawR1CS {
     pub num_constraints: u64,
 }
 
-/*
-1. Implementar Deserialize para
-*/
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct RawGate {
     pub mul_terms: Vec<MulTerm>,
