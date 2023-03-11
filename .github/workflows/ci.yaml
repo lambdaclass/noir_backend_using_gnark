@@ -60,6 +60,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install nargo
+        run: make nargo
+
       - name: Run cargo test
         run: make test
         
