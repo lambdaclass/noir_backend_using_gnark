@@ -1,15 +1,17 @@
-package plonk
+package acir
 
 import (
 	"encoding/json"
-	"gnark_backend_ffi/backend"
+	"gnark_backend_ffi/acir/opcode"
 	"log"
+
+	common "gnark_backend_ffi/internal"
 )
 
 type ACIR struct {
-	CurrentWitness backend.Witness
-	Opcodes        []Opcode
-	PublicInputs   backend.Witnesses
+	CurrentWitness common.Witness
+	Opcodes        []opcode.Opcode
+	PublicInputs   common.Witnesses
 }
 
 func (a *ACIR) UnmarshalJSON(data []byte) error {
@@ -20,8 +22,8 @@ func (a *ACIR) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	var opcodes []Opcode
-	var publicInputs backend.Witnesses
+	var opcodes []opcode.Opcode
+	var publicInputs common.Witnesses
 	var currentWitness uint32
 
 	if opcodesValue, ok := acirMap["opcodes"].([]interface{}); ok {

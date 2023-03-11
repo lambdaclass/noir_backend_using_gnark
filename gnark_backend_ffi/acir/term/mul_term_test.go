@@ -1,4 +1,4 @@
-package backend
+package term
 
 import (
 	"encoding/json"
@@ -6,13 +6,15 @@ import (
 	"math/rand"
 	"testing"
 
+	backend_helpers "gnark_backend_ffi/internal/backend"
+
 	"github.com/stretchr/testify/assert"
 )
 
 // TODO: Test error cases.
 
 func TestMulTermUnmarshalJSON(t *testing.T) {
-	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
+	encodedCoefficient, nonEncodedCoefficient := backend_helpers.RandomEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
 	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multiplicand":%d,"multiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
@@ -22,12 +24,12 @@ func TestMulTermUnmarshalJSON(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, nonEncodedCoefficient, m.Coefficient)
-	assert.Equal(t, multiplicand, m.Multiplicand)
-	assert.Equal(t, multiplier, m.Multiplier)
+	assert.Equal(t, multiplicand, m.MultiplicandIndex)
+	assert.Equal(t, multiplier, m.MultiplierIndex)
 }
 
 func TestMulTermsUnmarshalJSON(t *testing.T) {
-	encodedCoefficient, nonEncodedCoefficient := SampleEncodedFelt()
+	encodedCoefficient, nonEncodedCoefficient := backend_helpers.RandomEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
 	mulTerms := fmt.Sprintf(`[{"coefficient":"%s","multiplicand":%d,"multiplier":%d},{"coefficient":"%s","multiplicand":%d,"multiplier":%d}]`, encodedCoefficient, multiplicand, multiplier, encodedCoefficient, multiplicand, multiplier)
@@ -38,13 +40,13 @@ func TestMulTermsUnmarshalJSON(t *testing.T) {
 	assert.NoError(t, err)
 	for _, mulTerm := range m {
 		assert.Equal(t, nonEncodedCoefficient, mulTerm.Coefficient)
-		assert.Equal(t, multiplicand, mulTerm.Multiplicand)
-		assert.Equal(t, multiplier, mulTerm.Multiplier)
+		assert.Equal(t, multiplicand, mulTerm.MultiplicandIndex)
+		assert.Equal(t, multiplier, mulTerm.MultiplierIndex)
 	}
 }
 
 func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatCoefficient(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
+	encodedCoefficient, _ := backend_helpers.RandomEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
 	mulTerm := fmt.Sprintf(`{"coefficien":"%s","multiplicand":%d,"multiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
@@ -55,7 +57,7 @@ func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatCoefficient(t *testing.T)
 }
 
 func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatMultiplicand(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
+	encodedCoefficient, _ := backend_helpers.RandomEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
 	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multipliand":%d,"multiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
@@ -66,7 +68,7 @@ func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatMultiplicand(t *testing.T
 }
 
 func TestMulTermUnmarshalJSONThrowsErrorWrongJSONFormatMultiplier(t *testing.T) {
-	encodedCoefficient, _ := SampleEncodedFelt()
+	encodedCoefficient, _ := backend_helpers.RandomEncodedFelt()
 	multiplicand := rand.Uint32()
 	multiplier := rand.Uint32()
 	mulTerm := fmt.Sprintf(`{"coefficient":"%s","multiplicand":%d,"ultiplier":%d}`, encodedCoefficient, multiplicand, multiplier)
