@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
+	"gnark_backend_ffi/acir"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -14,6 +16,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	kzgg "github.com/consensys/gnark-crypto/kzg"
 	"github.com/consensys/gnark/backend/witness"
+	"github.com/consensys/gnark/constraint"
 )
 
 func BuildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nbPublicVariables int, nbSecretVariables int) witness.Witness {
@@ -37,6 +40,33 @@ func BuildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, priva
 	witness.Fill(nbPublicVariables, nbSecretVariables, witnessValues)
 
 	return witness
+}
+
+func HandleValues(a acir.ACIR, cs constraint.ConstraintSystem, values fr_bn254.Vector) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
+	indexMap = make(map[string]int)
+	var index int
+	for i, value := range values {
+		i++
+		for _, publicInput := range a.PublicInputs {
+			if uint32(i) == publicInput {
+				index = cs.AddPublicVariable(fmt.Sprintf("public_%d", i))
+				publicVariables = append(publicVariables, value)
+				indexMap[fmt.Sprint(i)] = index
+			}
+		}
+
+	}
+	for i, value := range values {
+		i++
+		for _, publicInput := range a.PublicInputs {
+			if uint32(i) != publicInput {
+				index = cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
+				secretVariables = append(secretVariables, value)
+				indexMap[fmt.Sprint(i)] = index
+			}
+		}
+	}
+	return
 }
 
 func LoadSRS() (srs kzgg.SRS, err error) {

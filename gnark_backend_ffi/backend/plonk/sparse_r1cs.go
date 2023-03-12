@@ -3,6 +3,7 @@ package plonk
 import (
 	"fmt"
 	"gnark_backend_ffi/acir"
+	"gnark_backend_ffi/backend"
 	"log"
 
 	acir_opcode "gnark_backend_ffi/acir/opcode"
@@ -11,36 +12,6 @@ import (
 	"github.com/consensys/gnark/constraint"
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
-
-// TODO: Refactor this function so it is generic for all systems and move it to
-// a common.go module in the backend directory.
-func handleValues(a acir.ACIR, sparseR1CS constraint.SparseR1CS, values fr_bn254.Vector) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
-	indexMap = make(map[string]int)
-	var index int
-	// _ = sparseR1CS.AddPublicVariable("1")
-	for i, value := range values {
-		i++
-		for _, publicInput := range a.PublicInputs {
-			if uint32(i) == publicInput {
-				index = sparseR1CS.AddPublicVariable(fmt.Sprintf("public_%d", i))
-				publicVariables = append(publicVariables, value)
-				indexMap[fmt.Sprint(i)] = index
-			}
-		}
-
-	}
-	for i, value := range values {
-		i++
-		for _, publicInput := range a.PublicInputs {
-			if uint32(i) != publicInput {
-				index = sparseR1CS.AddSecretVariable(fmt.Sprintf("secret_%d", i))
-				secretVariables = append(secretVariables, value)
-				indexMap[fmt.Sprint(i)] = index
-			}
-		}
-	}
-	return
-}
 
 func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
 	for _, opcode := range a.Opcodes {
@@ -121,7 +92,7 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 func BuildSparseR1CS(a acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
 
-	publicVariables, secretVariables, indexMap := handleValues(a, sparseR1CS, values)
+	publicVariables, secretVariables, indexMap := backend.HandleValues(a, sparseR1CS, values)
 	handleOpcodes(a, sparseR1CS, indexMap)
 
 	return sparseR1CS, publicVariables, secretVariables
