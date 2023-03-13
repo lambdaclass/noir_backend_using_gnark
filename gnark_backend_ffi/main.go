@@ -2,9 +2,7 @@ package main
 
 import "C"
 import (
-	"bytes"
 	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -67,7 +65,6 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// Decode values.
 	var valuesToDecode string
 	err = json.Unmarshal([]byte(encodedRandomValues), &valuesToDecode)
@@ -76,22 +73,9 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	}
 	decodedRandomValues := backend_helpers.DeserializeFelts(valuesToDecode)
 
-	provingKey, verifyingKey, err := plonk_backend.Preprocess(acir, decodedRandomValues)
-	if err != nil {
-		log.Fatal(err)
-	}
+	provingKey, verifyingKey := plonk_backend.Preprocess(acir, decodedRandomValues)
 
-	// Serialize proving key.
-	var serializedProvingKey bytes.Buffer
-	provingKey.WriteTo(&serializedProvingKey)
-	provingKeyString := hex.EncodeToString(serializedProvingKey.Bytes())
-
-	// Serialize verifying key.
-	var serializedVerifyingKey bytes.Buffer
-	verifyingKey.WriteTo(&serializedVerifyingKey)
-	verifyingKeyString := hex.EncodeToString(serializedVerifyingKey.Bytes())
-
-	return C.CString(provingKeyString), C.CString(verifyingKeyString)
+	return C.CString(backend_helpers.SerializeProvingKey(provingKey)), C.CString(backend_helpers.SerializeVerifyingKey(verifyingKey))
 }
 
 func ExampleSimpleCircuit() {

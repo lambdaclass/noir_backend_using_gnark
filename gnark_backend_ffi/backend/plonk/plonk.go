@@ -10,8 +10,7 @@ import (
 	"github.com/consensys/gnark/backend/plonk"
 )
 
-func Preprocess(acir acir.ACIR, values fr_bn254.Vector) (plonk.ProvingKey, plonk.VerifyingKey, error) {
-	// Build sparse R1CS.
+func Preprocess(acir acir.ACIR, values fr_bn254.Vector) (pk plonk.ProvingKey, vk plonk.VerifyingKey) {
 	sparseR1CS, _, _ := BuildSparseR1CS(acir, values)
 
 	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
@@ -19,7 +18,12 @@ func Preprocess(acir acir.ACIR, values fr_bn254.Vector) (plonk.ProvingKey, plonk
 		log.Fatal(err)
 	}
 
-	return plonk.Setup(sparseR1CS, srs)
+	pk, vk, err = plonk.Setup(sparseR1CS, srs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return
 }
 
 func VerifyWithVK(circuit acir.ACIR, verifyingKey plonk.VerifyingKey, proof plonk.Proof, publicVariables fr_bn254.Vector, curveID ecc.ID) bool {

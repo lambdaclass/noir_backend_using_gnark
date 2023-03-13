@@ -85,6 +85,20 @@ func SerializeProof(proof plonk.Proof) (p string) {
 	return
 }
 
+func SerializeProvingKey(provingKey plonk.ProvingKey) (pk string) {
+	var serializedProvingKey bytes.Buffer
+	provingKey.WriteTo(&serializedProvingKey)
+	pk = hex.EncodeToString(serializedProvingKey.Bytes())
+	return
+}
+
+func SerializeVerifyingKey(verifyingKey plonk.VerifyingKey) (vk string) {
+	var serializedProvingKey bytes.Buffer
+	verifyingKey.WriteTo(&serializedProvingKey)
+	vk = hex.EncodeToString(serializedProvingKey.Bytes())
+	return
+}
+
 // Samples a felt and returns the encoded felt and the non-encoded felt.
 func RandomEncodedFelt() (string, fr_bn254.Element) {
 	var felt fr_bn254.Element
