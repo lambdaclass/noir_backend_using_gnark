@@ -22,7 +22,11 @@ func Preprocess(acir acir.ACIR, values fr_bn254.Vector) (plonk.ProvingKey, plonk
 	return plonk.Setup(sparseR1CS, srs)
 }
 
-func VerifyWithVK(sparseR1CS *cs_bn254.SparseR1CS, verifyingKey plonk.VerifyingKey, proof plonk.Proof, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector) bool {
+func VerifyWithVK(sparseR1CS *cs_bn254.SparseR1CS,
+	verifyingKey plonk.VerifyingKey,
+	proof plonk.Proof,
+	publicVariables fr_bn254.Vector,
+	secretVariables fr_bn254.Vector) bool {
 	// Setup.
 	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
 	if err != nil {
@@ -46,4 +50,24 @@ func VerifyWithVK(sparseR1CS *cs_bn254.SparseR1CS, verifyingKey plonk.VerifyingK
 	}
 
 	return true
+}
+
+func ProveWithPK(sparseR1CS *cs_bn254.SparseR1CS,
+	provingKey plonk.ProvingKey,
+	publicVariables fr_bn254.Vector,
+	secretVariables fr_bn254.Vector) (plonk.Proof, error) {
+
+	// Build witness.
+	witness := backend.BuildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	// Setup.
+	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
+	if err != nil {
+		log.Fatal(err)
+	}
+	if provingKey.InitKZG(srs) != nil {
+		log.Fatal(err)
+	}
+
+	return plonk.Prove(sparseR1CS, provingKey, witness)
 }

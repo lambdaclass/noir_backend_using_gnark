@@ -37,9 +37,6 @@ func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey s
 	// Build sparse R1CS.
 	sparseR1CS, publicVariables, secretVariables := plonk_backend.BuildSparseR1CS(a, decodedValues)
 
-	// Build witness.
-	witness := backend.BuildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
-
 	// Deserialize proving key.
 	provingKey := plonk.NewProvingKey(sparseR1CS.CurveID())
 	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
@@ -51,17 +48,8 @@ func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey s
 		log.Fatal(err)
 	}
 
-	// Setup.
-	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
-	if err != nil {
-		log.Fatal(err)
-	}
-	if provingKey.InitKZG(srs) != nil {
-		log.Fatal(err)
-	}
-
 	// Prove.
-	proof, err := plonk.Prove(sparseR1CS, provingKey, witness)
+	proof, err := plonk_backend.ProveWithPK(sparseR1CS, provingKey, publicVariables, secretVariables)
 	if err != nil {
 		log.Fatal(err)
 	}
