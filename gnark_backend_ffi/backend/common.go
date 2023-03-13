@@ -58,12 +58,18 @@ func HandleValues(a acir.ACIR, cs constraint.ConstraintSystem, values fr_bn254.V
 	}
 	for i, value := range values {
 		i++
-		for _, publicInput := range a.PublicInputs {
-			if uint32(i) != publicInput {
-				index = cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
-				secretVariables = append(secretVariables, value)
-				indexMap[fmt.Sprint(i)] = index
+		if len(a.PublicInputs) > 0 {
+			for _, publicInput := range a.PublicInputs {
+				if uint32(i) != publicInput {
+					index = cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
+					secretVariables = append(secretVariables, value)
+					indexMap[fmt.Sprint(i)] = index
+				}
 			}
+		} else {
+			index = cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
+			secretVariables = append(secretVariables, value)
+			indexMap[fmt.Sprint(i)] = index
 		}
 	}
 	return
