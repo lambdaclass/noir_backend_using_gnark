@@ -63,6 +63,7 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	if err != nil {
 		log.Fatal(err)
 	}
+	// TODO: Fix this in the Rust backend side. We should not receive a JSON.
 	// Decode values.
 	var valuesToDecode string
 	err = json.Unmarshal([]byte(encodedRandomValues), &valuesToDecode)
