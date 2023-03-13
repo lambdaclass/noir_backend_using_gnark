@@ -16,28 +16,29 @@ flowchart
     end
 ```
 
-### Backend wrapper written in Rust
+### Backend wrapper
 
 This module is needed because Noir's backend has to be written in Rust and we want to develop one using gnark which is written in Go.
 
-This Rust module is basically in charge of implementing the trait `Backend` for a given type which we've named `Gnark` which represents our backend and of mapping ACIR into an R1CS-friendly data structure. Even though gnark supports several proving systems (like Plonk and Groth16) this wrapper will translate ACIR into R1CS. In the future, more proving systems can be easily supported (we are already planning on supporting Plonk. By this I mean that, a C++ Plonk implementation is already supported as a backend for Noir, but gnark's Plonk implementation isn't).
+This Rust module is basically in charge of implementing the trait `Backend` for a given struct which we've named `Gnark` which represents our backend and of calling the Go API. Gnark supports several proving systems (like Plonk and Groth16), this wrapper works today using Gnark's Plonk implementation (Groth16 is in WIP). In the future, more proving systems can be easily supported.
 
-The first part is not so difficult. We just followed the other Noir backends' structure (see [Arkwork's Marlin's](https://github.com/noir-lang/marlin_arkworks_backend/tree/master/src) and [Aztec's Plonk's](https://github.com/noir-lang/aztec_backend/tree/master/barretenberg_static_lib/src)).
+The project could be decomposed in three parts:
 
-The second part takes most of the work. It can be cut into two parts: the raw R1CS generation (ACIR translation) and the communication with the concrete backend (glue between Rust and Go). In the following paragraphs, we are going to explain these sub-parts a little bit better.
+1. The first part is not so difficult. We just followed the other Noir backends' structure (see [Arkwork's Marlin's](https://github.com/noir-lang/marlin_arkworks_backend/tree/master/src) and [Aztec's Plonk's](https://github.com/noir-lang/aztec_backend/tree/master/barretenberg_static_lib/src)).
+2. The second part is the communication with the concrete backend (glue between Rust and Go). In the following paragraphs, we are going to explain these sub-parts a little bit better.
+3. And the third part, the hardest, is the concrete backend. 
 
-Generating a raw R1CS or translating ACIR to something R1CS-friendly could be seen as just mapping a struct to another struct. For this, we've made two structs: `RawR1CS` and `RawGate`.
+In the next paragraphs, we go into the details of each part.
 
-The communication between the concrete backend (the one written in Go) could be done through a pre-compiled WASM API or through FFI. For this, what we are basically doing is serializing the `RawR1CS` struct into JSON and sending it as a parameter for the WASM functions (in the case that we end up using the WASM API) or to the Go functions (FFI). At the moment we are looking for the easiest way to communicate Rust with Go. We started using WASMER but it is a little bit limited in terms of the amount of information that can be sent to a WASM function so we have discarded it for the moment (a second look could help here). Another step can be to try another WASM library called WASM-PACK, but we decided to start researching FFI.
+The communication between the concrete backend (the one written in Go) is being done through FFI. For this, we just serialize the ACIR and the circuit values into C JSON strings using `std::ffi` and sending them as parameters for the extern functions.
 
 And that's it for this module, in the next section we are going to dive a little deeper into the WASM API.
 
-### Concrete backend
+### Concrete backend (`gnark_backend_ffi/`)
 
-This module is the real deal. It is in charge of generating the proof for a given circuit and also of verifying a given proof. Using the raw R1CS received from the backend wrapper, it rebuilds the circuit and generates the proof or verifies a proof (depending on what function you are using).
+This module is the real deal. It is in charge of preprocessing the circuit, generating the proof for a given circuit and also of verifying a given proof. Using the ACIR received from Noir 
 
-The API would compile to WASM which is going to be used by the Rust wrapper. Or it would just expose functions for the Rust FFI (again, we are researching which is the easiest way to interface).
-
+The API exposes functions for the Rust Foreign Function Interface (FFI) module.
 
 ## Modules
 
@@ -80,7 +81,7 @@ type ArithmeticOpcode struct {
 is a struct that represents a Plonk constraint ($q_{L} \cdot x_{a} + q_{R} \cdot x_{b} 
  q_{O} \cdot x_{c} + q_{M} \cdot (x_{a} \cdot x_{b}) + q_{C} = 0$). `MulTerms` is a vector that represents the following sum: $q_{M_1} \cdot (w_{L_{1}} * w_{R_1}) + \dots + q_{M_n} \cdot (w_{L_{n}} * w_{R_n})$, but right now we are assuming that only one term comes in the vector. `SimpleTerms` is a vector that could represent one term ($q_{O} \cdot x_{c}$), two terms ($q_{L} \cdot x_{a} + q_{R} \cdot x_{b}$) or three terms ($q_{L} \cdot x_{a} + q_{R} \cdot x_{b} + q_{O} \cdot x_{c}$). And finally `QC` represents the constant term ($q_{C}$).
 
-`BlackBoxFunctionOpcode`s: This opcodes represent what it's called gadgets. Gadgets are essentially libraries that give you access to common types and operations when defining circuits. In this case gadgets refer to operations and not common types, such as function calls to Pedersen, Poseidon, SHA3, etc. We do not support this kind of opcodes currently.
+`BlackBoxFunctionOpcode`s: These opcodes represent what are called gadgets. Gadgets are essentially libraries that give you access to common types and operations when defining circuits. In this case gadgets refer to operations and not common types, such as function calls to Pedersen, Poseidon, SHA3, etc. We do not support this kind of opcodes currently.
 
 `DirectiveOpcode`s which, given that we do not need to handle them in the Go side but it comes with the ACIR anyways, is an empty struct.
 
@@ -119,7 +120,7 @@ It is designed in such way that it should be easy to implement a new backend.
 
 #### `internal/`
 
-As the name hits, this module is internal and it is not intended to be exposed for the common user. At the moment it contains mainly helper functions that could be serialization, deserialization and sampling functions.
+As the name hints, this module is internal and it is not intended to be exposed for the common user. At the moment it contains mainly helper functions that could be serialization, deserialization and sampling functions.
 
 ### Rust
 
