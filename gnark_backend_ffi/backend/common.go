@@ -69,8 +69,21 @@ func HandleValues(a acir.ACIR, cs constraint.ConstraintSystem, values fr_bn254.V
 	return
 }
 
+func getFilePath() (string, error) {
+	userConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		return userConfigDir, err
+	}
+	return userConfigDir + "/noir-lang/srs.hex", nil
+}
+
 func LoadSRS() (srs kzgg.SRS, err error) {
-	srsEncoded, err := os.ReadFile("srs.hex")
+	filepath, err := getFilePath()
+	if err != nil {
+		return
+	}
+
+	srsEncoded, err := os.ReadFile(filepath)
 	if err != nil {
 		return
 	}
@@ -96,7 +109,11 @@ func SaveSRS(srs kzgg.SRS) (err error) {
 	// to a SRS struct but we can't rely on a pointer because memory is volatile.
 	// When we deserialize the VerifyingKey we will deserialize the SRS and insert
 	// a valid pointer.
-	err = ioutil.WriteFile("srs.hex", []byte(encodedSRS), 0644)
+	filepath, err := getFilePath()
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filepath, []byte(encodedSRS), 0644)
 
 	return
 }
