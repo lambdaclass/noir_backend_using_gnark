@@ -1,10 +1,13 @@
 package backend
 
 import (
+	"bytes"
 	"encoding/hex"
 	"log"
 
+	"github.com/consensys/gnark-crypto/ecc"
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark/backend/plonk"
 )
 
 func DeserializeFelt(encodedFelt string) fr_bn254.Element {
@@ -33,6 +36,26 @@ func DeserializeFelts(encodedFelts string) fr_bn254.Vector {
 	deserializedFelts.UnmarshalBinary(decodedFelts)
 
 	return deserializedFelts
+}
+
+func DeserializeProvingKey(encodedProvingKey string) (pk plonk.ProvingKey) {
+	pk = plonk.NewProvingKey(ecc.BN254)
+	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = pk.ReadFrom(bytes.NewReader([]byte(decodedProvingKey)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
+
+func SerializeProof(proof plonk.Proof) (p string) {
+	var serialized_proof bytes.Buffer
+	proof.WriteTo(&serialized_proof)
+	p = hex.EncodeToString(serialized_proof.Bytes())
+	return
 }
 
 // Samples a felt and returns the encoded felt and the non-encoded felt.

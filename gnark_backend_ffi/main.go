@@ -24,42 +24,17 @@ import (
 
 //export PlonkProveWithPK
 func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey string) *C.char {
-	// Deserialize ACIR.
-	var a acir.ACIR
-	err := json.Unmarshal([]byte(acirJSON), &a)
+	var circuit acir.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &circuit)
 	if err != nil {
 		log.Fatal(err)
 	}
+	values := backend_helpers.DeserializeFelts(encodedValues)
+	provingKey := backend_helpers.DeserializeProvingKey(encodedProvingKey)
 
-	// Decode values.
-	decodedValues := backend_helpers.DeserializeFelts(encodedValues)
+	proof := plonk_backend.ProveWithPK(circuit, provingKey, values)
 
-	// Build sparse R1CS.
-	sparseR1CS, publicVariables, secretVariables := plonk_backend.BuildSparseR1CS(a, decodedValues)
-
-	// Deserialize proving key.
-	provingKey := plonk.NewProvingKey(sparseR1CS.CurveID())
-	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = provingKey.ReadFrom(bytes.NewReader([]byte(decodedProvingKey)))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Prove.
-	proof, err := plonk_backend.ProveWithPK(sparseR1CS, provingKey, publicVariables, secretVariables)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Serialize proof
-	var serialized_proof bytes.Buffer
-	proof.WriteTo(&serialized_proof)
-	proof_string := hex.EncodeToString(serialized_proof.Bytes())
-
-	return C.CString(proof_string)
+	return C.CString(backend_helpers.SerializeProof(proof))
 }
 
 //export PlonkVerifyWithMeta

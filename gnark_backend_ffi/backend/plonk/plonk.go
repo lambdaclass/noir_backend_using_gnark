@@ -52,12 +52,8 @@ func VerifyWithVK(sparseR1CS *cs_bn254.SparseR1CS,
 	return true
 }
 
-func ProveWithPK(sparseR1CS *cs_bn254.SparseR1CS,
-	provingKey plonk.ProvingKey,
-	publicVariables fr_bn254.Vector,
-	secretVariables fr_bn254.Vector) (plonk.Proof, error) {
-
-	// Build witness.
+func ProveWithPK(circuit acir.ACIR, provingKey plonk.ProvingKey, values fr_bn254.Vector) (proof plonk.Proof) {
+	sparseR1CS, publicVariables, secretVariables := BuildSparseR1CS(circuit, values)
 	witness := backend.BuildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
 
 	// Setup.
@@ -69,5 +65,11 @@ func ProveWithPK(sparseR1CS *cs_bn254.SparseR1CS,
 		log.Fatal(err)
 	}
 
-	return plonk.Prove(sparseR1CS, provingKey, witness)
+	// Prove
+	proof, err = plonk.Prove(sparseR1CS, provingKey, witness)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return
 }

@@ -89,11 +89,11 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 
 // TODO: Make this a method for acir.ACIR.
 // qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
-func BuildSparseR1CS(a acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
-	sparseR1CS := cs_bn254.NewSparseR1CS(int(a.CurrentWitness) - 1)
+func BuildSparseR1CS(circuit acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
+	sparseR1CS := cs_bn254.NewSparseR1CS(int(circuit.CurrentWitness) - 1)
 
-	publicVariables, secretVariables, indexMap := backend.HandleValues(a, sparseR1CS, values)
-	handleOpcodes(a, sparseR1CS, indexMap)
+	publicVariables, secretVariables, indexMap := backend.HandleValues(circuit, sparseR1CS, values)
+	handleOpcodes(circuit, sparseR1CS, indexMap)
 
 	return sparseR1CS, publicVariables, secretVariables
 }
