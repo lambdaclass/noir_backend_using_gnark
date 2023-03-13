@@ -10,32 +10,26 @@ import (
 	"github.com/consensys/gnark/backend/plonk"
 )
 
-func DeserializeFelt(encodedFelt string) fr_bn254.Element {
+func DeserializeFelt(encodedFelt string) (felt fr_bn254.Element) {
 	// Decode the received felt.
 	decodedFelt, err := hex.DecodeString(encodedFelt)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// Deserialize the decoded felt.
-	var deserializedFelt fr_bn254.Element
-	deserializedFelt.SetBytes(decodedFelt)
-
-	return deserializedFelt
+	felt.SetBytes(decodedFelt)
+	return
 }
 
-func DeserializeFelts(encodedFelts string) fr_bn254.Vector {
+func DeserializeFelts(encodedFelts string) (felts fr_bn254.Vector) {
 	// Decode the received felts.
 	decodedFelts, err := hex.DecodeString(encodedFelts)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// Unpack and deserialize the decoded felts.
-	var deserializedFelts fr_bn254.Vector
-	deserializedFelts.UnmarshalBinary(decodedFelts)
-
-	return deserializedFelts
+	felts.UnmarshalBinary(decodedFelts)
+	return
 }
 
 func DeserializeProof(serializedProof string, curveID ecc.ID) (p plonk.Proof) {

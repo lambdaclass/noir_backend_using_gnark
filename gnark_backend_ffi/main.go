@@ -52,9 +52,7 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 	publicInputs := backend_helpers.DeserializeFelts(encodedPublicInputs)
 	verifyingKey := backend_helpers.DeserializeVerifyingKey(encodedVerifyingKey, ecc.BN254)
 
-	verifies := plonk_backend.VerifyWithVK(circuit, verifyingKey, proof, publicInputs, ecc.BN254)
-
-	return verifies
+	return plonk_backend.VerifyWithVK(circuit, verifyingKey, proof, publicInputs, ecc.BN254)
 }
 
 //export PlonkPreprocess
