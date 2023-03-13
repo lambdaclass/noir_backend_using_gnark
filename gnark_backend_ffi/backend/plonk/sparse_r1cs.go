@@ -1,4 +1,4 @@
-package plonk
+package plonk_backend
 
 import (
 	"fmt"

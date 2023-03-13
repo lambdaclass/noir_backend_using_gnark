@@ -145,8 +145,8 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 //export PlonkPreprocess
 func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.char) {
 	// Deserialize ACIR.
-	var a acir.ACIR
-	err := json.Unmarshal([]byte(acirJSON), &a)
+	var acir acir.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &acir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,15 +159,7 @@ func PlonkPreprocess(acirJSON string, encodedRandomValues string) (*C.char, *C.c
 	}
 	decodedRandomValues := backend_helpers.DeserializeFelts(valuesToDecode)
 
-	// Build sparse R1CS.
-	sparseR1CS, _, _ := plonk_backend.BuildSparseR1CS(a, decodedRandomValues)
-
-	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	provingKey, verifyingKey, err := plonk.Setup(sparseR1CS, srs)
+	provingKey, verifyingKey, err := plonk_backend.Preprocess(acir, decodedRandomValues)
 	if err != nil {
 		log.Fatal(err)
 	}
