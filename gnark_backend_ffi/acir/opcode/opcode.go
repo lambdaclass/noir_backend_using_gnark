@@ -26,6 +26,7 @@ func (o *Opcode) UnmarshalJSON(b []byte) error {
 	// 	return nil
 	// }
 
+	// TODO: Check that we effectively receive a Directive opcode.
 	o.Data = &DirectiveOpcode{}
 	return nil
 }
