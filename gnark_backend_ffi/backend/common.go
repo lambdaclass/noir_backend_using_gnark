@@ -104,7 +104,7 @@ func SaveSRS(srs kzgg.SRS) (err error) {
 	srs.WriteTo(&serializedSRS)
 	encodedSRS := hex.EncodeToString(serializedSRS.Bytes())
 
-	// Save the encoded SRS in a file named srs.hex.
+	// Save the encoded SRS in a file named srs.hex in the user config dir.
 	// We need to save the encoded SRS because the struct VerifyingKey has a pointer
 	// to a SRS struct but we can't rely on a pointer because memory is volatile.
 	// When we deserialize the VerifyingKey we will deserialize the SRS and insert
