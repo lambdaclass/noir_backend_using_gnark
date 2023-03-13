@@ -41,11 +41,13 @@ The API would compile to WASM which is going to be used by the Rust wrapper. Or 
 
 ## Modules
 
-### gnark_backend_ffi/
+### Go
+
+#### `gnark_backend_ffi/`
 
 Written in Go and using gnark, this modules contains the concrete backend implementation.
 
-#### `acir/`
+##### `acir/`
 
 Noir code compiles to an intermediate representation specific for arithmetic circuits called abstract circuit intermediate representation (ACIR), hence the name of this module. The compiled circuit is sent through Rust to the Go backend using a Foreign Function Interface (FFI). We encode Rust's types into C strings and send them to Go where they are decoded.
 
@@ -63,7 +65,7 @@ type ACIR struct {
 - `Opcodes` is an array that contains the different ACIR opcodes which could be Arithmetic opcodes that represent a constraint to be enforced, Black Box Function opcodes which are more complex arithmetic opcodes that imply the use of gadgets, and Directive opcodes which are optimizations made and used in the Rust backend side (they don't need to be handled in the Go side). 
 - `PublicInputs`
 
-#### `opcode/` 
+##### `opcode/` 
 
 Above we explain what opcodes and below we dive deep into their structures. Among them we could find:
 
@@ -82,7 +84,7 @@ is a struct that represents a Plonk constraint ($q_{L} \cdot x_{a} + q_{R} \cdot
 
 `DirectiveOpcode`s which, given that we do not need to handle them in the Go side but it comes with the ACIR anyways, is an empty struct.
 
-#### `term/`
+##### `term/`
 
 This module contains the representation and serialization of the multiplication and non-multiplication terms in the Plonk constraint. These are the `MulTerm`, defined as
 
@@ -109,13 +111,13 @@ type SimpleTerm struct {
 
 where `Coefficient` is $q_{L/R/C}$ and `VariableIndex` is the index of $xa/xb/xc$ in the values vector (or the public inputs vector). 
 
-### `backend/`
+#### `backend/`
 
 The different backend implementations are located in this module. These are `plonk/` and `groth16/` (WIP). Every backend defines the basic API needed by Noir to compile, execute, prove and verify.
 
 It is designed in such way that it should be easy to implement a new backend.
 
-### `internal/`
+#### `internal/`
 
 As the name hits, this module is internal and it is not intended to be exposed for the common user. At the moment it contains mainly helper functions that could be serialization, deserialization and sampling functions.
 
