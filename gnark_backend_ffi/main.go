@@ -94,9 +94,6 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 	// Build sparse R1CS.
 	sparseR1CS, publicVariables, secretVariables := plonk_backend.BuildSparseR1CS(a, decodedPublicInputs)
 
-	// Build witness.
-	witness := backend.BuildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
-
 	// Deserialize proof.
 	proof := plonk.NewProof(sparseR1CS.CurveID())
 	decodedProof, err := hex.DecodeString(encodedProof)
@@ -119,27 +116,7 @@ func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs
 		log.Fatal(err)
 	}
 
-	// Setup.
-	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
-	if err != nil {
-		log.Fatal(err)
-	}
-	if verifyingKey.InitKZG(srs) != nil {
-		log.Fatal(err)
-	}
-
-	// Retrieve public inputs.
-	witnessPublics, err := witness.Public()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Verify.
-	if plonk.Verify(proof, verifyingKey, witnessPublics) != nil {
-		return false
-	}
-
-	return true
+	return plonk_backend.VerifyWithVK(sparseR1CS, verifyingKey, proof, publicVariables, secretVariables)
 }
 
 //export PlonkPreprocess
