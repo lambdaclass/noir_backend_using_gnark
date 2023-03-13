@@ -14,6 +14,7 @@ import (
 	plonk_backend "gnark_backend_ffi/backend/plonk"
 	backend_helpers "gnark_backend_ffi/internal/backend"
 
+	"github.com/consensys/gnark-crypto/ecc"
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/consensys/gnark/backend/groth16"
@@ -30,9 +31,9 @@ func PlonkProveWithPK(acirJSON string, encodedValues string, encodedProvingKey s
 		log.Fatal(err)
 	}
 	values := backend_helpers.DeserializeFelts(encodedValues)
-	provingKey := backend_helpers.DeserializeProvingKey(encodedProvingKey)
+	provingKey := backend_helpers.DeserializeProvingKey(encodedProvingKey, ecc.BN254)
 
-	proof := plonk_backend.ProveWithPK(circuit, provingKey, values)
+	proof := plonk_backend.ProveWithPK(circuit, provingKey, values, ecc.BN254)
 
 	return C.CString(backend_helpers.SerializeProof(proof))
 }
@@ -44,42 +45,18 @@ func PlonkVerifyWithMeta(acirJSON string, encodedValues string, encodedProof str
 
 //export PlonkVerifyWithVK
 func PlonkVerifyWithVK(acirJSON string, encodedProof string, encodedPublicInputs string, encodedVerifyingKey string) bool {
-	// Deserialize ACIR.
-	var a acir.ACIR
-	err := json.Unmarshal([]byte(acirJSON), &a)
+	var circuit acir.ACIR
+	err := json.Unmarshal([]byte(acirJSON), &circuit)
 	if err != nil {
 		log.Fatal(err)
 	}
+	proof := backend_helpers.DeserializeProof(encodedProof, ecc.BN254)
+	publicInputs := backend_helpers.DeserializeFelts(encodedPublicInputs)
+	verifyingKey := backend_helpers.DeserializeVerifyingKey(encodedVerifyingKey, ecc.BN254)
 
-	// Decode public inputs.
-	decodedPublicInputs := backend_helpers.DeserializeFelts(encodedPublicInputs)
+	verifies := plonk_backend.VerifyWithVK(circuit, verifyingKey, proof, publicInputs, ecc.BN254)
 
-	// Build sparse R1CS.
-	sparseR1CS, publicVariables, secretVariables := plonk_backend.BuildSparseR1CS(a, decodedPublicInputs)
-
-	// Deserialize proof.
-	proof := plonk.NewProof(sparseR1CS.CurveID())
-	decodedProof, err := hex.DecodeString(encodedProof)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = proof.ReadFrom(bytes.NewReader(decodedProof))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Deserialize verifying key.
-	verifyingKey := plonk.NewVerifyingKey(sparseR1CS.CurveID())
-	decodedVerifyingKey, err := hex.DecodeString(encodedVerifyingKey)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = verifyingKey.ReadFrom(bytes.NewReader(decodedVerifyingKey))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return plonk_backend.VerifyWithVK(sparseR1CS, verifyingKey, proof, publicVariables, secretVariables)
+	return verifies
 }
 
 //export PlonkPreprocess

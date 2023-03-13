@@ -38,13 +38,40 @@ func DeserializeFelts(encodedFelts string) fr_bn254.Vector {
 	return deserializedFelts
 }
 
-func DeserializeProvingKey(encodedProvingKey string) (pk plonk.ProvingKey) {
-	pk = plonk.NewProvingKey(ecc.BN254)
+func DeserializeProof(serializedProof string, curveID ecc.ID) (p plonk.Proof) {
+	// Deserialize proof.
+	p = plonk.NewProof(curveID)
+	decodedProof, err := hex.DecodeString(serializedProof)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = p.ReadFrom(bytes.NewReader(decodedProof))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
+
+func DeserializeProvingKey(encodedProvingKey string, curveID ecc.ID) (pk plonk.ProvingKey) {
+	pk = plonk.NewProvingKey(curveID)
 	decodedProvingKey, err := hex.DecodeString(encodedProvingKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 	_, err = pk.ReadFrom(bytes.NewReader([]byte(decodedProvingKey)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
+
+func DeserializeVerifyingKey(serializedVerifyingKey string, curveID ecc.ID) (vk plonk.VerifyingKey) {
+	vk = plonk.NewVerifyingKey(curveID)
+	decodedVerifyingKey, err := hex.DecodeString(serializedVerifyingKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = vk.ReadFrom(bytes.NewReader(decodedVerifyingKey))
 	if err != nil {
 		log.Fatal(err)
 	}
