@@ -1,6 +1,6 @@
-package plonk
+package opcode
 
-import "gnark_backend_ffi/backend"
+import common "gnark_backend_ffi/internal"
 
 type BlackBoxFunctionName = int
 
@@ -23,12 +23,12 @@ const (
 )
 
 type FunctionInput struct {
-	Witness backend.Witness
+	Witness common.Witness
 	NumBits uint32
 }
 
 type BlackBoxFunction struct {
 	Name    BlackBoxFunctionName
 	Inputs  []FunctionInput
-	Outputs backend.Witnesses
+	Outputs common.Witnesses
 }

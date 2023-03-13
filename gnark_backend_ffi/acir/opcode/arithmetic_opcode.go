@@ -1,16 +1,18 @@
-package plonk
+package opcode
 
 import (
 	"encoding/json"
-	"gnark_backend_ffi/backend"
+
+	"gnark_backend_ffi/acir/term"
+	backend_helpers "gnark_backend_ffi/internal/backend"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
 
 type ArithmeticOpcode struct {
-	MulTerms []backend.MulTerm
-	AddTerms []backend.AddTerm
-	QC       fr_bn254.Element
+	MulTerms    term.MulTerms
+	SimpleTerms term.SimpleTerms
+	QC          fr_bn254.Element
 }
 
 func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
@@ -34,8 +36,8 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 		return &json.UnmarshalTypeError{}
 	}
 
-	var mulTerms []backend.MulTerm
-	var addTerms []backend.AddTerm
+	var mulTerms term.MulTerms
+	var addTerms term.SimpleTerms
 	var constantTerm fr_bn254.Element
 
 	// Deserialize mul terms.
@@ -68,13 +70,13 @@ func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 
 	// Deserialize constant term.
 	if encodedConstantTerm, ok := gateMap["q_c"].(string); ok {
-		constantTerm = backend.DeserializeFelt(encodedConstantTerm)
+		constantTerm = backend_helpers.DeserializeFelt(encodedConstantTerm)
 	} else {
 		return &json.UnmarshalTypeError{}
 	}
 
 	g.MulTerms = mulTerms
-	g.AddTerms = addTerms
+	g.SimpleTerms = addTerms
 	g.QC = constantTerm
 
 	return nil

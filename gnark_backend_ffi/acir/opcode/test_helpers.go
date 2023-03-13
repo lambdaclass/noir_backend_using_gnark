@@ -1,4 +1,4 @@
-package plonk
+package opcode
 
 import (
 	"encoding/json"
