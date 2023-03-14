@@ -4,38 +4,12 @@ use std::num::TryFromIntError;
 use std::os::raw::{c_char, c_uchar};
 
 mod acir_to_r1cs;
-mod c_go_structures;
-mod errors;
 
-mod serialize;
+use crate::gnark_backend_wrapper::c_go_structures::{GoString, KeyPair};
+use crate::gnark_backend_wrapper::errors::GnarkBackendError;
 pub use crate::gnark_backend_wrapper::groth16::acir_to_r1cs::{AddTerm, MulTerm, RawGate, RawR1CS};
-pub use crate::gnark_backend_wrapper::groth16::c_go_structures::GoString;
-use crate::gnark_backend_wrapper::groth16::c_go_structures::KeyPair;
-use crate::gnark_backend_wrapper::groth16::errors::GnarkBackendError;
-
-// Arkworks's types are generic for `Field` but Noir's types are concrete and
-// its value depends on the feature flag.
-cfg_if::cfg_if! {
-    if #[cfg(feature = "bn254")] {
-        pub use ark_bn254::{Bn254 as Curve, Fr};
-
-        // Converts a FieldElement to a Fr
-        // noir_field uses arkworks for bn254
-        pub fn from_felt(felt: acvm::FieldElement) -> Fr {
-            felt.into_repr()
-        }
-    } else if #[cfg(feature = "bls12_381")] {
-        pub use ark_bls12_381::{Bls12_381 as Curve, Fr};
-
-        // Converts a FieldElement to a Fr
-        // noir_field uses arkworks for bls12_381
-        pub fn from_felt(felt: FieldElement) -> Fr {
-            felt.into_repr()
-        }
-    } else {
-        compile_error!("please specify a field to compile with");
-    }
-}
+use crate::gnark_backend_wrapper::num_constraints;
+use crate::Gnark;
 
 extern "C" {
     fn VerifyWithMeta(rawr1cs: GoString, proof: GoString) -> c_uchar;
@@ -162,7 +136,7 @@ pub fn verify_with_vk(
 }
 
 pub fn get_exact_circuit_size(circuit: &acvm::Circuit) -> Result<u32, GnarkBackendError> {
-    let size: u32 = RawR1CS::num_constraints(circuit)?
+    let size: u32 = num_constraints(circuit)?
         .try_into()
         .map_err(|e: TryFromIntError| GnarkBackendError::Error(e.to_string()))?;
     Ok(size)

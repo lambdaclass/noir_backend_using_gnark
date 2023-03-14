@@ -9,7 +9,8 @@ build-go:
 # Temporary solution for testing the only tests we have. We should test recurively.
 test-go: 
 	$ cd ${FFI_LIB_PATH}; \
-		go test -run '' gnark_backend_ffi/structs
+		go test -run '' gnark_backend_ffi/backend/groth16; \
+		go test -run '' gnark_backend_ffi/backend/plonk
 
 build: build-go
 	$ RUSTFLAGS="-L${FFI_LIB_PATH}" cargo build

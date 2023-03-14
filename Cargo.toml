@@ -21,9 +21,6 @@ hex-literal = "0.3.4"
 thiserror = "1.0"
 rand = "0.8"
 
-[dev-dependencies]
-rand = "0.8"
-
 [profile.test]
 opt-level = 3
 lto = "thin"
@@ -32,7 +29,8 @@ debug = true
 debug-assertions = true
 
 [features]
-default = ["bn254", "groth16"]
+default = ["bn254", "plonk"]
 groth16 = []
+plonk = []
 bn254 = ["acvm/bn254"]
 bls12_381 = ["acvm/bls12_381"]

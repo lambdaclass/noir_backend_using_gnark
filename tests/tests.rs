@@ -79,7 +79,8 @@ fn assert_nargo_cmd_works(cmd_name: &str, test_test_program_dir: &std::path::Pat
 
     assert!(
         cmd_output.status.success(),
-        "stderr(nargo {cmd_name}): {}",
+        "stderr(nargo {cmd_name}) in {}: {}",
+        test_test_program_dir.display(),
         String::from_utf8(cmd_output.stderr).unwrap()
     );
 }
@@ -99,16 +100,32 @@ fn install_nargo() {
 
 #[test]
 fn test_integration() {
-    let test_test_program_dir = test_program_dir_path("priv_x_eq_pub_y");
+    // TODO: Refactor this.
+    let test_dirs_names = vec![
+        "3_add",
+        "comptime_recursion_regression",
+        "global_consts",
+        "main_bool_arg",
+        "modules",
+        "pred_eq",
+        "priv_x_eq_pub_y",
+        "priv_x_neq_pub_y",
+    ];
+    let test_program_dirs: Vec<std::path::PathBuf> = test_dirs_names
+        .into_iter()
+        .map(test_program_dir_path)
+        .collect();
 
     // Ensure our nargo's fork is being used here.
     install_nargo();
 
-    assert_nargo_cmd_works("check", &test_test_program_dir);
-    assert_nargo_cmd_works("compile", &test_test_program_dir);
-    assert_nargo_cmd_works("execute", &test_test_program_dir);
-    assert_nargo_cmd_works("prove", &test_test_program_dir);
-    assert_nargo_cmd_works("verify", &test_test_program_dir);
-    assert_nargo_cmd_works("test", &test_test_program_dir);
-    assert_nargo_cmd_works("gates", &test_test_program_dir);
+    for test_program in test_program_dirs {
+        assert_nargo_cmd_works("check", &test_program);
+        assert_nargo_cmd_works("compile", &test_program);
+        assert_nargo_cmd_works("execute", &test_program);
+        assert_nargo_cmd_works("prove", &test_program);
+        assert_nargo_cmd_works("verify", &test_program);
+        assert_nargo_cmd_works("test", &test_program);
+        assert_nargo_cmd_works("gates", &test_program);
+    }
 }
