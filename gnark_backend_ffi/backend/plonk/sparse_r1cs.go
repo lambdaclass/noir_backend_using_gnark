@@ -13,6 +13,71 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
+func handleArithmeticOpcode(a *acir_opcode.ArithmeticOpcode, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
+	var xa, xb, xc int
+	var qL, qR, qO, qC, qM1, qM2 constraint.Coeff
+
+	// Case qM⋅(xa⋅xb)
+	if len(a.MulTerms) != 0 {
+		mulTerm := a.MulTerms[0]
+		qM1 = sparseR1CS.FromInterface(mulTerm.Coefficient)
+		qM2 = sparseR1CS.FromInterface(1)
+		xa = indexMap[fmt.Sprint(int(mulTerm.MultiplicandIndex))]
+		xb = indexMap[fmt.Sprint(int(mulTerm.MultiplierIndex))]
+	}
+
+	// Case qO⋅xc
+	if len(a.SimpleTerms) == 1 {
+		qOwOTerm := a.SimpleTerms[0]
+		qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
+		xc = indexMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
+	}
+
+	// Case qL⋅xa + qR⋅xb
+	if len(a.SimpleTerms) == 2 {
+		// qL⋅xa
+		qLwLTerm := a.SimpleTerms[0]
+		qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
+		xa = indexMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
+		// qR⋅xb
+		qRwRTerm := a.SimpleTerms[1]
+		qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
+		xb = indexMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
+	}
+
+	// Case qL⋅xa + qR⋅xb + qO⋅xc
+	if len(a.SimpleTerms) == 3 {
+		// qL⋅xa
+		qLwLTerm := a.SimpleTerms[0]
+		qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
+		xa = indexMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
+		// qR⋅xb
+		qRwRTerm := a.SimpleTerms[1]
+		qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
+		xb = indexMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
+		// qO⋅xc
+		qOwOTerm := a.SimpleTerms[2]
+		qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
+		xc = indexMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
+	}
+
+	// Add the qC term
+	qC = sparseR1CS.FromInterface(a.QC)
+
+	K := sparseR1CS.MakeTerm(&qC, 0)
+	K.MarkConstant()
+
+	constraint := constraint.SparseR1C{
+		L: sparseR1CS.MakeTerm(&qL, xa),
+		R: sparseR1CS.MakeTerm(&qR, xb),
+		O: sparseR1CS.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		K: K.CoeffID(),
+	}
+
+	sparseR1CS.AddConstraint(constraint)
+}
+
 func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction) {
 	switch bbf.Name {
 	case acir_opcode.AES:
@@ -61,71 +126,10 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 	for _, opcode := range a.Opcodes {
 		switch opcode := opcode.Data.(type) {
 		case *acir_opcode.ArithmeticOpcode:
-			var xa, xb, xc int
-			var qL, qR, qO, qC, qM1, qM2 constraint.Coeff
-
-			// Case qM⋅(xa⋅xb)
-			if len(opcode.MulTerms) != 0 {
-				mulTerm := opcode.MulTerms[0]
-				qM1 = sparseR1CS.FromInterface(mulTerm.Coefficient)
-				qM2 = sparseR1CS.FromInterface(1)
-				xa = indexMap[fmt.Sprint(int(mulTerm.MultiplicandIndex))]
-				xb = indexMap[fmt.Sprint(int(mulTerm.MultiplierIndex))]
-			}
-
-			// Case qO⋅xc
-			if len(opcode.SimpleTerms) == 1 {
-				qOwOTerm := opcode.SimpleTerms[0]
-				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-				xc = indexMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
-			}
-
-			// Case qL⋅xa + qR⋅xb
-			if len(opcode.SimpleTerms) == 2 {
-				// qL⋅xa
-				qLwLTerm := opcode.SimpleTerms[0]
-				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-				xa = indexMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
-				// qR⋅xb
-				qRwRTerm := opcode.SimpleTerms[1]
-				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-				xb = indexMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
-			}
-
-			// Case qL⋅xa + qR⋅xb + qO⋅xc
-			if len(opcode.SimpleTerms) == 3 {
-				// qL⋅xa
-				qLwLTerm := opcode.SimpleTerms[0]
-				qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-				xa = indexMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
-				// qR⋅xb
-				qRwRTerm := opcode.SimpleTerms[1]
-				qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-				xb = indexMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
-				// qO⋅xc
-				qOwOTerm := opcode.SimpleTerms[2]
-				qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-				xc = indexMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
-			}
-
-			// Add the qC term
-			qC = sparseR1CS.FromInterface(opcode.QC)
-
-			K := sparseR1CS.MakeTerm(&qC, 0)
-			K.MarkConstant()
-
-			constraint := constraint.SparseR1C{
-				L: sparseR1CS.MakeTerm(&qL, xa),
-				R: sparseR1CS.MakeTerm(&qR, xb),
-				O: sparseR1CS.MakeTerm(&qO, xc),
-				M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
-				K: K.CoeffID(),
-			}
-
-			sparseR1CS.AddConstraint(constraint)
+			handleArithmeticOpcode(opcode, sparseR1CS, indexMap)
 			break
 		case *acir_opcode.BlackBoxFunction:
-			handleBlackBoxFunctionOpcodes(opcode)
+			handleBlackBoxFunctionOpcode(opcode)
 			break
 		case *acir_opcode.DirectiveOpcode:
 			break
