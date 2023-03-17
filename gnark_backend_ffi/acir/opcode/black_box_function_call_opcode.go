@@ -5,10 +5,10 @@ import (
 	common "gnark_backend_ffi/internal"
 )
 
-type BlackBoxFunctionName = int
+type blackBoxFunctionName = int
 
 const (
-	AES BlackBoxFunctionName = iota
+	AES blackBoxFunctionName = iota
 	AND
 	XOR
 	RANGE
@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	blackBoxFunctionsNameMap = map[string]BlackBoxFunctionName{
+	blackBoxFunctionsNameMap = map[string]blackBoxFunctionName{
 		"AES":                    AES,
 		"AND":                    AND,
 		"XOR":                    XOR,
@@ -44,14 +44,14 @@ var (
 )
 
 type BlackBoxFunction struct {
-	Name    BlackBoxFunctionName
-	Inputs  FunctionInputs
+	Name    blackBoxFunctionName
+	Inputs  functionInputs
 	Outputs common.Witnesses
 }
 
-type FunctionInputs = []FunctionInput
+type functionInputs = []functionInput
 
-type FunctionInput struct {
+type functionInput struct {
 	Witness common.Witness
 	NumBits uint32
 }
@@ -77,8 +77,8 @@ func (bbf *BlackBoxFunction) UnmarshalJSON(data []byte) error {
 		return &json.UnmarshalTypeError{}
 	}
 
-	var name BlackBoxFunctionName
-	var inputs FunctionInputs
+	var name blackBoxFunctionName
+	var inputs functionInputs
 	var outputs common.Witnesses
 
 	if inputsValue, ok := blackBoxFunctionMap["inputs"].([]interface{}); ok {
@@ -120,7 +120,7 @@ func (bbf *BlackBoxFunction) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (fi *FunctionInput) UnmarshalJSON(data []byte) error {
+func (fi *functionInput) UnmarshalJSON(data []byte) error {
 	var functionInputMap map[string]interface{}
 	err := json.Unmarshal(data, &functionInputMap)
 	if err != nil {
