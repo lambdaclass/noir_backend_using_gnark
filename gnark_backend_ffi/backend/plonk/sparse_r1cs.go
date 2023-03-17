@@ -18,12 +18,13 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 		switch opcode := opcode.Data.(type) {
 		case *acir_opcode.ArithmeticOpcode:
 			var xa, xb, xc int
-			var qL, qR, qO, qC, qM constraint.Coeff
+			var qL, qR, qO, qC, qM1, qM2 constraint.Coeff
 
 			// Case qM⋅(xa⋅xb)
 			if len(opcode.MulTerms) != 0 {
 				mulTerm := opcode.MulTerms[0]
-				qM = sparseR1CS.FromInterface(mulTerm.Coefficient)
+				qM1 = sparseR1CS.FromInterface(mulTerm.Coefficient)
+				qM2 = sparseR1CS.FromInterface(1)
 				xa = indexMap[fmt.Sprint(int(mulTerm.MultiplicandIndex))]
 				xb = indexMap[fmt.Sprint(int(mulTerm.MultiplierIndex))]
 			}
@@ -73,7 +74,7 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 				L: sparseR1CS.MakeTerm(&qL, xa),
 				R: sparseR1CS.MakeTerm(&qR, xb),
 				O: sparseR1CS.MakeTerm(&qO, xc),
-				M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM, xa), sparseR1CS.MakeTerm(&qM, xb)},
+				M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
 				K: K.CoeffID(),
 			}
 
