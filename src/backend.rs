@@ -30,7 +30,7 @@ fn get_values_from_witness_tree(
 
 impl ProofSystemCompiler for Gnark {
     fn np_language(&self) -> Language {
-        Language::R1CS
+        Language::PLONKCSat { width: 3 }
     }
 
     fn black_box_function_supported(&self, opcode: &BlackBoxFunc) -> bool {
