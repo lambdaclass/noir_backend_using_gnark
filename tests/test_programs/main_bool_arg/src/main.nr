@@ -1,4 +1,4 @@
-fn main(x : pub bool, y: [bool;2]) {
+fn main(x : bool, y: [bool;2]) {
     if x {
         constrain 1 != 2;
     }
