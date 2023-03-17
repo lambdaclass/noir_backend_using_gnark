@@ -18,13 +18,12 @@ func (o *Opcode) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	// TODO: Implement UnmarshalJSON for BlackBoxFunction.
-	// blackBoxFunctionOpcode := &BlackBoxFunction{}
-	// err = json.Unmarshal(b, blackBoxFunctionOpcode)
-	// if err == nil {
-	// 	o.Data = blackBoxFunctionOpcode
-	// 	return nil
-	// }
+	blackBoxFunctionOpcode := &BlackBoxFunction{}
+	err = json.Unmarshal(b, blackBoxFunctionOpcode)
+	if err == nil {
+		o.Data = blackBoxFunctionOpcode
+		return nil
+	}
 
 	directiveOpcode := &DirectiveOpcode{}
 	err = json.Unmarshal(b, directiveOpcode)
