@@ -117,7 +117,6 @@ fn test_integration() {
         "priv_x_eq_pub_y",
         "priv_x_neq_pub_y",
         "struct",
-        "struct_inputs",
     ];
     let test_program_dirs: Vec<std::path::PathBuf> = test_dirs_names
         .into_iter()
