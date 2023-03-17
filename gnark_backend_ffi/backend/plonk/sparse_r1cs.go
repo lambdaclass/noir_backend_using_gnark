@@ -14,6 +14,21 @@ import (
 )
 
 func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
+	if len(a.Opcodes) == 0 {
+		fmt.Println(indexMap)
+		constraint := constraint.SparseR1C{
+			L: constraint.Term{},
+			R: constraint.Term{},
+			O: constraint.Term{},
+			M: [2]constraint.Term{},
+			K: constraint.CoeffIdZero,
+		}
+
+		// For a function with one public input we need to add an empty constraint fot it to work.
+		// The number of empty constraints needed for a no-opcode function to work increases by the number of witnesses.
+		sparseR1CS.AddConstraint(constraint)
+		return
+	}
 	for _, opcode := range a.Opcodes {
 		switch opcode := opcode.Data.(type) {
 		case *acir_opcode.ArithmeticOpcode:

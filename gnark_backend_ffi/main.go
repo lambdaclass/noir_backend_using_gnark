@@ -162,10 +162,12 @@ func PlonkExample(acirJSON string, values fr_bn254.Vector) {
 		fmt.Println(sparseR1C.String(res))
 	}
 	fmt.Println()
+	fmt.Println("Public Variables:", publicVariables.String())
+	fmt.Println("Secret Variables:", secretVariables.String())
 
 	fmt.Println("Building witness...")
 	witness := backend.BuildWitnesses(sparseR1CS.CurveID().ScalarField(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
-	fmt.Println("Witness built.")
+	fmt.Println("Witness built:", witness.Vector().(fr_bn254.Vector).String())
 	fmt.Println()
 
 	fmt.Println("Setting up...")
@@ -225,6 +227,7 @@ func main() {
 	one := fr_bn254.One()
 	two := fr_bn254.NewElement(2)
 	three := fr_bn254.NewElement(3)
+	eight := fr_bn254.NewElement(8)
 	var minusOne fr_bn254.Element
 	minusOne.Sub(&zero, &one)
 
@@ -244,5 +247,19 @@ func main() {
 	PlonkExample(
 		`{"current_witness_index":6,"opcodes":[{"Arithmetic":{"linear_combinations":[["0000000000000000000000000000000000000000000000000000000000000001",1],["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",2],["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",3]],"mul_terms":[],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Directive":{"Invert":{"result":4,"x":3}}},{"Arithmetic":{"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",5]],"mul_terms":[["0000000000000000000000000000000000000000000000000000000000000001",3,4]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Arithmetic":{"linear_combinations":[["30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",3]],"mul_terms":[["0000000000000000000000000000000000000000000000000000000000000001",3,5]],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}},{"Arithmetic":{"linear_combinations":[["0000000000000000000000000000000000000000000000000000000000000001",5]],"mul_terms":[],"q_c":"0000000000000000000000000000000000000000000000000000000000000000"}}],"public_inputs":[]}`,
 		fr_bn254.Vector{three, three, zero, zero, zero, zero},
+	)
+
+	// fn main(x: pub Field) -> pub Field {
+	//     x
+	// }
+	PlonkExample(
+		`{"current_witness_index":2,"opcodes":[],"public_inputs":[1]}`,
+		fr_bn254.Vector{eight, zero},
+	)
+
+	//
+	PlonkExample(
+		`{"current_witness_index":4,"opcodes":[],"public_inputs":[]}`,
+		fr_bn254.Vector{one, two, three, zero},
 	)
 }
