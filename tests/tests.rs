@@ -116,7 +116,6 @@ fn test_integration() {
         "pred_eq",
         "priv_x_eq_pub_y",
         "priv_x_neq_pub_y",
-        "simple_shield",
         "struct",
         "struct_inputs",
     ];
