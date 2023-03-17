@@ -13,6 +13,34 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
+// TODO: Make this a method for acir.ACIR.
+// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
+func BuildSparseR1CS(circuit acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
+	sparseR1CS := cs_bn254.NewSparseR1CS(int(circuit.CurrentWitness) - 1)
+
+	publicVariables, secretVariables, indexMap := backend.HandleValues(circuit, sparseR1CS, values)
+	handleOpcodes(circuit, sparseR1CS, indexMap)
+
+	return sparseR1CS, publicVariables, secretVariables
+}
+
+func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
+	for _, opcode := range a.Opcodes {
+		switch opcode := opcode.Data.(type) {
+		case *acir_opcode.ArithmeticOpcode:
+			handleArithmeticOpcode(opcode, sparseR1CS, indexMap)
+			break
+		case *acir_opcode.BlackBoxFunction:
+			handleBlackBoxFunctionOpcode(opcode)
+			break
+		case *acir_opcode.DirectiveOpcode:
+			break
+		default:
+			log.Fatal("unknown opcode type")
+		}
+	}
+}
+
 func handleArithmeticOpcode(a *acir_opcode.ArithmeticOpcode, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
 	var xa, xb, xc int
 	var qL, qR, qO, qC, qM1, qM2 constraint.Coeff
@@ -120,32 +148,4 @@ func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction) {
 		log.Fatal("Keccak256 black box function call is not handled")
 		break
 	}
-}
-
-func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
-	for _, opcode := range a.Opcodes {
-		switch opcode := opcode.Data.(type) {
-		case *acir_opcode.ArithmeticOpcode:
-			handleArithmeticOpcode(opcode, sparseR1CS, indexMap)
-			break
-		case *acir_opcode.BlackBoxFunction:
-			handleBlackBoxFunctionOpcode(opcode)
-			break
-		case *acir_opcode.DirectiveOpcode:
-			break
-		default:
-			log.Fatal("unknown opcode type")
-		}
-	}
-}
-
-// TODO: Make this a method for acir.ACIR.
-// qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
-func BuildSparseR1CS(circuit acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
-	sparseR1CS := cs_bn254.NewSparseR1CS(int(circuit.CurrentWitness) - 1)
-
-	publicVariables, secretVariables, indexMap := backend.HandleValues(circuit, sparseR1CS, values)
-	handleOpcodes(circuit, sparseR1CS, indexMap)
-
-	return sparseR1CS, publicVariables, secretVariables
 }
