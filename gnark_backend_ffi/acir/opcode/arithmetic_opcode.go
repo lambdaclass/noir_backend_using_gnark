@@ -17,12 +17,12 @@ type ArithmeticOpcode struct {
 
 func (g *ArithmeticOpcode) UnmarshalJSON(data []byte) error {
 	var opcodeMap map[string]interface{}
-	var gateMap map[string]interface{}
 	err := json.Unmarshal(data, &opcodeMap)
 	if err != nil {
 		return err
 	}
 
+	var gateMap map[string]interface{}
 	if gateValue, ok := opcodeMap["Arithmetic"]; ok {
 		gateJSON, err := json.Marshal(gateValue)
 		if err != nil {
