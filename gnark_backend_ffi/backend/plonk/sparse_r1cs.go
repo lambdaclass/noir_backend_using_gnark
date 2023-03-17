@@ -109,43 +109,43 @@ func handleArithmeticOpcode(a *acir_opcode.ArithmeticOpcode, sparseR1CS constrai
 func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction) {
 	switch bbf.Name {
 	case acir_opcode.AES:
-		log.Fatal("AES black box function call is not handled")
+		AES()
 		break
 	case acir_opcode.AND:
-		log.Fatal("AND black box function call is not handled")
+		AND()
 		break
 	case acir_opcode.XOR:
-		log.Fatal("XOR black box function call is not handled")
+		XOR()
 		break
 	case acir_opcode.RANGE:
-		log.Fatal("RANGE black box function call is not handled")
+		Range()
 		break
 	case acir_opcode.SHA256:
-		log.Fatal("SHA256 black box function call is not handled")
+		SHA256()
 		break
 	case acir_opcode.Blake2s:
-		log.Fatal("Blake2s black box function call is not handled")
+		Blake2s()
 		break
 	case acir_opcode.MerkleMembership:
-		log.Fatal("MerkleMembership black box function call is not handled")
+		MerkleMembership()
 		break
 	case acir_opcode.SchnorrVerify:
-		log.Fatal("SchnorrVerify black box function call is not handled")
+		SchnorrVerify()
 		break
 	case acir_opcode.Pedersen:
-		log.Fatal("Pedersen black box function call is not handled")
+		Pedersen()
 		break
 	case acir_opcode.HashToField128Security:
-		log.Fatal("HashToField128Security black box function call is not handled")
+		HashToField128Security()
 		break
 	case acir_opcode.EcdsaSecp256k1:
-		log.Fatal("EcdsaSecp256k1 black box function call is not handled")
+		EcdsaSecp256k1()
 		break
 	case acir_opcode.FixedBaseScalarMul:
-		log.Fatal("FixedBaseScalarMul black box function call is not handled")
+		FixedBaseScalarMul()
 		break
 	case acir_opcode.Keccak256:
-		log.Fatal("Keccak256 black box function call is not handled")
+		Keccak256()
 		break
 	}
 }
