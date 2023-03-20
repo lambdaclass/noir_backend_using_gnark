@@ -4,6 +4,10 @@
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
+use acvm::pwg::hash::{sha256, blake2s};
+use acvm::pwg::logic::solve_logic_opcode;
+use acvm::pwg::range::solve_range_opcode;
+use acvm::pwg::signature::ecdsa::secp256k1_prehashed;
 use acvm::pwg::witness_to_value;
 use acvm::{
     FieldElement, Language, OpcodeResolutionError, PartialWitnessGenerator, ProofSystemCompiler,
@@ -104,10 +108,52 @@ impl ProofSystemCompiler for Gnark {
 
 impl PartialWitnessGenerator for Gnark {
     fn solve_black_box_function_call(
-        _initial_witness: &mut BTreeMap<Witness, FieldElement>,
-        _func_call: &BlackBoxFuncCall,
+        initial_witness: &mut BTreeMap<Witness, FieldElement>,
+        func_call: &BlackBoxFuncCall,
     ) -> Result<(), OpcodeResolutionError> {
-        unimplemented!()
+        match func_call.name {
+            BlackBoxFunc::AES => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::AND | BlackBoxFunc::XOR => solve_logic_opcode(initial_witness, func_call),
+            BlackBoxFunc::RANGE => solve_range_opcode(initial_witness, func_call),
+            BlackBoxFunc::SHA256 => {
+                sha256(initial_witness, func_call);
+                Ok(())
+            },
+            BlackBoxFunc::Blake2s => {
+                blake2s(initial_witness, func_call);
+                Ok(())
+            },
+            BlackBoxFunc::MerkleMembership => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::SchnorrVerify => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::Pedersen => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::HashToField128Security => {
+                // Deal with Blake2s -- XXX: It's not possible for pwg to know that it is Blake2s
+                // We need to get this method from the backend
+                let mut hasher = <blake2::Blake2s as blake2::Digest>::new();
+
+                // 0. For each input in the vector of inputs, check if we have their witness assignments (Can do this outside of match, since they all have inputs)
+                for input_index in func_call.inputs.iter() {
+                    let witness = &input_index.witness;
+                    let num_bits = input_index.num_bits;
+
+                    let assignment = witness_to_value(initial_witness, *witness)?;
+
+                    let bytes = assignment.fetch_nearest_bytes(num_bits.try_into().unwrap());
+
+                    blake2::Digest::update(&mut hasher, bytes);
+                }
+                let result = blake2::Digest::finalize(hasher);
+
+                let reduced_res = FieldElement::from_be_bytes_reduce(&result);
+                assert_eq!(func_call.outputs.len(), 1);
+
+                initial_witness.insert(func_call.outputs[0], reduced_res);
+                Ok(())
+            },
+            BlackBoxFunc::EcdsaSecp256k1 => secp256k1_prehashed(initial_witness, func_call),
+            BlackBoxFunc::FixedBaseScalarMul => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::Keccak256 => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+        }
     }
 }
 

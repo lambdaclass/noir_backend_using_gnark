@@ -20,6 +20,7 @@ hex = "0.4"
 hex-literal = "0.3.4"
 thiserror = "1.0"
 rand = "0.8"
+blake2 = "0.9.1"
 
 [profile.test]
 opt-level = 3
