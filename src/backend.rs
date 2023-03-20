@@ -4,7 +4,7 @@
 use acvm::acir::{
     circuit::opcodes::BlackBoxFuncCall, circuit::Circuit, native_types::Witness, BlackBoxFunc,
 };
-use acvm::pwg::hash::{sha256, blake2s};
+use acvm::pwg::hash::{blake2s, sha256};
 use acvm::pwg::logic::solve_logic_opcode;
 use acvm::pwg::range::solve_range_opcode;
 use acvm::pwg::signature::ecdsa::secp256k1_prehashed;
@@ -112,20 +112,28 @@ impl PartialWitnessGenerator for Gnark {
         func_call: &BlackBoxFuncCall,
     ) -> Result<(), OpcodeResolutionError> {
         match func_call.name {
-            BlackBoxFunc::AES => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::AES => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(
+                func_call.name,
+            )),
             BlackBoxFunc::AND | BlackBoxFunc::XOR => solve_logic_opcode(initial_witness, func_call),
             BlackBoxFunc::RANGE => solve_range_opcode(initial_witness, func_call),
             BlackBoxFunc::SHA256 => {
                 sha256(initial_witness, func_call);
                 Ok(())
-            },
+            }
             BlackBoxFunc::Blake2s => {
                 blake2s(initial_witness, func_call);
                 Ok(())
-            },
-            BlackBoxFunc::MerkleMembership => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
-            BlackBoxFunc::SchnorrVerify => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
-            BlackBoxFunc::Pedersen => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            }
+            BlackBoxFunc::MerkleMembership => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(
+                func_call.name,
+            )),
+            BlackBoxFunc::SchnorrVerify => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(
+                func_call.name,
+            )),
+            BlackBoxFunc::Pedersen => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(
+                func_call.name,
+            )),
             BlackBoxFunc::HashToField128Security => {
                 // Deal with Blake2s -- XXX: It's not possible for pwg to know that it is Blake2s
                 // We need to get this method from the backend
@@ -149,10 +157,14 @@ impl PartialWitnessGenerator for Gnark {
 
                 initial_witness.insert(func_call.outputs[0], reduced_res);
                 Ok(())
-            },
+            }
             BlackBoxFunc::EcdsaSecp256k1 => secp256k1_prehashed(initial_witness, func_call),
-            BlackBoxFunc::FixedBaseScalarMul => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
-            BlackBoxFunc::Keccak256 => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name)),
+            BlackBoxFunc::FixedBaseScalarMul => Err(
+                OpcodeResolutionError::UnsupportedBlackBoxFunc(func_call.name),
+            ),
+            BlackBoxFunc::Keccak256 => Err(OpcodeResolutionError::UnsupportedBlackBoxFunc(
+                func_call.name,
+            )),
         }
     }
 }
