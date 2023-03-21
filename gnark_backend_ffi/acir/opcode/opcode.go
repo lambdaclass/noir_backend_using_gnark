@@ -31,5 +31,6 @@ func (o *Opcode) UnmarshalJSON(b []byte) error {
 		o.Data = directiveOpcode
 		return nil
 	}
-	return nil
+
+	return err
 }
