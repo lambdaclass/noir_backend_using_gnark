@@ -65,7 +65,7 @@ func (bbf *BlackBoxFunction) UnmarshalJSON(data []byte) error {
 	}
 
 	var blackBoxFunctionMap map[string]interface{}
-	if blackBoxFunctionValue, ok := opcodeMap["BlackBoxFunction"]; ok {
+	if blackBoxFunctionValue, ok := opcodeMap["BlackBoxFuncCall"]; ok {
 		blackBoxFunctionJSON, err := json.Marshal(blackBoxFunctionValue)
 		if err != nil {
 			return err
