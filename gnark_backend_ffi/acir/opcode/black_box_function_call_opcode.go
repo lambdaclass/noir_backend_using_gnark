@@ -2,6 +2,7 @@ package opcode
 
 import (
 	"encoding/json"
+
 	common "gnark_backend_ffi/internal"
 )
 
