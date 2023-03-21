@@ -1,57 +1,40 @@
 package plonk_backend
 
-import (
-	"log"
-)
+// AES black box function call is not handled
+func AES() {}
 
-func AES() {
-	log.Fatal("AES black box function call is not handled")
-}
+// AND black box function call is not handled
+func AND() {}
 
-func AND() {
-	log.Fatal("AND black box function call is not handled")
-}
+// XOR black box function call is not handled
+func XOR() {}
 
-func XOR() {
-	log.Fatal("XOR black box function call is not handled")
-}
+// RANGE black box function call is not handled
+func Range() {}
 
-func Range() {
-	log.Fatal("RANGE black box function call is not handled")
-}
+// SHA256 black box function call is not handled
+func SHA256() {}
 
-func SHA256() {
-	log.Fatal("SHA256 black box function call is not handled")
-}
+// Blake2s black box function call is not handled
+func Blake2s() {}
 
-func Blake2s() {
-	log.Fatal("Blake2s black box function call is not handled")
-}
+// MerkleMembership black box function call is not handled
+func MerkleMembership() {}
 
-func MerkleMembership() {
-	log.Fatal("MerkleMembership black box function call is not handled")
-}
+// SchnorrVerify black box function call is not handled
+func SchnorrVerify() {}
 
-func SchnorrVerify() {
-	log.Fatal("SchnorrVerify black box function call is not handled")
-}
+// Pedersen black box function call is not handled
+func Pedersen() {}
 
-func Pedersen() {
-	log.Fatal("Pedersen black box function call is not handled")
-}
+// HashToField128Security black box function call is not handled
+func HashToField128Security() {}
 
-func HashToField128Security() {
-	log.Fatal("HashToField128Security black box function call is not handled")
-}
+// EcdsaSecp256k1 black box function call is not handled
+func EcdsaSecp256k1() {}
 
-func EcdsaSecp256k1() {
-	log.Fatal("EcdsaSecp256k1 black box function call is not handled")
-}
+// FixedBaseScalarMul black box function call is not handled
+func FixedBaseScalarMul() {}
 
-func FixedBaseScalarMul() {
-	log.Fatal("FixedBaseScalarMul black box function call is not handled")
-}
-
-func Keccak256() {
-	log.Fatal("Keccak256 black box function call is not handled")
-}
+// Keccak256 black box function call is not handled
+func Keccak256() {}
