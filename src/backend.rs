@@ -40,17 +40,17 @@ impl ProofSystemCompiler for Gnark {
     fn black_box_function_supported(&self, opcode: &BlackBoxFunc) -> bool {
         match opcode {
             BlackBoxFunc::AES => false,
-            BlackBoxFunc::AND => false,
-            BlackBoxFunc::XOR => false,
-            BlackBoxFunc::RANGE => false,
-            BlackBoxFunc::SHA256 => false,
-            BlackBoxFunc::Blake2s => false,
+            BlackBoxFunc::AND => true,
+            BlackBoxFunc::XOR => true,
+            BlackBoxFunc::RANGE => true,
+            BlackBoxFunc::SHA256 => true,
+            BlackBoxFunc::Blake2s => true,
             BlackBoxFunc::MerkleMembership => false,
             BlackBoxFunc::SchnorrVerify => false,
             BlackBoxFunc::Pedersen => false,
-            BlackBoxFunc::HashToField128Security => false,
-            BlackBoxFunc::EcdsaSecp256k1 => false,
-            BlackBoxFunc::FixedBaseScalarMul => false,
+            BlackBoxFunc::HashToField128Security => true,
+            BlackBoxFunc::EcdsaSecp256k1 => true,
+            BlackBoxFunc::FixedBaseScalarMul => true,
             BlackBoxFunc::Keccak256 => false,
         }
     }
