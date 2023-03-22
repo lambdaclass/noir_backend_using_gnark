@@ -50,7 +50,7 @@ impl ProofSystemCompiler for Gnark {
             BlackBoxFunc::Pedersen => false,
             BlackBoxFunc::HashToField128Security => true,
             BlackBoxFunc::EcdsaSecp256k1 => true,
-            BlackBoxFunc::FixedBaseScalarMul => true,
+            BlackBoxFunc::FixedBaseScalarMul => false,
             BlackBoxFunc::Keccak256 => false,
         }
     }
