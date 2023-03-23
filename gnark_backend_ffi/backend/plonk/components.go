@@ -53,7 +53,7 @@ func Keccak256() {}
 // sparseR1CS is the constraint system being mutated.
 // values is the vector of values and it is necessary because we're adding two
 // new values here (one for 1 - b and another one for (1 - b) * b)
-// TODO: Maybe this constraints could be reduced to one (b * b^2)
+// TODO: Maybe these constraints could be reduced to one (b * b^2)
 // TODO: Make tests for this.
 //
 // The intuition here is for the constraints to be satisfied if and only if the
