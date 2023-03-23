@@ -102,14 +102,21 @@ fn install_nargo() {
 fn test_integration() {
     // TODO: Refactor this.
     let test_dirs_names = vec![
-        "3_add",
+        "array_neq",
+        "assign_ex",
+        "bool_not",
+        "bool_or",
+        "cast_bool",
         "comptime_recursion_regression",
+        "generics",
         "global_consts",
         "main_bool_arg",
         "modules",
+        "modules_more",
         "pred_eq",
         "priv_x_eq_pub_y",
         "priv_x_neq_pub_y",
+        "struct",
     ];
     let test_program_dirs: Vec<std::path::PathBuf> = test_dirs_names
         .into_iter()
