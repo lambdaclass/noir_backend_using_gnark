@@ -45,7 +45,7 @@ func FixedBaseScalarMul() {}
 // Keccak256 black box function call is not handled
 func Keccak256() {}
 
-// This generates constraints for asserting that a given value is boolean.
+// Generates constraints for asserting that a given value is boolean.
 // It generates two constraints, one for (1 - b) and another one for (1 - b) * b
 // where b is the bit being checked.
 //
