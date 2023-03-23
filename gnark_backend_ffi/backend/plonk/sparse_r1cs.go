@@ -18,7 +18,7 @@ import (
 func BuildSparseR1CS(circuit acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(int(circuit.CurrentWitness) - 1)
 
-	publicVariables, secretVariables, indexMap := backend.HandleValues(circuit, sparseR1CS, values)
+	publicVariables, secretVariables, indexMap := backend.HandleValues(sparseR1CS, values, circuit.PublicInputs)
 	handleOpcodes(circuit, sparseR1CS, indexMap)
 
 	return sparseR1CS, publicVariables, secretVariables
