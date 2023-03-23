@@ -96,7 +96,7 @@ func assertIsBoolean(bitIndex int, sparseR1CS cs_bn254.SparseR1CS, values fr_bn2
 
 	/* (1 - b) * b constraint */
 
-	// Clean left & right wires
+	// Clean left & right selectors
 	qL = sparseR1CS.FromInterface(0)
 	qR = sparseR1CS.FromInterface(0)
 	// (1 - b)
