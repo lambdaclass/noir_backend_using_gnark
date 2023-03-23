@@ -1,6 +1,9 @@
 package plonk_backend
 
 import (
+	"fmt"
+	"math/big"
+
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
@@ -197,4 +200,45 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 	sparseR1CS.AddConstraint(andConstraint)
 
 	return xc, secretVariables
+}
+
+func toBits(felt fr_bn254.Element, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) ([]int, fr_bn254.Vector) {
+	var feltConstant big.Int
+	felt.BigInt(&feltConstant)
+
+	feltBitsIndices := make([]int, bits)
+	for i := 0; i < bits; i++ {
+		bigEndianIndex := bits - 1 - i
+
+		bit := fr_bn254.NewElement(uint64(feltConstant.Bit(i)))
+		feltBitsIndices[bigEndianIndex] = sparseR1CS.AddSecretVariable(fmt.Sprintf("bit_%d", i))
+		secretVariables = append(secretVariables, bit)
+	}
+	return feltBitsIndices, secretVariables
+}
+
+func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+	lhsBitsIndices, secretVariables := toBits(secretVariables[lhs], bits, sparseR1CS, secretVariables)
+	rhsBitsIndices, secretVariables := toBits(secretVariables[rhs], bits, sparseR1CS, secretVariables)
+	resultBits := make([]big.Word, bits)
+
+	for i := 0; i < bits; i++ {
+		lhsBitIndex := lhsBitsIndices[i]
+		rhsBitIndex := rhsBitsIndices[i]
+		resultBit, secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables)
+		resultBits[i] = big.Word(secretVariables[resultBit].Uint64())
+	}
+
+	var (
+		resultBigInt big.Int
+		resultFelt   fr_bn254.Element
+	)
+
+	resultBigInt.SetBits(resultBits)
+	resultFelt.SetBigInt(&resultBigInt)
+
+	resultIndex := sparseR1CS.AddSecretVariable("result")
+	secretVariables = append(secretVariables, resultFelt)
+
+	return resultIndex, secretVariables
 }
