@@ -80,7 +80,8 @@ func findOneIndex(sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vect
 // if bit = 1 => 0 * 1 = 0
 // if bit = 0 => 1 * 0 = 0
 // if bit != 1 && bit != 0 => (1 - bit) * bit != 0
-func assertIsBoolean(bitIndex int, sparseR1CS cs_bn254.SparseR1CS, values fr_bn254.Vector) {
+// TODO: Maybe these constraints could be reduced to one (b * b^2)
+func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) fr_bn254.Vector {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
