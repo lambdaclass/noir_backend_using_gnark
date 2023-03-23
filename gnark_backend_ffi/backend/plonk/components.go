@@ -157,3 +157,44 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariab
 	// Values must be returned because they're being mutated (new values are being added to it)
 	return secretVariables
 }
+
+// Generates constraints for the bit operation AND.
+//
+// lhs is the index of the left hand side of the AND operation in the values vector.
+// rhs is the index of the right hand side of the AND operation in the values vector.
+// sparseR1CS is the constraint system being mutated.
+//
+// Returns a tuple with the index of the result of the operation in the secret
+// variables vector.
+func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+	secretVariables = assertIsBoolean(lhs, sparseR1CS, secretVariables)
+	secretVariables = assertIsBoolean(rhs, sparseR1CS, secretVariables)
+
+	var xa, xb, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	qM1 = sparseR1CS.One()
+	xa = lhs
+	qM2 = sparseR1CS.One()
+	xb = rhs
+
+	qO = sparseR1CS.FromInterface(-1)
+	xc = sparseR1CS.AddSecretVariable("b0 * b1")
+
+	// Add (bit_0 * bit_1) to the values vector so it could be recovered with xc (the index to it).
+	var andResult fr_bn254.Element
+	andResult.Mul(&secretVariables[lhs], &secretVariables[rhs])
+	secretVariables = append(secretVariables, andResult)
+
+	andConstraint := constraint.SparseR1C{
+		L: sparseR1CS.MakeTerm(&qL, xa),
+		R: sparseR1CS.MakeTerm(&qR, xb),
+		O: sparseR1CS.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	sparseR1CS.AddConstraint(andConstraint)
+
+	return xc, secretVariables
+}
