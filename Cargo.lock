@@ -537,6 +537,7 @@ dependencies = [
  "ark-bn254",
  "ark-ff",
  "ark-serialize",
+ "blake2",
  "cfg-if",
  "hex",
  "hex-literal",
