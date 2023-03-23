@@ -153,4 +153,7 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariab
 	}
 
 	sparseR1CS.AddConstraint(oneMinusBitTimesBitConstraint)
+
+	// Values must be returned because they're being mutated (new values are being added to it)
+	return secretVariables
 }
