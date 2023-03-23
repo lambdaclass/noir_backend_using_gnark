@@ -242,3 +242,87 @@ func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 
 	return resultIndex, secretVariables
 }
+
+// Generates constraints for the bit operation XOR.
+//
+// lhs is the index of the left hand side of the XOR operation in the values vector.
+// rhs is the index of the right hand side of the XOR operation in the values vector.
+// sparseR1CS is the constraint system being mutated.
+//
+// Returns a tuple with the index of the result of the operation in the secret
+// variables vector.
+func xor(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+	secretVariables = assertIsBoolean(lhs, sparseR1CS, secretVariables)
+	secretVariables = assertIsBoolean(rhs, sparseR1CS, secretVariables)
+
+	var xa, xb, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	// -1 * a
+	qL = sparseR1CS.FromInterface(-1)
+	xa = lhs
+	// -1 * b
+	qR = sparseR1CS.FromInterface(-1)
+	xb = rhs
+	// 2 * (a * b)
+	qM1 = sparseR1CS.FromInterface(2)
+	xa = lhs
+	qM2 = sparseR1CS.One()
+	xb = rhs
+	// a + b - 2 * a * b
+	qO = sparseR1CS.FromInterface(1)
+	xc = sparseR1CS.AddSecretVariable("a + b - 2 * (a * b)")
+
+	// Add a + b - 2 * a * b to the values vector so it could be recovered with xc (the index to it).
+	var (
+		aPlusB          fr_bn254.Element
+		aTimesB         fr_bn254.Element
+		twoTimesATimesB fr_bn254.Element
+		xorResult       fr_bn254.Element
+	)
+	two := fr_bn254.NewElement(2)
+	aPlusB.Add(&secretVariables[lhs], &secretVariables[rhs])
+	aTimesB.Mul(&secretVariables[lhs], &secretVariables[rhs])
+	twoTimesATimesB.Mul(&two, &aTimesB)
+	// a + b - 2 * a * b
+	xorResult.Sub(&aPlusB, &twoTimesATimesB)
+	secretVariables = append(secretVariables, xorResult)
+
+	andConstraint := constraint.SparseR1C{
+		L: sparseR1CS.MakeTerm(&qL, xa),
+		R: sparseR1CS.MakeTerm(&qR, xb),
+		O: sparseR1CS.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	sparseR1CS.AddConstraint(andConstraint)
+
+	return xc, secretVariables
+}
+
+func Xor(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+	lhsBitsIndices, secretVariables := toBits(secretVariables[lhs], bits, sparseR1CS, secretVariables)
+	rhsBitsIndices, secretVariables := toBits(secretVariables[rhs], bits, sparseR1CS, secretVariables)
+	resultBits := make([]big.Word, bits)
+
+	for i := 0; i < bits; i++ {
+		lhsBitIndex := lhsBitsIndices[i]
+		rhsBitIndex := rhsBitsIndices[i]
+		resultBit, secretVariables := xor(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables)
+		resultBits[i] = big.Word(secretVariables[resultBit].Uint64())
+	}
+
+	var (
+		resultBigInt big.Int
+		resultFelt   fr_bn254.Element
+	)
+
+	resultBigInt.SetBits(resultBits)
+	resultFelt.SetBigInt(&resultBigInt)
+
+	resultIndex := sparseR1CS.AddSecretVariable("xor_result")
+	secretVariables = append(secretVariables, resultFelt)
+
+	return resultIndex, secretVariables
+}
