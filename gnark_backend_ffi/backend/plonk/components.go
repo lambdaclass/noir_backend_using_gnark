@@ -237,7 +237,7 @@ func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 	resultBigInt.SetBits(resultBits)
 	resultFelt.SetBigInt(&resultBigInt)
 
-	resultIndex := sparseR1CS.AddSecretVariable("result")
+	resultIndex := sparseR1CS.AddSecretVariable("and_result")
 	secretVariables = append(secretVariables, resultFelt)
 
 	return resultIndex, secretVariables
