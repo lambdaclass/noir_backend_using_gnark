@@ -234,3 +234,40 @@ func TestMulComponent(t *testing.T) {
 
 	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
 }
+
+func TestToBitsConversionWithNoBits(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.One()}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := toBinaryConversion(0, 0, sparseR1CS, secretVariables)
+	assert.Empty(t, result)
+
+	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestToBitsConversionWithOneBit(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.One()}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := toBinaryConversion(0, 1, sparseR1CS, secretVariables)
+	assert.Equal(t, fr_bn254.One(), secretVariables[result[0]])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestToBitsConversionWithMoreThanOneBit(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := toBinaryConversion(0, 2, sparseR1CS, secretVariables)
+	assert.Equal(t, fr_bn254.One(), secretVariables[result[0]])
+	assert.Equal(t, fr_bn254.One(), secretVariables[result[1]])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}
