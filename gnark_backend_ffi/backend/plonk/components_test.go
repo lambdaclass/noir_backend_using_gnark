@@ -3,7 +3,6 @@ package plonk_backend
 import (
 	"fmt"
 	"gnark_backend_ffi/backend"
-	"log"
 	"testing"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -85,13 +84,9 @@ func assertThatProvingAndVerifyingSucceeds(t *testing.T, publicVariables fr_bn25
 	assert.Nil(t, err, err)
 
 	publicWitnesses, err := witness.Public()
+
+	err = plonk.Verify(proof, vk, publicWitnesses)
 	assert.Nil(t, err, err)
-
-	if err = plonk.Verify(proof, vk, publicWitnesses); err != nil {
-		log.Print(err)
-	}
-
-	assert.True(t, true)
 }
 
 func assertThatProvingFails(t *testing.T, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, sparseR1CS *cs_bn254.SparseR1CS) {
@@ -177,13 +172,19 @@ func TestBitAndComponentWithNonBooleans(t *testing.T) {
 }
 
 func TestAssertIsEqualComponentWithEqualElements(t *testing.T) {
-	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
+	values := fr_bn254.Vector{fr_bn254.NewElement(0), fr_bn254.One()}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	// TODO: This test fails if the variable is not public. Figure out why.
-	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{1})
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
 
+	// TODO: I think that there is a bug in Gnark here. If you want to see it for
+	// yourself, just remove the second assertIsEqual. It seems that when having
+	// one constraint that it's supposed to be satisfied when proving, an error
+	// rises, and in the same case but with a constraint system that it is not
+	// supposed to be satisfied the proving goes well (see that TestAssertIsEqualComponentWithNonEqualElements)
+	// passes. This is the same for every other similar test.
 	assertIsEqual(0, 0, sparseR1CS)
+	assertIsEqual(1, 1, sparseR1CS)
 
 	constraints, res := sparseR1CS.GetConstraints()
 	for _, sparseR1C := range constraints {
@@ -202,4 +203,34 @@ func TestAssertIsEqualComponentWithNonEqualElements(t *testing.T) {
 	assertIsEqual(0, 1, sparseR1CS)
 
 	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestAddComponent(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(3), fr_bn254.NewElement(2)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+	expectedResult := fr_bn254.NewElement(5)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := add(0, 1, sparseR1CS, secretVariables)
+	assert.Equal(t, expectedResult, secretVariables[result])
+	result, secretVariables = add(1, 0, sparseR1CS, secretVariables)
+	assert.Equal(t, expectedResult, secretVariables[result])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestMulComponent(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(2), fr_bn254.NewElement(3)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+	expectedResult := fr_bn254.NewElement(6)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := mul(0, 1, sparseR1CS, secretVariables)
+	assert.Equal(t, expectedResult, secretVariables[result])
+	result, secretVariables = mul(1, 0, sparseR1CS, secretVariables)
+	assert.Equal(t, expectedResult, secretVariables[result])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
 }

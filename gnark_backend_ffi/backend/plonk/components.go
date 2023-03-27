@@ -86,8 +86,8 @@ func assertIsEqual(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS) {
 	// lhs - rhs = 0
 	qL = sparseR1CS.One()
 	xa = lhs
-	qO = sparseR1CS.FromInterface(-1)
-	xc = rhs
+	qR = sparseR1CS.FromInterface(-1)
+	xb = rhs
 
 	constraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
@@ -141,9 +141,66 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 	return xc, secretVariables
 }
 
-func toBits(felt fr_bn254.Element, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) ([]int, fr_bn254.Vector) {
+func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+	var xa, xb, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	qL = sparseR1CS.One()
+	xa = augend
+	qR = sparseR1CS.One()
+	xb = addend
+	qO = sparseR1CS.FromInterface(-1)
+	xc = sparseR1CS.AddSecretVariable("add_gate")
+
+	var sum fr_bn254.Element
+	sum.Add(&secretVariables[augend], &secretVariables[addend])
+	secretVariables = append(secretVariables, sum)
+
+	addConstraint := constraint.SparseR1C{
+		L: sparseR1CS.MakeTerm(&qL, xa),
+		R: sparseR1CS.MakeTerm(&qR, xb),
+		O: sparseR1CS.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	sparseR1CS.AddConstraint(addConstraint)
+
+	return xc, secretVariables
+}
+
+func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+	var xa, xb, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	qM1 = sparseR1CS.One()
+	qM2 = sparseR1CS.One()
+	xa = multiplicand
+	xb = multiplier
+	qO = sparseR1CS.FromInterface(-1)
+	xc = sparseR1CS.AddSecretVariable("mul_gate")
+
+	var product fr_bn254.Element
+	product.Mul(&secretVariables[multiplicand], &secretVariables[multiplier])
+	secretVariables = append(secretVariables, product)
+
+	mulConstraint := constraint.SparseR1C{
+		L: sparseR1CS.MakeTerm(&qL, xa),
+		R: sparseR1CS.MakeTerm(&qR, xb),
+		O: sparseR1CS.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	sparseR1CS.AddConstraint(mulConstraint)
+
+	return xc, secretVariables
+}
+
+func toBits(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) ([]int, fr_bn254.Vector) {
+	/* Felt to binary (hint) */
 	var feltConstant big.Int
-	felt.BigInt(&feltConstant)
+	secretVariables[felt].BigInt(&feltConstant)
 
 	feltBitsIndices := make([]int, bits)
 	for i := 0; i < bits; i++ {
@@ -153,12 +210,37 @@ func toBits(felt fr_bn254.Element, bits int, sparseR1CS *cs_bn254.SparseR1CS, se
 		feltBitsIndices[bigEndianIndex] = sparseR1CS.AddSecretVariable(fmt.Sprintf("bit_%d", i))
 		secretVariables = append(secretVariables, bit)
 	}
+
+	/* Hint check */
+	accumulator := fr_bn254.NewElement(0)
+	accumulatorIndex := sparseR1CS.AddSecretVariable("0")
+	secretVariables = append(secretVariables, accumulator)
+
+	var c fr_bn254.Element
+	coefficientValue := big.NewInt(1)
+
+	for i := 0; i < bits; i++ {
+		// Shift the coefficient for the next iteration and add it as a secret variable.
+		coefficientValue.Lsh(coefficientValue, uint(i))
+		c.SetBigInt(coefficientValue)
+		cIndex := sparseR1CS.AddSecretVariable(fmt.Sprintf("c_%d", i))
+		secretVariables = append(secretVariables, c)
+		// bits - 1 - i because we want big endian.
+		currentBitIndex := feltBitsIndices[bits-1-i]
+		assertIsBoolean(currentBitIndex, sparseR1CS)
+		intermediateProdIndex, secretVariables := mul(cIndex, currentBitIndex, sparseR1CS, secretVariables)
+		accumulatorIndex, secretVariables = add(accumulatorIndex, intermediateProdIndex, sparseR1CS, secretVariables)
+	}
+
+	// record the constraint Σ (2**i * b[i]) == a
+	assertIsEqual(felt, accumulatorIndex, sparseR1CS)
+
 	return feltBitsIndices, secretVariables
 }
 
 func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	lhsBitsIndices, secretVariables := toBits(secretVariables[lhs], bits, sparseR1CS, secretVariables)
-	rhsBitsIndices, secretVariables := toBits(secretVariables[rhs], bits, sparseR1CS, secretVariables)
+	lhsBitsIndices, secretVariables := toBits(lhs, bits, sparseR1CS, secretVariables)
+	rhsBitsIndices, secretVariables := toBits(rhs, bits, sparseR1CS, secretVariables)
 	resultBits := make([]big.Word, bits)
 
 	for i := 0; i < bits; i++ {
