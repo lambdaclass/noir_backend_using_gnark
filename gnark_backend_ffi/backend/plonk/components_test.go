@@ -175,3 +175,31 @@ func TestBitAndComponentWithNonBooleans(t *testing.T) {
 
 	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
 }
+
+func TestAssertIsEqualComponentWithEqualElements(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	// TODO: This test fails if the variable is not public. Figure out why.
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{1})
+
+	assertIsEqual(0, 0, sparseR1CS)
+
+	constraints, res := sparseR1CS.GetConstraints()
+	for _, sparseR1C := range constraints {
+		fmt.Println(sparseR1C.String(res))
+	}
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestAssertIsEqualComponentWithNonEqualElements(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(2), fr_bn254.NewElement(3)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	assertIsEqual(0, 1, sparseR1CS)
+
+	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
+}
