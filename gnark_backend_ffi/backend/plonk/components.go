@@ -79,6 +79,27 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS) {
 	sparseR1CS.AddConstraint(constraint)
 }
 
+func assertIsEqual(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS) {
+	var xa, xb, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	// lhs - rhs = 0
+	qL = sparseR1CS.One()
+	xa = lhs
+	qO = sparseR1CS.FromInterface(-1)
+	xc = rhs
+
+	constraint := constraint.SparseR1C{
+		L: sparseR1CS.MakeTerm(&qL, xa),
+		R: sparseR1CS.MakeTerm(&qR, xb),
+		O: sparseR1CS.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	sparseR1CS.AddConstraint(constraint)
+}
+
 // Generates constraints for the bit operation AND.
 //
 // lhs is the index of the left hand side of the AND operation in the values vector.
