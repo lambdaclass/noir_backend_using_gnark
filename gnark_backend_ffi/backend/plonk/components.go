@@ -83,7 +83,7 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariab
 	qM1 = sparseR1CS.One()
 	qM2 = sparseR1CS.One()
 
-	oneMinusBitConstraint := constraint.SparseR1C{
+	constraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
 		R: sparseR1CS.MakeTerm(&qR, xb),
 		O: sparseR1CS.MakeTerm(&qO, xc),
@@ -91,5 +91,5 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariab
 		K: constraint.CoeffIdZero,
 	}
 
-	sparseR1CS.AddConstraint(oneMinusBitConstraint)
+	sparseR1CS.AddConstraint(constraint)
 }
