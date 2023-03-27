@@ -309,7 +309,8 @@ func Xor(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 	for i := 0; i < bits; i++ {
 		lhsBitIndex := lhsBitsIndices[i]
 		rhsBitIndex := rhsBitsIndices[i]
-		resultBit, secretVariables := xor(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables)
+		resultBit, _secretVariables := xor(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables)
+		secretVariables = append(secretVariables, _secretVariables...)
 		resultBits[i] = big.Word(secretVariables[resultBit].Uint64())
 	}
 
