@@ -150,7 +150,7 @@ func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariable
 	qR = sparseR1CS.One()
 	xb = addend
 	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable("add_gate")
+	xc = sparseR1CS.AddSecretVariable("add_gate_result")
 
 	var sum fr_bn254.Element
 	sum.Add(&secretVariables[augend], &secretVariables[addend])
@@ -178,7 +178,7 @@ func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secr
 	xa = multiplicand
 	xb = multiplier
 	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable("mul_gate")
+	xc = sparseR1CS.AddSecretVariable("mul_gate_result")
 
 	var product fr_bn254.Element
 	product.Mul(&secretVariables[multiplicand], &secretVariables[multiplier])
@@ -244,8 +244,8 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 }
 
 func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	lhsBitsIndices, secretVariables := toBits(lhs, bits, sparseR1CS, secretVariables)
-	rhsBitsIndices, secretVariables := toBits(rhs, bits, sparseR1CS, secretVariables)
+	lhsBitsIndices, secretVariables := toBinaryConversion(lhs, bits, sparseR1CS, secretVariables)
+	rhsBitsIndices, secretVariables := toBinaryConversion(rhs, bits, sparseR1CS, secretVariables)
 	resultBits := make([]big.Word, bits)
 
 	for i := 0; i < bits; i++ {
