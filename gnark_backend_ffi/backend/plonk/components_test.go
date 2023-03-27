@@ -202,3 +202,74 @@ func TestBitAndComponentWithNonBooleans(t *testing.T) {
 	_, err = plonk.Prove(sparseR1CS, pk, witness)
 	assert.Error(t, err)
 }
+
+func TestBitXorComponentWithBooleans(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(0), fr_bn254.One()}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+	one := fr_bn254.One()
+	zero := fr_bn254.NewElement(0)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := xor(0, 0, sparseR1CS, secretVariables)
+	assert.Equal(t, zero, secretVariables[result])
+	result, secretVariables = xor(0, 1, sparseR1CS, secretVariables)
+	assert.Equal(t, one, secretVariables[result])
+	result, secretVariables = xor(1, 0, sparseR1CS, secretVariables)
+	assert.Equal(t, one, secretVariables[result])
+	result, secretVariables = xor(1, 1, sparseR1CS, secretVariables)
+	assert.Equal(t, zero, secretVariables[result])
+
+	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
+	assert.Nil(t, err)
+
+	pk, vk, err := plonk.Setup(sparseR1CS, srs)
+	assert.Nil(t, err)
+
+	proof, err := plonk.Prove(sparseR1CS, pk, witness)
+	assert.Nil(t, err)
+
+	publicWitnesses, err := witness.Public()
+	assert.Nil(t, err)
+
+	if plonk.Verify(proof, vk, publicWitnesses) != nil {
+		log.Fatal(err)
+	}
+
+	assert.True(t, true)
+}
+
+func TestBitXorComponentWithNonBooleans(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(2), fr_bn254.NewElement(3)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+	one := fr_bn254.One()
+	zero := fr_bn254.NewElement(0)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := xor(0, 0, sparseR1CS, secretVariables)
+	assert.NotEqual(t, zero, secretVariables[result])
+	assert.NotEqual(t, one, secretVariables[result])
+	result, secretVariables = xor(0, 1, sparseR1CS, secretVariables)
+	assert.NotEqual(t, zero, secretVariables[result])
+	assert.NotEqual(t, one, secretVariables[result])
+	result, secretVariables = xor(1, 0, sparseR1CS, secretVariables)
+	assert.NotEqual(t, zero, secretVariables[result])
+	assert.NotEqual(t, one, secretVariables[result])
+	result, secretVariables = xor(1, 1, sparseR1CS, secretVariables)
+	assert.NotEqual(t, zero, secretVariables[result])
+	assert.NotEqual(t, one, secretVariables[result])
+
+	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+
+	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
+	assert.Nil(t, err)
+
+	pk, _, err := plonk.Setup(sparseR1CS, srs)
+	assert.Nil(t, err)
+
+	_, err = plonk.Prove(sparseR1CS, pk, witness)
+	assert.Error(t, err)
+}
