@@ -78,8 +78,8 @@ func TestAssertIsBooleanComponentWithBooleans(t *testing.T) {
 
 	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
 
-	assertIsBoolean(0, sparseR1CS, secretVariables)
-	assertIsBoolean(1, sparseR1CS, secretVariables)
+	assertIsBoolean(0, sparseR1CS)
+	assertIsBoolean(1, sparseR1CS)
 
 	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
 
@@ -116,7 +116,7 @@ func TestAssertIsBooleanComponentWithNonBooleans(t *testing.T) {
 
 	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
 
-	assertIsBoolean(0, sparseR1CS, secretVariables)
+	assertIsBoolean(0, sparseR1CS)
 
 	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
 
