@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"gnark_backend_ffi/acir"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -42,12 +41,12 @@ func BuildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, priva
 	return witness
 }
 
-func HandleValues(a acir.ACIR, cs constraint.ConstraintSystem, values fr_bn254.Vector) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
+func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, publicInputsIndices []uint32) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
 	indexMap = make(map[string]int)
 	var index int
 	for i, value := range values {
 		i++
-		for _, publicInput := range a.PublicInputs {
+		for _, publicInput := range publicInputsIndices {
 			if uint32(i) == publicInput {
 				index = cs.AddPublicVariable(fmt.Sprintf("public_%d", i))
 				publicVariables = append(publicVariables, value)
@@ -58,8 +57,8 @@ func HandleValues(a acir.ACIR, cs constraint.ConstraintSystem, values fr_bn254.V
 	}
 	for i, value := range values {
 		i++
-		if len(a.PublicInputs) > 0 {
-			for _, publicInput := range a.PublicInputs {
+		if len(publicInputsIndices) > 0 {
+			for _, publicInput := range publicInputsIndices {
 				if uint32(i) != publicInput {
 					index = cs.AddSecretVariable(fmt.Sprintf("secret_%d", i))
 					secretVariables = append(secretVariables, value)
