@@ -197,7 +197,7 @@ func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secr
 	return xc, secretVariables
 }
 
-func toBits(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) ([]int, fr_bn254.Vector) {
+func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) ([]int, fr_bn254.Vector) {
 	/* Felt to binary (hint) */
 	var feltConstant big.Int
 	secretVariables[felt].BigInt(&feltConstant)
@@ -213,11 +213,14 @@ func toBits(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables
 
 	/* Hint check */
 	accumulator := fr_bn254.NewElement(0)
-	accumulatorIndex := sparseR1CS.AddSecretVariable("0")
+	accumulatorIndex := sparseR1CS.AddSecretVariable("accumulator_0")
 	secretVariables = append(secretVariables, accumulator)
 
 	var c fr_bn254.Element
 	coefficientValue := big.NewInt(1)
+
+	// This declaration is needed because if not the reference is lost in the for loop.
+	var intermediateProdIndex int
 
 	for i := 0; i < bits; i++ {
 		// Shift the coefficient for the next iteration and add it as a secret variable.
@@ -226,9 +229,11 @@ func toBits(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables
 		cIndex := sparseR1CS.AddSecretVariable(fmt.Sprintf("c_%d", i))
 		secretVariables = append(secretVariables, c)
 		// bits - 1 - i because we want big endian.
-		currentBitIndex := feltBitsIndices[bits-1-i]
+		bigEndianIndex := bits - 1 - i
+		currentBitIndex := feltBitsIndices[bigEndianIndex]
 		assertIsBoolean(currentBitIndex, sparseR1CS)
-		intermediateProdIndex, secretVariables := mul(cIndex, currentBitIndex, sparseR1CS, secretVariables)
+		fmt.Println(secretVariables[cIndex].String(), secretVariables[currentBitIndex].String())
+		intermediateProdIndex, secretVariables = mul(cIndex, currentBitIndex, sparseR1CS, secretVariables)
 		accumulatorIndex, secretVariables = add(accumulatorIndex, intermediateProdIndex, sparseR1CS, secretVariables)
 	}
 
