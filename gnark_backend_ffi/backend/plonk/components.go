@@ -45,24 +45,6 @@ func FixedBaseScalarMul() {}
 // Keccak256 black box function call is not handled
 func Keccak256() {}
 
-// This function searches for any secret variable whose value is 1 and returns its index.
-// If no secret variable has value 1 then it adds a new secret variable with value 1 and
-// returns its index.
-// This is an optimization to avoid adding a new secret variable with value 1 every time
-// we need to add a constraint that uses 1.
-func findOneIndex(sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	one := fr_bn254.One()
-	for i, v := range secretVariables {
-		if v.IsOne() {
-			return i, secretVariables
-		}
-	}
-
-	newOne := sparseR1CS.AddSecretVariable("1")
-	secretVariables = append(secretVariables, one)
-	return newOne, secretVariables
-}
-
 // Generates constraints for asserting that a given value is boolean.
 // It generates two constraints, one for (1 - b) and another one for (1 - b) * b
 // where b is the bit being checked.
