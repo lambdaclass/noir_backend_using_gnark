@@ -48,24 +48,6 @@ func FixedBaseScalarMul() {}
 // Keccak256 black box function call is not handled
 func Keccak256() {}
 
-// This function searches for any secret variable whose value is 1 and returns its index.
-// If no secret variable has value 1 then it adds a new secret variable with value 1 and
-// returns its index.
-// This is an optimization to avoid adding a new secret variable with value 1 every time
-// we need to add a constraint that uses 1.
-func findOneIndex(sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	one := fr_bn254.One()
-	for i, v := range secretVariables {
-		if v.IsOne() {
-			return i, secretVariables
-		}
-	}
-
-	newOne := sparseR1CS.AddSecretVariable("1")
-	secretVariables = append(secretVariables, one)
-	return newOne, secretVariables
-}
-
 // Generates constraints for asserting that a given value is boolean.
 // It generates two constraints, one for (1 - b) and another one for (1 - b) * b
 // where b is the bit being checked.
@@ -93,29 +75,16 @@ func findOneIndex(sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vect
 // if bit = 0 => 1 * 0 = 0
 // if bit != 1 && bit != 0 => (1 - bit) * bit != 0
 // TODO: Maybe these constraints could be reduced to one (b * b^2)
-func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) fr_bn254.Vector {
+func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
-	ONE_WIRE, secretVariables := findOneIndex(sparseR1CS, secretVariables)
-
-	/* 1 - b constraint */
-
-	// 1
-	qL = sparseR1CS.One()
-	xa = ONE_WIRE
-	// -bit
-	qR = sparseR1CS.FromInterface(-1)
+	// -bit + 1 * (bit * bit) = 0
+	qL = sparseR1CS.FromInterface(-1)
+	xa = bitIndex
 	xb = bitIndex
-	// 1 - bit
-	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable("(1 - b)")
-
-	// Add (1 - b) to the values vector so it could be recovered with xc (the index to it).
-	var oneMinusBit fr_bn254.Element
-	one := fr_bn254.One()
-	oneMinusBit.Sub(&one, &secretVariables[bitIndex])
-	secretVariables = append(secretVariables, oneMinusBit)
+	qM1 = sparseR1CS.One()
+	qM2 = sparseR1CS.One()
 
 	oneMinusBitConstraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
@@ -126,39 +95,6 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS, secretVariab
 	}
 
 	sparseR1CS.AddConstraint(oneMinusBitConstraint)
-
-	/* (1 - b) * b constraint */
-
-	// Clean left & right selectors
-	qL = sparseR1CS.FromInterface(0)
-	qR = sparseR1CS.FromInterface(0)
-	// (1 - b)
-	qM1 = sparseR1CS.One()
-	xa = xc
-	// b
-	qM2 = sparseR1CS.One()
-	xb = bitIndex
-	// (1 - b) * b
-	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable("(1 - b) * b")
-
-	// Add (1 - b) * b to the values vector so it could be recovered with xc (the index to it).
-	var oneMinusBitTimesBit fr_bn254.Element
-	oneMinusBit.Mul(&oneMinusBit, &secretVariables[bitIndex])
-	secretVariables = append(secretVariables, oneMinusBitTimesBit)
-
-	oneMinusBitTimesBitConstraint := constraint.SparseR1C{
-		L: sparseR1CS.MakeTerm(&qL, xa),
-		R: sparseR1CS.MakeTerm(&qR, xb),
-		O: sparseR1CS.MakeTerm(&qO, xc),
-		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
-		K: constraint.CoeffIdZero,
-	}
-
-	sparseR1CS.AddConstraint(oneMinusBitTimesBitConstraint)
-
-	// Values must be returned because they're being mutated (new values are being added to it)
-	return secretVariables
 }
 
 // Generates constraints for the bit operation AND.
