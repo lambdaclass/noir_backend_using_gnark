@@ -150,7 +150,7 @@ func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariable
 	qR = sparseR1CS.One()
 	xb = addend
 	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable("add_gate_result")
+	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s+%s)", sparseR1CS.VariableToString(augend), sparseR1CS.VariableToString(addend)))
 
 	var sum fr_bn254.Element
 	sum.Add(&secretVariables[augend], &secretVariables[addend])
@@ -178,7 +178,7 @@ func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secr
 	xa = multiplicand
 	xb = multiplier
 	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable("mul_gate_result")
+	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s*%s)", sparseR1CS.VariableToString(multiplicand), sparseR1CS.VariableToString(multiplier)))
 
 	var product fr_bn254.Element
 	product.Mul(&secretVariables[multiplicand], &secretVariables[multiplier])
