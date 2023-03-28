@@ -36,6 +36,11 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS) {
 	sparseR1CS.AddConstraint(constraint)
 }
 
+// Generates constraints for asserting that two given values are equal.
+//
+// bitIndex is the index of the evaluated bit in the values vector.
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
 func assertIsEqual(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
