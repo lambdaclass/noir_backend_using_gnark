@@ -226,8 +226,6 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 	var intermediateProdIndex, cIndex int
 
 	for i := 0; i < bits; i++ {
-		// Shift the coefficient for the next iteration and add it as a secret variable.
-		coefficientValue.Lsh(coefficientValue, uint(i))
 		c.SetBigInt(coefficientValue)
 		cIndex = sparseR1CS.AddSecretVariable(fmt.Sprintf("(2^%d)", i))
 		secretVariables = append(secretVariables, c)
@@ -237,6 +235,8 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 		assertIsBoolean(currentBitIndex, sparseR1CS)
 		intermediateProdIndex, secretVariables = mul(cIndex, currentBitIndex, sparseR1CS, secretVariables)
 		accumulatorIndex, secretVariables = add(accumulatorIndex, intermediateProdIndex, sparseR1CS, secretVariables)
+		// Shift the coefficient for the next iteration.
+		coefficientValue.Lsh(coefficientValue, 1)
 	}
 
 	// record the constraint Σ (2**i * b[i]) == a
