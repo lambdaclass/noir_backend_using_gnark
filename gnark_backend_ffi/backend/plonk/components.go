@@ -216,7 +216,7 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 
 	/* Hint check */
 	accumulator := fr_bn254.NewElement(0)
-	accumulatorIndex := sparseR1CS.AddSecretVariable("accumulator_0")
+	accumulatorIndex := sparseR1CS.AddSecretVariable("accumulator")
 	secretVariables = append(secretVariables, accumulator)
 
 	var c fr_bn254.Element
