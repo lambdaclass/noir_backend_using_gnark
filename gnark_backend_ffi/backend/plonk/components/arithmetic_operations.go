@@ -19,7 +19,7 @@ import (
 //
 // Returns a tuple with the index of the result of the operation in the values
 // vector and the updated values vector.
-func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+func add(augend int, addend int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (int, fr_bn254.Vector, fr_bn254.Vector) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
@@ -28,11 +28,13 @@ func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariable
 	qR = sparseR1CS.One()
 	xb = addend
 	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s+%s)", sparseR1CS.VariableToString(augend), sparseR1CS.VariableToString(addend)))
+	// TODO: Remove the interface casting.
+	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s+%s)", sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(augend), sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(addend)))
 
 	var sum fr_bn254.Element
-	sum.Add(&secretVariables[augend], &secretVariables[addend])
-	secretVariables = append(secretVariables, sum)
+	sum.Add(&variables[augend], &variables[addend])
+	addedSecretVariables := fr_bn254.Vector{sum}
+	variables = append(variables, sum)
 
 	addConstraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
@@ -44,7 +46,7 @@ func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariable
 
 	sparseR1CS.AddConstraint(addConstraint)
 
-	return xc, secretVariables
+	return xc, addedSecretVariables, variables
 }
 
 // Generates constraints for multiplying two values.
@@ -58,7 +60,7 @@ func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariable
 //
 // Returns a tuple with the index of the result of the operation in the values
 // vector and the updated values vector.
-func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
+func mul(multiplicand int, multiplier int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (int, fr_bn254.Vector, fr_bn254.Vector) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
@@ -67,11 +69,13 @@ func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secr
 	xa = multiplicand
 	xb = multiplier
 	qO = sparseR1CS.FromInterface(-1)
-	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s*%s)", sparseR1CS.VariableToString(multiplicand), sparseR1CS.VariableToString(multiplier)))
+	// TODO: Remove the interface casting.
+	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s*%s)", sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(multiplicand), sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(multiplier)))
 
 	var product fr_bn254.Element
-	product.Mul(&secretVariables[multiplicand], &secretVariables[multiplier])
-	secretVariables = append(secretVariables, product)
+	product.Mul(&variables[multiplicand], &variables[multiplier])
+	addedSecretVariables := fr_bn254.Vector{product}
+	variables = append(variables, product)
 
 	mulConstraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
@@ -83,5 +87,5 @@ func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secr
 
 	sparseR1CS.AddConstraint(mulConstraint)
 
-	return xc, secretVariables
+	return xc, addedSecretVariables, variables
 }

@@ -3,7 +3,6 @@ package plonk_components
 import (
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
-	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
 // Generates constraints for the bit operation AND between two boolean values.
@@ -20,7 +19,7 @@ import (
 //
 // Returns a tuple with the index of the result of the operation in the secret
 // variables vector.
-func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector) {
+func and(lhs int, rhs int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector, fr_bn254.Vector) {
 	if unconstrainedInputs {
 		assertIsBoolean(lhs, sparseR1CS)
 		assertIsBoolean(rhs, sparseR1CS)
@@ -39,8 +38,9 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 
 	// Add (bit_0 * bit_1) to the values vector so it could be recovered with xc (the index to it).
 	var andResult fr_bn254.Element
-	andResult.Mul(&secretVariables[lhs], &secretVariables[rhs])
-	secretVariables = append(secretVariables, andResult)
+	andResult.Mul(&variables[lhs], &variables[rhs])
+	addedSecretVariables := fr_bn254.Vector{andResult}
+	variables = append(variables, addedSecretVariables...)
 
 	andConstraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
@@ -52,7 +52,7 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 
 	sparseR1CS.AddConstraint(andConstraint)
 
-	return xc, secretVariables
+	return xc, addedSecretVariables, variables
 }
 
 // Generates constraints for the AND operation between to values.
@@ -64,25 +64,32 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 // lhs is the index of the left hand side value in the values vector.
 // rhs is the index of the right hand side value in the values vector.
 // sparseR1CS is the constraint system being mutated.
-// secretVariables is the values vector.
+// variables is the values vector.
 //
 // Returns a tuple with the index of the result of the AND operation in the values
 // vector and the updated values vector.
-func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	lhsBitsIndices, secretVariables := toBinaryConversion(lhs, bits, sparseR1CS, secretVariables)
-	rhsBitsIndices, secretVariables := toBinaryConversion(rhs, bits, sparseR1CS, secretVariables)
+func And(lhs int, rhs int, bits int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (int, fr_bn254.Vector, fr_bn254.Vector) {
+	var addedSecretVariables fr_bn254.Vector
+	lhsBitsIndices, _addedSecretVariables, variables := toBinaryConversion(lhs, bits, sparseR1CS, variables)
+	addedSecretVariables = _addedSecretVariables
+	rhsBitsIndices, _addedSecretVariables, variables := toBinaryConversion(rhs, bits, sparseR1CS, variables)
+	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
 	resultBits := make([]int, bits)
 
 	for i := 0; i < bits; i++ {
 		lhsBitIndex := lhsBitsIndices[i]
 		rhsBitIndex := rhsBitsIndices[i]
 		// Inputs were constrained in the above `toBinaryConversion` calls.
-		resultBit, _secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables, false)
-		secretVariables = _secretVariables
+		resultBit, _addedSecretVariables, _variables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, variables, false)
+		addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
+		variables = _variables
 		resultBits[i] = resultBit
 	}
 
-	return fromBinaryConversion(resultBits, sparseR1CS, secretVariables, false)
+	resultIndex, _addedSecretVariables, variables := fromBinaryConversion(resultBits, sparseR1CS, variables, false)
+	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
+
+	return resultIndex, addedSecretVariables, variables
 }
 
 // Generates constraints for the bit operation XOR between two boolean values.
@@ -99,7 +106,7 @@ func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 //
 // Returns a tuple with the index of the result of the operation in the secret
 // variables vector.
-func xor(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector) {
+func xor(lhs int, rhs int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector, fr_bn254.Vector) {
 	if unconstrainedInputs {
 		assertIsBoolean(lhs, sparseR1CS)
 		assertIsBoolean(rhs, sparseR1CS)
@@ -131,12 +138,13 @@ func xor(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 		xorResult       fr_bn254.Element
 	)
 	two := fr_bn254.NewElement(2)
-	aPlusB.Add(&secretVariables[lhs], &secretVariables[rhs])
-	aTimesB.Mul(&secretVariables[lhs], &secretVariables[rhs])
+	aPlusB.Add(&variables[lhs], &variables[rhs])
+	aTimesB.Mul(&variables[lhs], &variables[rhs])
 	twoTimesATimesB.Mul(&two, &aTimesB)
 	// a + b - 2 * a * b
 	xorResult.Sub(&aPlusB, &twoTimesATimesB)
-	secretVariables = append(secretVariables, xorResult)
+	addedSecretVariables := fr_bn254.Vector{xorResult}
+	variables = append(variables, xorResult)
 
 	andConstraint := constraint.SparseR1C{
 		L: sparseR1CS.MakeTerm(&qL, xa),
@@ -148,7 +156,7 @@ func xor(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 
 	sparseR1CS.AddConstraint(andConstraint)
 
-	return xc, secretVariables
+	return xc, addedSecretVariables, variables
 }
 
 // Generates constraints for the XOR operation between to values.
@@ -160,23 +168,30 @@ func xor(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 // lhs is the index of the left hand side value in the values vector.
 // rhs is the index of the right hand side value in the values vector.
 // sparseR1CS is the constraint system being mutated.
-// secretVariables is the values vector.
+// variables is the values vector.
 //
 // Returns a tuple with the index of the result of the AND operation in the values
 // vector and the updated values vector.
-func Xor(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	lhsBitsIndices, secretVariables := toBinaryConversion(lhs, bits, sparseR1CS, secretVariables)
-	rhsBitsIndices, secretVariables := toBinaryConversion(rhs, bits, sparseR1CS, secretVariables)
+func Xor(lhs int, rhs int, bits int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (int, fr_bn254.Vector, fr_bn254.Vector) {
+	var addedSecretVariables fr_bn254.Vector
+	lhsBitsIndices, _addedSecretVariables, variables := toBinaryConversion(lhs, bits, sparseR1CS, variables)
+	addedSecretVariables = _addedSecretVariables
+	rhsBitsIndices, _addedSecretVariables, variables := toBinaryConversion(rhs, bits, sparseR1CS, variables)
+	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
 	resultBits := make([]int, bits)
 
 	for i := 0; i < bits; i++ {
 		lhsBitIndex := lhsBitsIndices[i]
 		rhsBitIndex := rhsBitsIndices[i]
 		// Inputs were constrained in the above `toBinaryConversion` calls.
-		resultBit, _secretVariables := xor(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables, false)
-		secretVariables = _secretVariables
+		resultBit, _addedSecretVariables, _variables := xor(lhsBitIndex, rhsBitIndex, sparseR1CS, variables, false)
+		addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
+		variables = _variables
 		resultBits[i] = resultBit
 	}
 
-	return fromBinaryConversion(resultBits, sparseR1CS, secretVariables, false)
+	resultIndex, _addedSecretVariables, variables := fromBinaryConversion(resultBits, sparseR1CS, variables, false)
+	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
+
+	return resultIndex, addedSecretVariables, variables
 }
