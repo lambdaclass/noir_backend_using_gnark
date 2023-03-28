@@ -41,7 +41,7 @@ func BuildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, priva
 	return witness
 }
 
-func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, publicInputsIndices []uint32) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
+func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, publicInputsIndices []uint32) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, variables fr_bn254.Vector, indexMap map[string]int) {
 	indexMap = make(map[string]int)
 	var index int
 	for i, value := range values {
@@ -71,6 +71,10 @@ func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, public
 			indexMap[fmt.Sprint(i)] = index
 		}
 	}
+
+	variables = append(variables, publicVariables...)
+	variables = append(variables, secretVariables...)
+
 	return
 }
 
