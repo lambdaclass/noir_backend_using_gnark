@@ -208,6 +208,7 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 
 		bit := fr_bn254.NewElement(uint64(feltConstant.Bit(i)))
 		feltBitsIndices[bigEndianIndex] = sparseR1CS.AddSecretVariable(fmt.Sprintf("bit_%d", i))
+		assertIsBoolean(feltBitsIndices[bigEndianIndex], sparseR1CS)
 		secretVariables = append(secretVariables, bit)
 	}
 
