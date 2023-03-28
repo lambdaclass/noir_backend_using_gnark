@@ -108,9 +108,11 @@ func assertIsEqual(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS) {
 //
 // Returns a tuple with the index of the result of the operation in the secret
 // variables vector.
-func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
-	assertIsBoolean(lhs, sparseR1CS)
-	assertIsBoolean(rhs, sparseR1CS)
+func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector) {
+	if unconstrainedInputs {
+		assertIsBoolean(lhs, sparseR1CS)
+		assertIsBoolean(rhs, sparseR1CS)
+	}
 
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
@@ -251,8 +253,10 @@ func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 	for i := 0; i < bits; i++ {
 		lhsBitIndex := lhsBitsIndices[i]
 		rhsBitIndex := rhsBitsIndices[i]
-		resultBit, secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables)
-		resultBits[i] = big.Word(secretVariables[resultBit].Uint64())
+		// Inputs were constrained in the above `toBinaryConversion` calls.
+		resultBit, _secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables, true)
+		secretVariables = _secretVariables
+		resultBits[bits-1-i] = big.Word(secretVariables[resultBit].Uint64())
 	}
 
 	var (

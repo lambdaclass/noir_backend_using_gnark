@@ -135,13 +135,13 @@ func TestBitAndComponentWithBooleans(t *testing.T) {
 
 	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
 
-	result, secretVariables := and(0, 0, sparseR1CS, secretVariables)
+	result, secretVariables := and(0, 0, sparseR1CS, secretVariables, true)
 	assert.Equal(t, zero, secretVariables[result])
-	result, secretVariables = and(0, 1, sparseR1CS, secretVariables)
+	result, secretVariables = and(0, 1, sparseR1CS, secretVariables, true)
 	assert.Equal(t, zero, secretVariables[result])
-	result, secretVariables = and(1, 0, sparseR1CS, secretVariables)
+	result, secretVariables = and(1, 0, sparseR1CS, secretVariables, true)
 	assert.Equal(t, zero, secretVariables[result])
-	result, secretVariables = and(1, 1, sparseR1CS, secretVariables)
+	result, secretVariables = and(1, 1, sparseR1CS, secretVariables, true)
 	assert.Equal(t, one, secretVariables[result])
 
 	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
@@ -155,16 +155,16 @@ func TestBitAndComponentWithNonBooleans(t *testing.T) {
 
 	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
 
-	result, secretVariables := and(0, 0, sparseR1CS, secretVariables)
+	result, secretVariables := and(0, 0, sparseR1CS, secretVariables, true)
 	assert.NotEqual(t, zero, secretVariables[result])
 	assert.NotEqual(t, one, secretVariables[result])
-	result, secretVariables = and(0, 1, sparseR1CS, secretVariables)
+	result, secretVariables = and(0, 1, sparseR1CS, secretVariables, true)
 	assert.NotEqual(t, zero, secretVariables[result])
 	assert.NotEqual(t, one, secretVariables[result])
-	result, secretVariables = and(1, 0, sparseR1CS, secretVariables)
+	result, secretVariables = and(1, 0, sparseR1CS, secretVariables, true)
 	assert.NotEqual(t, zero, secretVariables[result])
 	assert.NotEqual(t, one, secretVariables[result])
-	result, secretVariables = and(1, 1, sparseR1CS, secretVariables)
+	result, secretVariables = and(1, 1, sparseR1CS, secretVariables, true)
 	assert.NotEqual(t, zero, secretVariables[result])
 	assert.NotEqual(t, one, secretVariables[result])
 
