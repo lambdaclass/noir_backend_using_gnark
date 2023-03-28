@@ -57,7 +57,7 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 
 // Generates constraints for the AND operation between to values.
 // If you know beforehand that the inputs are boolean, you should use the `and`
-// function.
+// component.
 //
 // It generates 2 * ((3 * bits) + 1) + bits + (2 * bits) Plonk constraints.
 //
