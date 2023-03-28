@@ -220,14 +220,14 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 	var c fr_bn254.Element
 	coefficientValue := big.NewInt(1)
 
-	// This declaration is needed because if not the reference is lost in the for loop.
-	var intermediateProdIndex int
+	// These declarations are needed because if not their reference is lost in the for loop.
+	var intermediateProdIndex, cIndex int
 
 	for i := 0; i < bits; i++ {
 		// Shift the coefficient for the next iteration and add it as a secret variable.
 		coefficientValue.Lsh(coefficientValue, uint(i))
 		c.SetBigInt(coefficientValue)
-		cIndex := sparseR1CS.AddSecretVariable(fmt.Sprintf("c_%d", i))
+		cIndex = sparseR1CS.AddSecretVariable(fmt.Sprintf("(2^%d)", i))
 		secretVariables = append(secretVariables, c)
 		// bits - 1 - i because we want big endian.
 		bigEndianIndex := bits - 1 - i
