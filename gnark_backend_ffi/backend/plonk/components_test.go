@@ -247,7 +247,7 @@ func TestToBitsConversionWithNoBits(t *testing.T) {
 	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
 }
 
-func TestToBitsConversionWithOneBit(t *testing.T) {
+func TestToBinaryConversionWithOneBit(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.One()}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
@@ -259,7 +259,7 @@ func TestToBitsConversionWithOneBit(t *testing.T) {
 	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
 }
 
-func TestToBitsConversionWithMoreThanOneBit(t *testing.T) {
+func TestToBinaryConversionWithMoreThanOneBit(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
