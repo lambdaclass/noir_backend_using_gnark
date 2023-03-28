@@ -279,7 +279,7 @@ func fromBinaryConversion(feltBits []int, sparseR1CS *cs_bn254.SparseR1CS, secre
 func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
 	lhsBitsIndices, secretVariables := toBinaryConversion(lhs, bits, sparseR1CS, secretVariables)
 	rhsBitsIndices, secretVariables := toBinaryConversion(rhs, bits, sparseR1CS, secretVariables)
-	resultBits := make([]big.Word, bits)
+	resultBits := make([]int, bits)
 
 	for i := 0; i < bits; i++ {
 		lhsBitIndex := lhsBitsIndices[i]
@@ -287,19 +287,8 @@ func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 		// Inputs were constrained in the above `toBinaryConversion` calls.
 		resultBit, _secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables, false)
 		secretVariables = _secretVariables
-		resultBits[bits-1-i] = big.Word(secretVariables[resultBit].Uint64())
+		resultBits[i] = resultBit
 	}
 
-	var (
-		resultBigInt big.Int
-		resultFelt   fr_bn254.Element
-	)
-
-	resultBigInt.SetBits(resultBits)
-	resultFelt.SetBigInt(&resultBigInt)
-
-	resultIndex := sparseR1CS.AddSecretVariable("and_result")
-	secretVariables = append(secretVariables, resultFelt)
-
-	return resultIndex, secretVariables
+	return fromBinaryConversion(resultBits, sparseR1CS, secretVariables, false)
 }
