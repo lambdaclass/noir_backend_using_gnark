@@ -18,20 +18,21 @@ import (
 func BuildSparseR1CS(circuit acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(int(circuit.CurrentWitness) - 1)
 
-	publicVariables, secretVariables, indexMap := backend.HandleValues(sparseR1CS, values, circuit.PublicInputs)
-	handleOpcodes(circuit, sparseR1CS, indexMap)
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, circuit.PublicInputs)
+	addedSecretVariables := handleOpcodes(circuit, sparseR1CS, variables, variablesMap)
+	secretVariables = append(secretVariables, addedSecretVariables...)
 
 	return sparseR1CS, publicVariables, secretVariables
 }
 
-func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
+func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector, variablesMap map[string]int) (addedSecretVariables fr_bn254.Vector) {
 	for _, opcode := range a.Opcodes {
 		switch opcode := opcode.Data.(type) {
 		case *acir_opcode.ArithmeticOpcode:
-			handleArithmeticOpcode(opcode, sparseR1CS, indexMap)
+			handleArithmeticOpcode(opcode, sparseR1CS, variablesMap)
 			break
 		case *acir_opcode.BlackBoxFunction:
-			handleBlackBoxFunctionOpcode(opcode)
+			addedSecretVariables = handleBlackBoxFunctionOpcode(opcode, sparseR1CS, variables)
 			break
 		case *acir_opcode.DirectiveOpcode:
 			break
@@ -39,6 +40,7 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 			log.Fatal("unknown opcode type")
 		}
 	}
+	return
 }
 
 func handleArithmeticOpcode(a *acir_opcode.ArithmeticOpcode, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
@@ -106,7 +108,7 @@ func handleArithmeticOpcode(a *acir_opcode.ArithmeticOpcode, sparseR1CS constrai
 	sparseR1CS.AddConstraint(constraint)
 }
 
-func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction) {
+func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
 	switch bbf.Name {
 	case acir_opcode.AES:
 		AES()
@@ -148,4 +150,5 @@ func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction) {
 		Keccak256()
 		break
 	}
+	return
 }
