@@ -271,3 +271,46 @@ func TestToBitsConversionWithMoreThanOneBit(t *testing.T) {
 
 	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
 }
+
+func TestFromBinaryConversionWithOneBit(t *testing.T) {
+	one := fr_bn254.One()
+	values := fr_bn254.Vector{one}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	binaryResult, secretVariables := toBinaryConversion(0, 1, sparseR1CS, secretVariables)
+	result, secretVariables := fromBinaryConversion(binaryResult, sparseR1CS, secretVariables, false)
+	assert.Equal(t, one, secretVariables[result])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestFromBinaryConversionWithMoreThanOneBit(t *testing.T) {
+	three := fr_bn254.NewElement(3)
+	values := fr_bn254.Vector{three}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	binaryResult, secretVariables := toBinaryConversion(0, 2, sparseR1CS, secretVariables)
+	result, secretVariables := fromBinaryConversion(binaryResult, sparseR1CS, secretVariables, false)
+	assert.Equal(t, three, secretVariables[result])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}
+
+func TestFromBinaryConversionWithUnconstrainedInputs(t *testing.T) {
+	one := fr_bn254.One()
+	zero := fr_bn254.NewElement(0)
+	values := fr_bn254.Vector{one, one, zero}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+	expectedResult := fr_bn254.NewElement(6)
+
+	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+
+	result, secretVariables := fromBinaryConversion([]int{0, 1, 2}, sparseR1CS, secretVariables, true)
+	assert.Equal(t, expectedResult, secretVariables[result])
+
+	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+}

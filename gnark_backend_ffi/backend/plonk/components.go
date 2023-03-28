@@ -245,6 +245,37 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 	return feltBitsIndices, secretVariables
 }
 
+func fromBinaryConversion(feltBits []int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector) {
+	bits := len(feltBits)
+	accumulator := fr_bn254.NewElement(0)
+	accumulatorIndex := sparseR1CS.AddSecretVariable("accumulator")
+	secretVariables = append(secretVariables, accumulator)
+
+	var c fr_bn254.Element
+	coefficientValue := big.NewInt(1)
+
+	// These declarations are needed because if not their reference is lost in the for loop.
+	var intermediateProdIndex, cIndex int
+
+	for i := 0; i < bits; i++ {
+		c.SetBigInt(coefficientValue)
+		cIndex = sparseR1CS.AddSecretVariable(fmt.Sprintf("(2^%d)", i))
+		secretVariables = append(secretVariables, c)
+		// bits - 1 - i because we want big endian.
+		bigEndianIndex := bits - 1 - i
+		currentBitIndex := feltBits[bigEndianIndex]
+		if unconstrainedInputs {
+			assertIsBoolean(currentBitIndex, sparseR1CS)
+		}
+		intermediateProdIndex, secretVariables = mul(cIndex, currentBitIndex, sparseR1CS, secretVariables)
+		accumulatorIndex, secretVariables = add(accumulatorIndex, intermediateProdIndex, sparseR1CS, secretVariables)
+		// Shift the coefficient for the next iteration.
+		coefficientValue.Lsh(coefficientValue, 1)
+	}
+
+	return accumulatorIndex, secretVariables
+}
+
 func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
 	lhsBitsIndices, secretVariables := toBinaryConversion(lhs, bits, sparseR1CS, secretVariables)
 	rhsBitsIndices, secretVariables := toBinaryConversion(rhs, bits, sparseR1CS, secretVariables)
