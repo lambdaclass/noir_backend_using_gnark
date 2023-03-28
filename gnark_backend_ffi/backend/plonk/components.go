@@ -232,7 +232,6 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 		// bits - 1 - i because we want big endian.
 		bigEndianIndex := bits - 1 - i
 		currentBitIndex := feltBitsIndices[bigEndianIndex]
-		assertIsBoolean(currentBitIndex, sparseR1CS)
 		intermediateProdIndex, secretVariables = mul(cIndex, currentBitIndex, sparseR1CS, secretVariables)
 		accumulatorIndex, secretVariables = add(accumulatorIndex, intermediateProdIndex, sparseR1CS, secretVariables)
 		// Shift the coefficient for the next iteration.
