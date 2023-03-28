@@ -254,7 +254,7 @@ func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVari
 		lhsBitIndex := lhsBitsIndices[i]
 		rhsBitIndex := rhsBitsIndices[i]
 		// Inputs were constrained in the above `toBinaryConversion` calls.
-		resultBit, _secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables, true)
+		resultBit, _secretVariables := and(lhsBitIndex, rhsBitIndex, sparseR1CS, secretVariables, false)
 		secretVariables = _secretVariables
 		resultBits[bits-1-i] = big.Word(secretVariables[resultBit].Uint64())
 	}
