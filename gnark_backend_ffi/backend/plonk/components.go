@@ -100,11 +100,17 @@ func assertIsEqual(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS) {
 	sparseR1CS.AddConstraint(constraint)
 }
 
-// Generates constraints for the bit operation AND.
+// Generates constraints for the bit operation AND between two boolean values.
+//
+// It generates one Plonk constraint with constrained inputs or three Plonk
+// constraint with unconstrained inputs.
 //
 // lhs is the index of the left hand side of the AND operation in the values vector.
 // rhs is the index of the right hand side of the AND operation in the values vector.
 // sparseR1CS is the constraint system being mutated.
+// unconstrainedInputs is a boolean that indicates if the inputs are constrained
+// or not. If they are not constrained, then the function will generate the
+// necessary constraints to ensure that the inputs are boolean.
 //
 // Returns a tuple with the index of the result of the operation in the secret
 // variables vector.
@@ -143,6 +149,17 @@ func and(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_b
 	return xc, secretVariables
 }
 
+// Generates constraints for adding two values.
+//
+// It generates one Plonk constraint.
+//
+// augend is the index of the augend in the values vector.
+// addend is the index of the addend in the values vector.
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
+//
+// Returns a tuple with the index of the result of the operation in the values
+// vector and the updated values vector.
 func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
@@ -171,6 +188,17 @@ func add(augend int, addend int, sparseR1CS *cs_bn254.SparseR1CS, secretVariable
 	return xc, secretVariables
 }
 
+// Generates constraints for multiplying two values.
+//
+// It generates one Plonk constraint.
+//
+// augend is the index of the augend in the values vector.
+// addend is the index of the addend in the values vector.
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
+//
+// Returns a tuple with the index of the result of the operation in the values
+// vector and the updated values vector.
 func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
@@ -199,6 +227,20 @@ func mul(multiplicand int, multiplier int, sparseR1CS *cs_bn254.SparseR1CS, secr
 	return xc, secretVariables
 }
 
+// Generates constraints for converting a value into its binary representation.
+// We use a hint which converts the value into its binary representation outside
+// of the circuit and then we check that the result of the conversion is correct.
+// TODO: Use this hint with the Hints API
+//
+// It generates (3 * bits) + 1 Plonk constraints.
+//
+// felt is the index of the value to convert in the values vector.
+// bits is the number of bits to use for the conversion.
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
+//
+// Returns a tuple with the indices of the bits in the values vector (big-endian)
+// and the updated values vector.
 func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) ([]int, fr_bn254.Vector) {
 	/* Felt to binary (hint) */
 	var feltConstant big.Int
@@ -244,6 +286,20 @@ func toBinaryConversion(felt int, bits int, sparseR1CS *cs_bn254.SparseR1CS, sec
 	return feltBitsIndices, secretVariables
 }
 
+// Generates constraints for converting some bits into a value.
+//
+// It generates (2 * bits) Plonk constraints with constrained inputs or
+// (3 * bits) Plonk constraints with unconstrained inputs.
+//
+// feltBits is the indices of the bits in the values vector (big-endian).
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
+// unconstrainedInputs is a boolean that indicates if the inputs are constrained
+// or not. If they are not constrained, then the function will generate the
+// necessary constraints to ensure that the inputs are boolean.
+//
+// Returns a tuple with the index of the result of the conversion in the values
+// vector and the updated values vector.
 func fromBinaryConversion(feltBits []int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector) {
 	bits := len(feltBits)
 	accumulator := fr_bn254.NewElement(0)
@@ -275,6 +331,19 @@ func fromBinaryConversion(feltBits []int, sparseR1CS *cs_bn254.SparseR1CS, secre
 	return accumulatorIndex, secretVariables
 }
 
+// Generates constraints for the AND operation between to values.
+// If you know beforehand that the inputs are boolean, you should use the `and`
+// function.
+//
+// It generates 2 * ((3 * bits) + 1) + bits + (2 * bits) Plonk constraints.
+//
+// lhs is the index of the left hand side value in the values vector.
+// rhs is the index of the right hand side value in the values vector.
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
+//
+// Returns a tuple with the index of the result of the AND operation in the values
+// vector and the updated values vector.
 func And(lhs int, rhs int, bits int, sparseR1CS *cs_bn254.SparseR1CS, secretVariables fr_bn254.Vector) (int, fr_bn254.Vector) {
 	lhsBitsIndices, secretVariables := toBinaryConversion(lhs, bits, sparseR1CS, secretVariables)
 	rhsBitsIndices, secretVariables := toBinaryConversion(rhs, bits, sparseR1CS, secretVariables)
