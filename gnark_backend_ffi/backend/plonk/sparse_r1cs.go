@@ -114,10 +114,10 @@ func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction, sparseR1CS 
 		AES()
 		break
 	case acir_opcode.AND:
-		AND()
+		addedSecretVariables = AND(bbf, sparseR1CS, variables)
 		break
 	case acir_opcode.XOR:
-		XOR()
+		addedSecretVariables = XOR(bbf, sparseR1CS, variables)
 		break
 	case acir_opcode.RANGE:
 		Range()

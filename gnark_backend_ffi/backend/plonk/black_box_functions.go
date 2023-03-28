@@ -1,13 +1,33 @@
 package plonk_backend
 
+import (
+	"gnark_backend_ffi/acir/opcode"
+	components "gnark_backend_ffi/backend/plonk/components"
+
+	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark/constraint"
+)
+
 // AES black box function call is not handled
 func AES() {}
 
-// AND black box function call is not handled
-func AND() {}
+func AND(bbf *opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
+	lhs := int(bbf.Inputs[0].Witness)
+	rhs := int(bbf.Inputs[1].Witness)
+	bits := int(bbf.Inputs[0].NumBits)
 
-// XOR black box function call is not handled
-func XOR() {}
+	_, addedSecretVariables, _ = components.And(lhs, rhs, bits, sparseR1CS, variables)
+	return
+}
+
+func XOR(bbf *opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
+	lhs := int(bbf.Inputs[0].Witness)
+	rhs := int(bbf.Inputs[1].Witness)
+	bits := int(bbf.Inputs[0].NumBits)
+
+	_, addedSecretVariables, _ = components.Xor(lhs, rhs, bits, sparseR1CS, variables)
+	return
+}
 
 // RANGE black box function call is not handled
 func Range() {}
