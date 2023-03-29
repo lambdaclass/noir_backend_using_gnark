@@ -2,11 +2,11 @@ package plonk_backend
 
 import (
 	"fmt"
-	"gnark_backend_ffi/acir"
-	"gnark_backend_ffi/backend"
 	"log"
 
+	"gnark_backend_ffi/acir"
 	acir_opcode "gnark_backend_ffi/acir/opcode"
+	"gnark_backend_ffi/backend"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
