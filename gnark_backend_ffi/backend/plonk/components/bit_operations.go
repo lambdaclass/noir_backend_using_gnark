@@ -1,4 +1,4 @@
-package plonk_components
+package components
 
 import (
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"

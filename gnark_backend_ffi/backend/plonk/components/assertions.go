@@ -1,4 +1,4 @@
-package plonk_components
+package components
 
 import (
 	"github.com/consensys/gnark/constraint"

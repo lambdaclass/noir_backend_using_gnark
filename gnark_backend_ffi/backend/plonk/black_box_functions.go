@@ -2,7 +2,7 @@ package plonk_backend
 
 import (
 	"gnark_backend_ffi/acir/opcode"
-	components "gnark_backend_ffi/backend/plonk/components"
+	"gnark_backend_ffi/backend/plonk/components"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
