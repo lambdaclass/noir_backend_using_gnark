@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"gnark_backend_ffi/backend"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
@@ -19,34 +20,32 @@ import (
 //
 // Returns a tuple with the index of the result of the operation in the values
 // vector and the updated values vector.
-func add(augend int, addend int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (int, fr_bn254.Vector, fr_bn254.Vector) {
+func add(augend int, addend int, ctx *backend.Context) int {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
-	qL = sparseR1CS.One()
+	qL = ctx.ConstraintSystem.One()
 	xa = augend
-	qR = sparseR1CS.One()
+	qR = ctx.ConstraintSystem.One()
 	xb = addend
-	qO = sparseR1CS.FromInterface(-1)
-	// TODO: Remove the interface casting.
-	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s+%s)", sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(augend), sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(addend)))
-
+	qO = ctx.ConstraintSystem.FromInterface(-1)
 	var sum fr_bn254.Element
-	sum.Add(&variables[augend], &variables[addend])
-	addedSecretVariables := fr_bn254.Vector{sum}
-	variables = append(variables, sum)
+	sum.Add(&ctx.Variables[augend], &ctx.Variables[addend])
+	// TODO: Remove the interface casting.
+	variableName := fmt.Sprintf("(%s+%s)", ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(augend), ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(addend))
+	xc = ctx.AddSecretVariable(variableName, sum)
 
 	addConstraint := constraint.SparseR1C{
-		L: sparseR1CS.MakeTerm(&qL, xa),
-		R: sparseR1CS.MakeTerm(&qR, xb),
-		O: sparseR1CS.MakeTerm(&qO, xc),
-		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		L: ctx.ConstraintSystem.MakeTerm(&qL, xa),
+		R: ctx.ConstraintSystem.MakeTerm(&qR, xb),
+		O: ctx.ConstraintSystem.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{ctx.ConstraintSystem.MakeTerm(&qM1, xa), ctx.ConstraintSystem.MakeTerm(&qM2, xb)},
 		K: constraint.CoeffIdZero,
 	}
 
-	sparseR1CS.AddConstraint(addConstraint)
+	ctx.ConstraintSystem.AddConstraint(addConstraint)
 
-	return xc, addedSecretVariables, variables
+	return xc
 }
 
 // Generates constraints for multiplying two values.
@@ -60,32 +59,30 @@ func add(augend int, addend int, sparseR1CS constraint.SparseR1CS, variables fr_
 //
 // Returns a tuple with the index of the result of the operation in the values
 // vector and the updated values vector.
-func mul(multiplicand int, multiplier int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (int, fr_bn254.Vector, fr_bn254.Vector) {
+func mul(multiplicand int, multiplier int, ctx *backend.Context) int {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
-	qM1 = sparseR1CS.One()
-	qM2 = sparseR1CS.One()
+	qM1 = ctx.ConstraintSystem.One()
+	qM2 = ctx.ConstraintSystem.One()
 	xa = multiplicand
 	xb = multiplier
-	qO = sparseR1CS.FromInterface(-1)
-	// TODO: Remove the interface casting.
-	xc = sparseR1CS.AddSecretVariable(fmt.Sprintf("(%s*%s)", sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(multiplicand), sparseR1CS.(*cs_bn254.SparseR1CS).VariableToString(multiplier)))
-
+	qO = ctx.ConstraintSystem.FromInterface(-1)
 	var product fr_bn254.Element
-	product.Mul(&variables[multiplicand], &variables[multiplier])
-	addedSecretVariables := fr_bn254.Vector{product}
-	variables = append(variables, product)
+	product.Mul(&ctx.Variables[multiplicand], &ctx.Variables[multiplier])
+	// TODO: Remove the interface casting.
+	variableName := fmt.Sprintf("(%s*%s)", ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(multiplicand), ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(multiplier))
+	xc = ctx.AddSecretVariable(variableName, product)
 
 	mulConstraint := constraint.SparseR1C{
-		L: sparseR1CS.MakeTerm(&qL, xa),
-		R: sparseR1CS.MakeTerm(&qR, xb),
-		O: sparseR1CS.MakeTerm(&qO, xc),
-		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		L: ctx.ConstraintSystem.MakeTerm(&qL, xa),
+		R: ctx.ConstraintSystem.MakeTerm(&qR, xb),
+		O: ctx.ConstraintSystem.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{ctx.ConstraintSystem.MakeTerm(&qM1, xa), ctx.ConstraintSystem.MakeTerm(&qM2, xb)},
 		K: constraint.CoeffIdZero,
 	}
 
-	sparseR1CS.AddConstraint(mulConstraint)
+	ctx.ConstraintSystem.AddConstraint(mulConstraint)
 
-	return xc, addedSecretVariables, variables
+	return xc
 }
