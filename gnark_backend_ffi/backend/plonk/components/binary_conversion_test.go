@@ -1,6 +1,7 @@
 package components
 
 import (
+	"gnark_backend_ffi/acir"
 	"gnark_backend_ffi/backend"
 	"testing"
 
@@ -13,76 +14,70 @@ func TestToBinaryConversionWithNoBits(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.One()}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, addedSecretVariables, variables := toBinaryConversion(0, 0, sparseR1CS, variables)
+	result := toBinaryConversion(0, 0, ctx)
 	assert.Empty(t, result)
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingFails(t, ctx)
 }
 
 func TestToBinaryConversionWithOneBit(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.One()}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, addedSecretVariables, variables := toBinaryConversion(0, 1, sparseR1CS, variables)
-	assert.Equal(t, fr_bn254.One(), variables[result[0]])
+	result := toBinaryConversion(0, 1, ctx)
+	assert.Equal(t, fr_bn254.One(), ctx.Variables[result[0]])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestToBinaryConversionWithMoreThanOneBit(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, addedSecretVariables, variables := toBinaryConversion(0, 2, sparseR1CS, variables)
-	assert.Equal(t, fr_bn254.One(), variables[result[0]])
-	assert.Equal(t, fr_bn254.One(), variables[result[1]])
+	result := toBinaryConversion(0, 2, ctx)
+	assert.Equal(t, fr_bn254.One(), ctx.Variables[result[0]])
+	assert.Equal(t, fr_bn254.One(), ctx.Variables[result[1]])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestFromBinaryConversionWithOneBit(t *testing.T) {
 	one := fr_bn254.One()
 	values := fr_bn254.Vector{one}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
-	var addedSecretVariables fr_bn254.Vector
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	binaryResult, _addedSecretVariables, variables := toBinaryConversion(0, 1, sparseR1CS, variables)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	result, _addedSecretVariables, variables := fromBinaryConversion(binaryResult, sparseR1CS, variables, false)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	assert.Equal(t, one, variables[result])
+	binaryResult := toBinaryConversion(0, 1, ctx)
+	result := fromBinaryConversion(binaryResult, ctx, false)
+	assert.Equal(t, one, ctx.Variables[result])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestFromBinaryConversionWithMoreThanOneBit(t *testing.T) {
 	three := fr_bn254.NewElement(3)
 	values := fr_bn254.Vector{three}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
-	var addedSecretVariables fr_bn254.Vector
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	binaryResult, _addedSecretVariables, variables := toBinaryConversion(0, 2, sparseR1CS, variables)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	result, _addedSecretVariables, variables := fromBinaryConversion(binaryResult, sparseR1CS, variables, false)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	assert.Equal(t, three, variables[result])
+	binaryResult := toBinaryConversion(0, 2, ctx)
+	result := fromBinaryConversion(binaryResult, ctx, false)
+	assert.Equal(t, three, ctx.Variables[result])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestFromBinaryConversionWithUnconstrainedInputs(t *testing.T) {
@@ -92,11 +87,11 @@ func TestFromBinaryConversionWithUnconstrainedInputs(t *testing.T) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 	expectedResult := fr_bn254.NewElement(6)
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, addedSecretVariables, variables := fromBinaryConversion([]int{0, 1, 2}, sparseR1CS, variables, true)
-	assert.Equal(t, expectedResult, variables[result])
+	result := fromBinaryConversion([]int{0, 1, 2}, ctx, true)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }

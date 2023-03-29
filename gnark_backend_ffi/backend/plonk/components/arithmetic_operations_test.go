@@ -1,6 +1,7 @@
 package components
 
 import (
+	"gnark_backend_ffi/acir"
 	"gnark_backend_ffi/backend"
 	"testing"
 
@@ -13,36 +14,30 @@ func TestAddComponent(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(3), fr_bn254.NewElement(2)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 	expectedResult := fr_bn254.NewElement(5)
-	var addedSecretVariables fr_bn254.Vector
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, _addedSecretVariables, variables := add(0, 1, sparseR1CS, variables)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	assert.Equal(t, expectedResult, variables[result])
-	result, _addedSecretVariables, variables = add(1, 0, sparseR1CS, variables)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	assert.Equal(t, expectedResult, variables[result])
+	result := add(0, 1, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
+	result = add(1, 0, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestMulComponent(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(2), fr_bn254.NewElement(3)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 	expectedResult := fr_bn254.NewElement(6)
-	var addedSecretVariables fr_bn254.Vector
 
-	publicVariables, secretVariables, variables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, _addedSecretVariables, variables := mul(0, 1, sparseR1CS, variables)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	assert.Equal(t, expectedResult, variables[result])
-	result, _addedSecretVariables, variables = mul(1, 0, sparseR1CS, variables)
-	addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-	assert.Equal(t, expectedResult, variables[result])
+	result := mul(0, 1, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
+	result = mul(1, 0, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
 
-	secretVariables = append(secretVariables, addedSecretVariables...)
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
