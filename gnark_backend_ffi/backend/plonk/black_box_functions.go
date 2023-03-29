@@ -1,7 +1,7 @@
 package plonk_backend
 
 import (
-	"gnark_backend_ffi/acir/opcode"
+	acir_opcode "gnark_backend_ffi/acir/opcode"
 	"gnark_backend_ffi/backend/plonk/components"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -11,7 +11,7 @@ import (
 // AES black box function call is not handled
 func AES() {}
 
-func AND(bbf *opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
+func AND(bbf *acir_opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
 	lhs := int(bbf.Inputs[0].Witness)
 	rhs := int(bbf.Inputs[1].Witness)
 	bits := int(bbf.Inputs[0].NumBits)
@@ -20,7 +20,7 @@ func AND(bbf *opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variabl
 	return
 }
 
-func XOR(bbf *opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
+func XOR(bbf *acir_opcode.BlackBoxFunction, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) (addedSecretVariables fr_bn254.Vector) {
 	lhs := int(bbf.Inputs[0].Witness)
 	rhs := int(bbf.Inputs[1].Witness)
 	bits := int(bbf.Inputs[0].NumBits)
