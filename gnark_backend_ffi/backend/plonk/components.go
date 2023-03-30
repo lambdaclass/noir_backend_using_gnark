@@ -414,3 +414,54 @@ func Xor(lhs int, rhs int, bits int, ctx *backend.Context) int {
 
 	return resultIndex
 }
+
+// Generates constraints for subtracting two values.
+//
+// It generates one Plonk constraint.
+//
+// minuend is the index of the minuend in the values vector.
+// subtrahend is the index of the subtrahend in the values vector.
+// sparseR1CS is the constraint system being mutated.
+// secretVariables is the values vector.
+//
+// Returns a tuple with the index of the result of the operation in the values
+// vector and the updated values vector.
+func sub(minuend int, subtrahend int, ctx *backend.Context) int {
+	var xa, xb, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	qL = ctx.ConstraintSystem.One()
+	xa = minuend
+	qR = ctx.ConstraintSystem.FromInterface(-1)
+	xb = subtrahend
+	qO = ctx.ConstraintSystem.FromInterface(-1)
+	var difference fr_bn254.Element
+	difference.Sub(&ctx.Variables[minuend], &ctx.Variables[subtrahend])
+	// TODO: Remove the interface casting.
+	variableName := fmt.Sprintf("(%s-%s)", ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(minuend), ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(subtrahend))
+	xc = ctx.AddSecretVariable(variableName, difference)
+
+	addConstraint := constraint.SparseR1C{
+		L: ctx.ConstraintSystem.MakeTerm(&qL, xa),
+		R: ctx.ConstraintSystem.MakeTerm(&qR, xb),
+		O: ctx.ConstraintSystem.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{ctx.ConstraintSystem.MakeTerm(&qM1, xa), ctx.ConstraintSystem.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	ctx.ConstraintSystem.AddConstraint(addConstraint)
+
+	return xc
+}
+
+// (trueValue - falseValue) * condition + falseValue
+// If condition = 0 => (trueValue - falseValue) * 0 + falseValue = falseValue
+// If condition = 0 => (trueValue - falseValue) * 1 + falseValue = trueValue
+func Select(condition, trueValue, falseValue int, ctx *backend.Context, unconstrainedCondition bool) int {
+	if unconstrainedCondition {
+		assertIsBoolean(condition, ctx.ConstraintSystem)
+	}
+	trueValueMinusFalseValue := sub(trueValue, falseValue, ctx)
+	trueValueMinusFalseValueTimesCondition := mul(trueValueMinusFalseValue, condition, ctx)
+	return add(trueValueMinusFalseValueTimesCondition, falseValue, ctx)
+}
