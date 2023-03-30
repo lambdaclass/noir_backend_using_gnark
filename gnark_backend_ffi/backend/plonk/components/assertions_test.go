@@ -64,3 +64,31 @@ func TestAssertIsEqualComponentWithNonEqualElements(t *testing.T) {
 
 	assertThatProvingFails(t, ctx)
 }
+
+func TestAssertIsInRangeComponentSucceeds(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
+	amountOfBits := 2
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
+
+	assertIsInRange(0, amountOfBits, ctx)
+	assertIsInRange(0, amountOfBits+1, ctx)
+	assertIsInRange(0, amountOfBits+2, ctx)
+
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
+}
+
+func TestAssertIsInRangeComponentFails(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(3)}
+	amountOfBits := 1
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
+
+	assertIsInRange(0, amountOfBits, ctx)
+
+	assertThatProvingFails(t, ctx)
+}
