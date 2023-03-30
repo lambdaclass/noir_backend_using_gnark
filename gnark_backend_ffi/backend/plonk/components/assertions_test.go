@@ -1,6 +1,7 @@
 package components
 
 import (
+	"gnark_backend_ffi/acir"
 	"gnark_backend_ffi/backend"
 	"testing"
 
@@ -12,30 +13,33 @@ func TestAssertIsBooleanComponentWithBooleans(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(0), fr_bn254.One()}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, _, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
 	assertIsBoolean(0, sparseR1CS)
 	assertIsBoolean(1, sparseR1CS)
 
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestAssertIsBooleanComponentWithNonBooleans(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(2)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, _, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
 	assertIsBoolean(0, sparseR1CS)
 
-	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingFails(t, ctx)
 }
 
 func TestAssertIsEqualComponentWithEqualElements(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(0), fr_bn254.One()}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, _, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
 	// TODO: I think that there is a bug in Gnark here. If you want to see it for
 	// yourself, just remove the second assertIsEqual. It seems that when having
@@ -46,16 +50,17 @@ func TestAssertIsEqualComponentWithEqualElements(t *testing.T) {
 	assertIsEqual(0, 0, sparseR1CS)
 	assertIsEqual(1, 1, sparseR1CS)
 
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestAssertIsEqualComponentWithNonEqualElements(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(2), fr_bn254.NewElement(3)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 
-	publicVariables, secretVariables, _, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
 	assertIsEqual(0, 1, sparseR1CS)
 
-	assertThatProvingFails(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingFails(t, ctx)
 }

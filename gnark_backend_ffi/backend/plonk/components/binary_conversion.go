@@ -2,10 +2,10 @@ package components
 
 import (
 	"fmt"
+	"gnark_backend_ffi/backend"
 	"math/big"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark/constraint"
 )
 
 // Generates constraints for converting a value into its binary representation.
@@ -22,27 +22,22 @@ import (
 //
 // Returns a tuple with the indices of the bits in the values vector (big-endian)
 // and the updated values vector.
-func toBinaryConversion(felt int, bits int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector) ([]int, fr_bn254.Vector, fr_bn254.Vector) {
+func toBinaryConversion(felt int, bits int, ctx *backend.Context) []int {
 	/* Felt to binary (hint) */
 	var feltConstant big.Int
-	variables[felt].BigInt(&feltConstant)
+	ctx.Variables[felt].BigInt(&feltConstant)
 
-	var addedSecretVariables fr_bn254.Vector
 	resultIndices := make([]int, bits)
 	for i := 0; i < bits; i++ {
 		bigEndianIndex := bits - 1 - i
 		bit := fr_bn254.NewElement(uint64(feltConstant.Bit(i)))
-		resultIndices[bigEndianIndex] = sparseR1CS.AddSecretVariable(fmt.Sprintf("bit_%d", i))
-		assertIsBoolean(resultIndices[bigEndianIndex], sparseR1CS)
-		addedSecretVariables = append(addedSecretVariables, bit)
-		variables = append(variables, bit)
+		resultIndices[bigEndianIndex] = ctx.AddSecretVariable(fmt.Sprintf("bit_%d", i), bit)
+		assertIsBoolean(resultIndices[bigEndianIndex], ctx.ConstraintSystem)
 	}
 
 	/* Hint check */
 	accumulator := fr_bn254.NewElement(0)
-	accumulatorIndex := sparseR1CS.AddSecretVariable("accumulator")
-	addedSecretVariables = append(addedSecretVariables, accumulator)
-	variables = append(variables, accumulator)
+	accumulatorIndex := ctx.AddSecretVariable("accumulator", accumulator)
 
 	var c fr_bn254.Element
 	coefficientValue := big.NewInt(1)
@@ -52,27 +47,20 @@ func toBinaryConversion(felt int, bits int, sparseR1CS constraint.SparseR1CS, va
 
 	for i := 0; i < bits; i++ {
 		c.SetBigInt(coefficientValue)
-		cIndex = sparseR1CS.AddSecretVariable(fmt.Sprintf("(2^%d)", i))
-		addedSecretVariables = append(addedSecretVariables, c)
-		variables = append(variables, c)
+		cIndex = ctx.AddSecretVariable(fmt.Sprintf("(2^%d)", i), c)
 		// bits - 1 - i because we want big endian.
 		bigEndianIndex := bits - 1 - i
 		currentBitIndex := resultIndices[bigEndianIndex]
-		_intermediateProdIndex, _addedSecretVariables, _variables := mul(cIndex, currentBitIndex, sparseR1CS, variables)
-		addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-		variables = _variables
-		intermediateProdIndex = _intermediateProdIndex
-		accumulatorIndex, _addedSecretVariables, _variables = add(accumulatorIndex, intermediateProdIndex, sparseR1CS, variables)
-		addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-		variables = _variables
+		intermediateProdIndex = mul(cIndex, currentBitIndex, ctx)
+		accumulatorIndex = add(accumulatorIndex, intermediateProdIndex, ctx)
 		// Shift the coefficient for the next iteration.
 		coefficientValue.Lsh(coefficientValue, 1)
 	}
 
 	// record the constraint Σ (2**i * b[i]) == a
-	assertIsEqual(felt, accumulatorIndex, sparseR1CS)
+	assertIsEqual(felt, accumulatorIndex, ctx.ConstraintSystem)
 
-	return resultIndices, addedSecretVariables, variables
+	return resultIndices
 }
 
 // Generates constraints for converting some bits into a value.
@@ -89,14 +77,10 @@ func toBinaryConversion(felt int, bits int, sparseR1CS constraint.SparseR1CS, va
 //
 // Returns a tuple with the index of the result of the conversion in the values
 // vector and the updated values vector.
-func fromBinaryConversion(feltBits []int, sparseR1CS constraint.SparseR1CS, variables fr_bn254.Vector, unconstrainedInputs bool) (int, fr_bn254.Vector, fr_bn254.Vector) {
-	var addedSecretVariables fr_bn254.Vector
-
+func fromBinaryConversion(feltBits []int, ctx *backend.Context, unconstrainedInputs bool) int {
 	bits := len(feltBits)
 	accumulator := fr_bn254.NewElement(0)
-	accumulatorIndex := sparseR1CS.AddSecretVariable("accumulator")
-	addedSecretVariables = append(addedSecretVariables, accumulator)
-	variables = append(variables, accumulator)
+	accumulatorIndex := ctx.AddSecretVariable("accumulator", accumulator)
 
 	var c fr_bn254.Element
 	coefficientValue := big.NewInt(1)
@@ -106,26 +90,18 @@ func fromBinaryConversion(feltBits []int, sparseR1CS constraint.SparseR1CS, vari
 
 	for i := 0; i < bits; i++ {
 		c.SetBigInt(coefficientValue)
-		cIndex = sparseR1CS.AddSecretVariable(fmt.Sprintf("(2^%d)", i))
-		addedSecretVariables = append(addedSecretVariables, c)
-		variables = append(variables, c)
+		cIndex = ctx.AddSecretVariable(fmt.Sprintf("(2^%d)", i), c)
 		// bits - 1 - i because we want big endian.
 		bigEndianIndex := bits - 1 - i
 		currentBitIndex := feltBits[bigEndianIndex]
 		if unconstrainedInputs {
-			assertIsBoolean(currentBitIndex, sparseR1CS)
+			assertIsBoolean(currentBitIndex, ctx.ConstraintSystem)
 		}
-		_intermediateProdIndex, _addedSecretVariables, _variables := mul(cIndex, currentBitIndex, sparseR1CS, variables)
-		intermediateProdIndex = _intermediateProdIndex
-		addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-		variables = _variables
-		_accumulatorIndex, _addedSecretVariables, _variables := add(accumulatorIndex, intermediateProdIndex, sparseR1CS, variables)
-		accumulatorIndex = _accumulatorIndex
-		addedSecretVariables = append(addedSecretVariables, _addedSecretVariables...)
-		variables = _variables
+		intermediateProdIndex = mul(cIndex, currentBitIndex, ctx)
+		accumulatorIndex = add(accumulatorIndex, intermediateProdIndex, ctx)
 		// Shift the coefficient for the next iteration.
 		coefficientValue.Lsh(coefficientValue, 1)
 	}
 
-	return accumulatorIndex, addedSecretVariables, variables
+	return accumulatorIndex
 }
