@@ -3,7 +3,6 @@ package plonk_backend
 import (
 	acir_opcode "gnark_backend_ffi/acir/opcode"
 	"gnark_backend_ffi/backend"
-	"gnark_backend_ffi/backend/plonk/components"
 )
 
 // AES black box function call is not handled
@@ -14,7 +13,7 @@ func AND(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
 	rhs := int(bbf.Inputs[1].Witness)
 	bits := int(bbf.Inputs[0].NumBits)
 
-	components.And(lhs, rhs, bits, ctx)
+	And(lhs, rhs, bits, ctx)
 }
 
 func XOR(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
@@ -22,7 +21,7 @@ func XOR(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
 	rhs := int(bbf.Inputs[1].Witness)
 	bits := int(bbf.Inputs[0].NumBits)
 
-	components.Xor(lhs, rhs, bits, ctx)
+	Xor(lhs, rhs, bits, ctx)
 }
 
 // RANGE black box function call is not handled
