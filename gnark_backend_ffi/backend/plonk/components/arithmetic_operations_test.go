@@ -45,16 +45,18 @@ func TestMulComponent(t *testing.T) {
 func TestSubComponent(t *testing.T) {
 	values := fr_bn254.Vector{fr_bn254.NewElement(3), fr_bn254.NewElement(2)}
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
-	expectedResult := fr_bn254.NewElement(1)
 	negativeOne := fr_bn254.Element{10902020042510041094, 17381486299841078119, 5900175412809962030, 2475245527108272378}
 
 	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
 	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
+	// 3 - 2 = 1
 	result := sub(0, 1, ctx)
-	assert.Equal(t, expectedResult, ctx.Variables[result])
+	assert.Equal(t, fr_bn254.One(), ctx.Variables[result])
+	// 2 - 2 = 0
 	result = sub(0, 0, ctx)
 	assert.Equal(t, fr_bn254.NewElement(0), ctx.Variables[result])
+	// 2 - 3 = -1
 	result = sub(1, 0, ctx)
 	assert.Equal(t, negativeOne, ctx.Variables[result])
 
