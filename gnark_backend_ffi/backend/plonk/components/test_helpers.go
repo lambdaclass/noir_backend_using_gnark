@@ -1,9 +1,8 @@
-package plonk_backend
+package plonk_components
 
 import (
 	"fmt"
 	"gnark_backend_ffi/backend"
-	"log"
 	"testing"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -72,59 +71,32 @@ func checkConstraints(sparseR1CS *cs_bn254.SparseR1CS, values fr_bn254.Vector) e
 	return nil
 }
 
-func TestAssertIsBooleanComponentWithBooleans(t *testing.T) {
-	values := fr_bn254.Vector{fr_bn254.NewElement(0), fr_bn254.One()}
-	sparseR1CS := cs_bn254.NewSparseR1CS(1)
-
-	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
-
-	assertIsBoolean(0, sparseR1CS)
-	assertIsBoolean(1, sparseR1CS)
-
+func assertThatProvingAndVerifyingSucceeds(t *testing.T, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, sparseR1CS *cs_bn254.SparseR1CS) {
 	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
 
 	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err, err)
 
 	pk, vk, err := plonk.Setup(sparseR1CS, srs)
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err, err)
 
 	proof, err := plonk.Prove(sparseR1CS, pk, witness)
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err, err)
 
 	publicWitnesses, err := witness.Public()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	if plonk.Verify(proof, vk, publicWitnesses) != nil {
-		log.Fatal(err)
-	}
-
-	assert.True(t, true)
+	err = plonk.Verify(proof, vk, publicWitnesses)
+	assert.Nil(t, err, err)
 }
 
-func TestAssertIsBooleanComponentWithNonBooleans(t *testing.T) {
-	values := fr_bn254.Vector{fr_bn254.NewElement(2)}
-	sparseR1CS := cs_bn254.NewSparseR1CS(1)
-
-	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
-
-	assertIsBoolean(0, sparseR1CS)
-
+func assertThatProvingFails(t *testing.T, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, sparseR1CS *cs_bn254.SparseR1CS) {
 	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
 
 	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
-	assert.Nil(t, err)
+	assert.Nil(t, err, err)
 
 	pk, _, err := plonk.Setup(sparseR1CS, srs)
-	assert.Nil(t, err)
+	assert.Nil(t, err, err)
 
 	_, err = plonk.Prove(sparseR1CS, pk, witness)
 	assert.Error(t, err)
