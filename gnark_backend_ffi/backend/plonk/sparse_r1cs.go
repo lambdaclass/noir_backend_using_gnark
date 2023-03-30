@@ -2,11 +2,11 @@ package plonk_backend
 
 import (
 	"fmt"
-	"gnark_backend_ffi/acir"
-	"gnark_backend_ffi/backend"
 	"log"
 
+	"gnark_backend_ffi/acir"
 	acir_opcode "gnark_backend_ffi/acir/opcode"
+	"gnark_backend_ffi/backend"
 
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
@@ -17,21 +17,24 @@ import (
 // qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xa⋅xb) + qC == 0
 func BuildSparseR1CS(circuit acir.ACIR, values fr_bn254.Vector) (*cs_bn254.SparseR1CS, fr_bn254.Vector, fr_bn254.Vector) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(int(circuit.CurrentWitness) - 1)
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, circuit.PublicInputs)
 
-	publicVariables, secretVariables, indexMap := backend.HandleValues(sparseR1CS, values, circuit.PublicInputs)
-	handleOpcodes(circuit, sparseR1CS, indexMap)
+	ctx := backend.NewContext(circuit, sparseR1CS, variables, publicVariables, secretVariables, variablesMap)
+
+	addedSecretVariables := handleOpcodes(ctx)
+	secretVariables = append(secretVariables, addedSecretVariables...)
 
 	return sparseR1CS, publicVariables, secretVariables
 }
 
-func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
-	for _, opcode := range a.Opcodes {
+func handleOpcodes(ctx *backend.Context) (addedSecretVariables fr_bn254.Vector) {
+	for _, opcode := range ctx.Circuit.Opcodes {
 		switch opcode := opcode.Data.(type) {
 		case *acir_opcode.ArithmeticOpcode:
-			handleArithmeticOpcode(opcode, sparseR1CS, indexMap)
+			handleArithmeticOpcode(ctx, opcode)
 			break
 		case *acir_opcode.BlackBoxFunction:
-			handleBlackBoxFunctionOpcode(opcode)
+			handleBlackBoxFunctionOpcode(ctx, opcode)
 			break
 		case *acir_opcode.DirectiveOpcode:
 			break
@@ -39,83 +42,84 @@ func handleOpcodes(a acir.ACIR, sparseR1CS constraint.SparseR1CS, indexMap map[s
 			log.Fatal("unknown opcode type")
 		}
 	}
+	return
 }
 
-func handleArithmeticOpcode(a *acir_opcode.ArithmeticOpcode, sparseR1CS constraint.SparseR1CS, indexMap map[string]int) {
+func handleArithmeticOpcode(ctx *backend.Context, a *acir_opcode.ArithmeticOpcode) {
 	var xa, xb, xc int
 	var qL, qR, qO, qC, qM1, qM2 constraint.Coeff
 
 	// Case qM⋅(xa⋅xb)
 	if len(a.MulTerms) != 0 {
 		mulTerm := a.MulTerms[0]
-		qM1 = sparseR1CS.FromInterface(mulTerm.Coefficient)
-		qM2 = sparseR1CS.FromInterface(1)
-		xa = indexMap[fmt.Sprint(int(mulTerm.MultiplicandIndex))]
-		xb = indexMap[fmt.Sprint(int(mulTerm.MultiplierIndex))]
+		qM1 = ctx.ConstraintSystem.FromInterface(mulTerm.Coefficient)
+		qM2 = ctx.ConstraintSystem.FromInterface(1)
+		xa = ctx.VariablesMap[fmt.Sprint(int(mulTerm.MultiplicandIndex))]
+		xb = ctx.VariablesMap[fmt.Sprint(int(mulTerm.MultiplierIndex))]
 	}
 
 	// Case qO⋅xc
 	if len(a.SimpleTerms) == 1 {
 		qOwOTerm := a.SimpleTerms[0]
-		qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-		xc = indexMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
+		qO = ctx.ConstraintSystem.FromInterface(qOwOTerm.Coefficient)
+		xc = ctx.VariablesMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
 	}
 
 	// Case qL⋅xa + qR⋅xb
 	if len(a.SimpleTerms) == 2 {
 		// qL⋅xa
 		qLwLTerm := a.SimpleTerms[0]
-		qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-		xa = indexMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
+		qL = ctx.ConstraintSystem.FromInterface(qLwLTerm.Coefficient)
+		xa = ctx.VariablesMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
 		// qR⋅xb
 		qRwRTerm := a.SimpleTerms[1]
-		qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-		xb = indexMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
+		qR = ctx.ConstraintSystem.FromInterface(qRwRTerm.Coefficient)
+		xb = ctx.VariablesMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
 	}
 
 	// Case qL⋅xa + qR⋅xb + qO⋅xc
 	if len(a.SimpleTerms) == 3 {
 		// qL⋅xa
 		qLwLTerm := a.SimpleTerms[0]
-		qL = sparseR1CS.FromInterface(qLwLTerm.Coefficient)
-		xa = indexMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
+		qL = ctx.ConstraintSystem.FromInterface(qLwLTerm.Coefficient)
+		xa = ctx.VariablesMap[fmt.Sprint(int(qLwLTerm.VariableIndex))]
 		// qR⋅xb
 		qRwRTerm := a.SimpleTerms[1]
-		qR = sparseR1CS.FromInterface(qRwRTerm.Coefficient)
-		xb = indexMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
+		qR = ctx.ConstraintSystem.FromInterface(qRwRTerm.Coefficient)
+		xb = ctx.VariablesMap[fmt.Sprint(int(qRwRTerm.VariableIndex))]
 		// qO⋅xc
 		qOwOTerm := a.SimpleTerms[2]
-		qO = sparseR1CS.FromInterface(qOwOTerm.Coefficient)
-		xc = indexMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
+		qO = ctx.ConstraintSystem.FromInterface(qOwOTerm.Coefficient)
+		xc = ctx.VariablesMap[fmt.Sprint(int(qOwOTerm.VariableIndex))]
 	}
 
 	// Add the qC term
-	qC = sparseR1CS.FromInterface(a.QC)
+	qC = ctx.ConstraintSystem.FromInterface(a.QC)
 
-	K := sparseR1CS.MakeTerm(&qC, 0)
+	K := ctx.ConstraintSystem.MakeTerm(&qC, 0)
 	K.MarkConstant()
 
 	constraint := constraint.SparseR1C{
-		L: sparseR1CS.MakeTerm(&qL, xa),
-		R: sparseR1CS.MakeTerm(&qR, xb),
-		O: sparseR1CS.MakeTerm(&qO, xc),
-		M: [2]constraint.Term{sparseR1CS.MakeTerm(&qM1, xa), sparseR1CS.MakeTerm(&qM2, xb)},
+		L: ctx.ConstraintSystem.MakeTerm(&qL, xa),
+		R: ctx.ConstraintSystem.MakeTerm(&qR, xb),
+		O: ctx.ConstraintSystem.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{ctx.ConstraintSystem.MakeTerm(&qM1, xa), ctx.ConstraintSystem.MakeTerm(&qM2, xb)},
 		K: K.CoeffID(),
 	}
 
-	sparseR1CS.AddConstraint(constraint)
+	ctx.ConstraintSystem.AddConstraint(constraint)
 }
 
-func handleBlackBoxFunctionOpcode(bbf *acir_opcode.BlackBoxFunction) {
+func handleBlackBoxFunctionOpcode(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
 	switch bbf.Name {
 	case acir_opcode.AES:
 		AES()
 		break
 	case acir_opcode.AND:
-		AND()
+		AND(ctx, bbf)
 		break
 	case acir_opcode.XOR:
-		XOR()
+		// XOR(bbf, sparseR1CS, variables)
 		break
 	case acir_opcode.RANGE:
 		Range()

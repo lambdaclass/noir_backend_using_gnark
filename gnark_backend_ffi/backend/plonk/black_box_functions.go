@@ -1,13 +1,28 @@
 package plonk_backend
 
+import (
+	acir_opcode "gnark_backend_ffi/acir/opcode"
+	"gnark_backend_ffi/backend"
+)
+
 // AES black box function call is not handled
 func AES() {}
 
-// AND black box function call is not handled
-func AND() {}
+func AND(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
+	lhs := int(bbf.Inputs[0].Witness)
+	rhs := int(bbf.Inputs[1].Witness)
+	bits := int(bbf.Inputs[0].NumBits)
 
-// XOR black box function call is not handled
-func XOR() {}
+	And(lhs, rhs, bits, ctx)
+}
+
+func XOR(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
+	lhs := int(bbf.Inputs[0].Witness)
+	rhs := int(bbf.Inputs[1].Witness)
+	bits := int(bbf.Inputs[0].NumBits)
+
+	Xor(lhs, rhs, bits, ctx)
+}
 
 // RANGE black box function call is not handled
 func Range() {}

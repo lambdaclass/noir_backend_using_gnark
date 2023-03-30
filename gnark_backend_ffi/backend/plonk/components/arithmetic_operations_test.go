@@ -1,6 +1,7 @@
-package plonk_components
+package components
 
 import (
+	"gnark_backend_ffi/acir"
 	"gnark_backend_ffi/backend"
 	"testing"
 
@@ -14,14 +15,15 @@ func TestAddComponent(t *testing.T) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 	expectedResult := fr_bn254.NewElement(5)
 
-	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, secretVariables := add(0, 1, sparseR1CS, secretVariables)
-	assert.Equal(t, expectedResult, secretVariables[result])
-	result, secretVariables = add(1, 0, sparseR1CS, secretVariables)
-	assert.Equal(t, expectedResult, secretVariables[result])
+	result := add(0, 1, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
+	result = add(1, 0, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
 
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
 
 func TestMulComponent(t *testing.T) {
@@ -29,12 +31,13 @@ func TestMulComponent(t *testing.T) {
 	sparseR1CS := cs_bn254.NewSparseR1CS(1)
 	expectedResult := fr_bn254.NewElement(6)
 
-	publicVariables, secretVariables, _ := backend.HandleValues(sparseR1CS, values, []uint32{})
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
 
-	result, secretVariables := mul(0, 1, sparseR1CS, secretVariables)
-	assert.Equal(t, expectedResult, secretVariables[result])
-	result, secretVariables = mul(1, 0, sparseR1CS, secretVariables)
-	assert.Equal(t, expectedResult, secretVariables[result])
+	result := mul(0, 1, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
+	result = mul(1, 0, ctx)
+	assert.Equal(t, expectedResult, ctx.Variables[result])
 
-	assertThatProvingAndVerifyingSucceeds(t, publicVariables, secretVariables, sparseR1CS)
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }

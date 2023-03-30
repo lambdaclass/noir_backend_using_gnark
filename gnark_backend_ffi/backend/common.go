@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"os"
 
+	"gnark_backend_ffi/acir"
+
 	"github.com/consensys/gnark-crypto/ecc"
 	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
@@ -17,6 +19,35 @@ import (
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 )
+
+type Context struct {
+	Circuit acir.ACIR
+	// TODO: this should probably be a constraint.System in order to be able to
+	// use more backends.
+	ConstraintSystem constraint.SparseR1CS
+	PublicVariables  fr_bn254.Vector
+	SecretVariables  fr_bn254.Vector
+	Variables        fr_bn254.Vector
+	VariablesMap     map[string]int
+}
+
+func NewContext(circuit acir.ACIR, cs constraint.SparseR1CS, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, variables fr_bn254.Vector, variablesMap map[string]int) *Context {
+	return &Context{
+		Circuit:          circuit,
+		ConstraintSystem: cs,
+		PublicVariables:  publicVariables,
+		SecretVariables:  secretVariables,
+		Variables:        variables,
+		VariablesMap:     variablesMap,
+	}
+}
+
+func (ctx *Context) AddSecretVariable(name string, value fr_bn254.Element) (variableIndex int) {
+	variableIndex = ctx.ConstraintSystem.AddSecretVariable(name)
+	ctx.SecretVariables = append(ctx.SecretVariables, value)
+	ctx.Variables = append(ctx.Variables, value)
+	return
+}
 
 func BuildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, privateVariables fr_bn254.Vector, nbPublicVariables int, nbSecretVariables int) witness.Witness {
 	witnessValues := make(chan any)
@@ -41,7 +72,7 @@ func BuildWitnesses(scalarField *big.Int, publicVariables fr_bn254.Vector, priva
 	return witness
 }
 
-func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, publicInputsIndices []uint32) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, indexMap map[string]int) {
+func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, publicInputsIndices []uint32) (publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, variables fr_bn254.Vector, indexMap map[string]int) {
 	indexMap = make(map[string]int)
 	var index int
 	for i, value := range values {
@@ -71,6 +102,10 @@ func HandleValues(cs constraint.ConstraintSystem, values fr_bn254.Vector, public
 			indexMap[fmt.Sprint(i)] = index
 		}
 	}
+
+	variables = append(variables, publicVariables...)
+	variables = append(variables, secretVariables...)
+
 	return
 }
 

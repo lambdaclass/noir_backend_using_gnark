@@ -1,4 +1,4 @@
-package plonk_components
+package components
 
 import (
 	"fmt"
@@ -71,16 +71,17 @@ func checkConstraints(sparseR1CS *cs_bn254.SparseR1CS, values fr_bn254.Vector) e
 	return nil
 }
 
-func assertThatProvingAndVerifyingSucceeds(t *testing.T, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, sparseR1CS *cs_bn254.SparseR1CS) {
-	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+func assertThatProvingAndVerifyingSucceeds(t *testing.T, ctx *backend.Context) {
+	witness := backend.BuildWitnesses(ctx.ConstraintSystem.Field(), ctx.PublicVariables, ctx.SecretVariables, ctx.ConstraintSystem.GetNbPublicVariables(), ctx.ConstraintSystem.GetNbSecretVariables())
 
-	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
+	// TODO: Remove this cast.
+	srs, err := backend.TryLoadSRS(ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).CurveID())
 	assert.Nil(t, err, err)
 
-	pk, vk, err := plonk.Setup(sparseR1CS, srs)
+	pk, vk, err := plonk.Setup(ctx.ConstraintSystem, srs)
 	assert.Nil(t, err, err)
 
-	proof, err := plonk.Prove(sparseR1CS, pk, witness)
+	proof, err := plonk.Prove(ctx.ConstraintSystem, pk, witness)
 	assert.Nil(t, err, err)
 
 	publicWitnesses, err := witness.Public()
@@ -89,16 +90,17 @@ func assertThatProvingAndVerifyingSucceeds(t *testing.T, publicVariables fr_bn25
 	assert.Nil(t, err, err)
 }
 
-func assertThatProvingFails(t *testing.T, publicVariables fr_bn254.Vector, secretVariables fr_bn254.Vector, sparseR1CS *cs_bn254.SparseR1CS) {
-	witness := backend.BuildWitnesses(sparseR1CS.Field(), publicVariables, secretVariables, sparseR1CS.GetNbPublicVariables(), sparseR1CS.GetNbSecretVariables())
+func assertThatProvingFails(t *testing.T, ctx *backend.Context) {
+	witness := backend.BuildWitnesses(ctx.ConstraintSystem.Field(), ctx.PublicVariables, ctx.SecretVariables, ctx.ConstraintSystem.GetNbPublicVariables(), ctx.ConstraintSystem.GetNbSecretVariables())
 
-	srs, err := backend.TryLoadSRS(sparseR1CS.CurveID())
+	// TODO: Remove this cast.
+	srs, err := backend.TryLoadSRS(ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).CurveID())
 	assert.Nil(t, err, err)
 
-	pk, _, err := plonk.Setup(sparseR1CS, srs)
+	pk, _, err := plonk.Setup(ctx.ConstraintSystem, srs)
 	assert.Nil(t, err, err)
 
-	_, err = plonk.Prove(sparseR1CS, pk, witness)
+	_, err = plonk.Prove(ctx.ConstraintSystem, pk, witness)
 	assert.Error(t, err)
 	// TODO: Figure out why the below assertion fails.
 	// assert.ErrorIs(t, err, fmt.Errorf("constraint #1 is not satisfied: qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xaxb) + qC != 0 → 0 + 0 + 0 + (-1 × 2) + 0 != 0"))

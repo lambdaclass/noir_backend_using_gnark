@@ -1,8 +1,7 @@
-package plonk_components
+package components
 
 import (
 	"github.com/consensys/gnark/constraint"
-	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
 // Generates constraints for asserting that a given value is boolean.
@@ -14,7 +13,7 @@ import (
 // and they could not be public because they're intermediate variables and they
 // could not be internal variables because in that case we'd lose track of the
 // index of these added variables.
-func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS) {
+func assertIsBoolean(bitIndex int, sparseR1CS constraint.SparseR1CS) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
@@ -41,7 +40,7 @@ func assertIsBoolean(bitIndex int, sparseR1CS *cs_bn254.SparseR1CS) {
 // bitIndex is the index of the evaluated bit in the values vector.
 // sparseR1CS is the constraint system being mutated.
 // secretVariables is the values vector.
-func assertIsEqual(lhs int, rhs int, sparseR1CS *cs_bn254.SparseR1CS) {
+func assertIsEqual(lhs int, rhs int, sparseR1CS constraint.SparseR1CS) {
 	var xa, xb, xc int
 	var qL, qR, qO, qM1, qM2 constraint.Coeff
 
