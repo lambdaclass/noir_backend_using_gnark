@@ -125,3 +125,32 @@ func sub(minuend int, subtrahend int, ctx *backend.Context) int {
 
 	return xc
 }
+
+func Square(value int, ctx *backend.Context) int {
+	var xa, xc int
+	var qL, qR, qO, qM1, qM2 constraint.Coeff
+
+	qM1 = ctx.ConstraintSystem.One()
+	qM2 = ctx.ConstraintSystem.One()
+	xa = value
+	xb := value
+
+	qO = ctx.ConstraintSystem.FromInterface(-1)
+	var square fr_bn254.Element
+	square.Square(&ctx.Variables[value])
+
+	variableName := fmt.Sprintf("(%s^2)", ctx.ConstraintSystem.(*cs_bn254.SparseR1CS).VariableToString(value))
+	xc = ctx.AddSecretVariable(variableName, square)
+
+	addConstraint := constraint.SparseR1C{
+		L: ctx.ConstraintSystem.MakeTerm(&qL, xa),
+		R: ctx.ConstraintSystem.MakeTerm(&qR, xb),
+		O: ctx.ConstraintSystem.MakeTerm(&qO, xc),
+		M: [2]constraint.Term{ctx.ConstraintSystem.MakeTerm(&qM1, xa), ctx.ConstraintSystem.MakeTerm(&qM2, xb)},
+		K: constraint.CoeffIdZero,
+	}
+
+	ctx.ConstraintSystem.AddConstraint(addConstraint)
+
+	return xc
+}
