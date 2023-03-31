@@ -1,6 +1,8 @@
 package components
 
 import (
+	"gnark_backend_ffi/backend"
+
 	"github.com/consensys/gnark/constraint"
 )
 
@@ -59,4 +61,18 @@ func assertIsEqual(lhs int, rhs int, sparseR1CS constraint.SparseR1CS) {
 	}
 
 	sparseR1CS.AddConstraint(constraint)
+}
+
+// Generates constraints for asserting that a given value is between 0 and 2^bits
+// where the value and the amount of bits are witnesses.
+//
+// Generates (5 * bits) + 1 constraints.
+//
+// felt is the index of the evaluated bit in the values vector.
+// bits is the index of the value that represents the amount of bits of the
+// range in the values vector.
+func assertIsInRange(felt, bits int, ctx *backend.Context) {
+	feltBits := toBinaryConversion(felt, bits, ctx)
+	reconstructedFelt := fromBinaryConversion(feltBits, ctx, false)
+	assertIsEqual(felt, reconstructedFelt, ctx.ConstraintSystem)
 }

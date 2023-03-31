@@ -24,8 +24,12 @@ func XOR(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
 	Xor(lhs, rhs, bits, ctx)
 }
 
-// RANGE black box function call is not handled
-func Range() {}
+func Range(ctx *backend.Context, bbf *acir_opcode.BlackBoxFunction) {
+	felt := int(bbf.Inputs[0].Witness)
+	bits := int(bbf.Inputs[0].NumBits)
+
+	assertIsInRange(felt, bits, ctx)
+}
 
 // SHA256 black box function call is not handled
 func SHA256() {}

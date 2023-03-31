@@ -122,7 +122,7 @@ func handleBlackBoxFunctionOpcode(ctx *backend.Context, bbf *acir_opcode.BlackBo
 		// XOR(bbf, sparseR1CS, variables)
 		break
 	case acir_opcode.RANGE:
-		Range()
+		Range(ctx, bbf)
 		break
 	case acir_opcode.SHA256:
 		SHA256()
