@@ -3,7 +3,9 @@ package components
 import (
 	"gnark_backend_ffi/backend"
 
+	fr_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/constraint"
+	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 )
 
 // Generates constraints for asserting that a given value is boolean.
@@ -75,4 +77,27 @@ func assertIsInRange(felt, bits int, ctx *backend.Context) {
 	feltBits := toBinaryConversion(felt, bits, ctx)
 	reconstructedFelt := fromBinaryConversion(feltBits, ctx, false)
 	assertIsEqual(felt, reconstructedFelt, ctx.ConstraintSystem)
+}
+
+// Generates constraints for asserting that a point is on a curve. The curve
+// will depend on the context's constraint system used.
+//
+// Generates 5 Plonk constraints.
+//
+// pointX is the index to the x-coordinate of the point in question.
+// pointY is the index to the y-coordinate of the point in question.
+// ctx is the context.
+func AssertPointIsOnCurve(pointX, pointY int, ctx *backend.Context) {
+	var left, right int
+	switch ctx.ConstraintSystem.(type) {
+	case *cs_bn254.SparseR1CS:
+		left = Square(pointY, ctx)
+		xSquared := Square(pointX, ctx)
+		xCubed := mul(xSquared, pointX, ctx)
+		// This should be handled as a constant instead of a secret variable. Maybe
+		// If we hardcode the constraint this could be avoided.
+		curveConstant := ctx.AddSecretVariable("bn254_constant", fr_bn254.NewElement(3))
+		right = add(xCubed, curveConstant, ctx)
+	}
+	assertIsEqual(left, right, ctx.ConstraintSystem)
 }
