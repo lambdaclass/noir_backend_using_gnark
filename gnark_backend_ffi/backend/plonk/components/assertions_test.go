@@ -92,3 +92,11 @@ func TestAssertIsInRangeComponentFails(t *testing.T) {
 
 	assertThatProvingFails(t, ctx)
 }
+
+func TestAssertPointIsOnCurveSucceeds(t *testing.T) {
+
+}
+
+func TestAssertPointIsOnCurveFails(t *testing.T) {
+
+}

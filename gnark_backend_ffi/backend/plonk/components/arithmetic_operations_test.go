@@ -62,3 +62,20 @@ func TestSubComponent(t *testing.T) {
 
 	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
+
+func TestSquareComponent(t *testing.T) {
+	values := fr_bn254.Vector{fr_bn254.NewElement(2), fr_bn254.NewElement(3)}
+	sparseR1CS := cs_bn254.NewSparseR1CS(1)
+
+	publicVariables, secretVariables, variables, variablesMap := backend.HandleValues(sparseR1CS, values, []uint32{})
+	ctx := backend.NewContext(acir.ACIR{}, sparseR1CS, publicVariables, secretVariables, variables, variablesMap)
+
+	// 2^2 = 4
+	result := Square(0, ctx)
+	assert.Equal(t, fr_bn254.NewElement(4), ctx.Variables[result])
+	// 3^3 = 9
+	result = Square(1, ctx)
+	assert.Equal(t, fr_bn254.NewElement(9), ctx.Variables[result])
+
+	assertThatProvingAndVerifyingSucceeds(t, ctx)
+}
