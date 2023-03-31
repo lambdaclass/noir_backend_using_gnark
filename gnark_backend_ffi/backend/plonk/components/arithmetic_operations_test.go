@@ -62,3 +62,7 @@ func TestSubComponent(t *testing.T) {
 
 	assertThatProvingAndVerifyingSucceeds(t, ctx)
 }
+
+func TestSquareComponent(t *testing.T) {
+
+}
